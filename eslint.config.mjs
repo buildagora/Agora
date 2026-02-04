@@ -13,6 +13,36 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
   ]),
+  {
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            {
+              name: "@/lib/db",
+              message:
+                "Do not import Prisma from @/lib/db. Use @/lib/db.server (server-only).",
+            },
+          ],
+          patterns: [
+            {
+              group: ["@prisma/client"],
+              message:
+                "Import PrismaClient only inside src/lib/db.server.ts (server-only singleton).",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  // Allow @prisma/client import in db.server.ts
+  {
+    files: ["src/lib/db.server.ts"],
+    rules: {
+      "no-restricted-imports": "off",
+    },
+  },
 ]);
 
 export default eslintConfig;

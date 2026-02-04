@@ -1,65 +1,99 @@
-import Image from "next/image";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import { verifyAuthToken, getAuthCookieName } from "@/lib/jwt";
+import { getPrisma } from "@/lib/db.rsc";
+import type { User } from "@/lib/auth/types";
 
-export default function Home() {
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
-  );
+/**
+ * Root route - Server-side authentication gate
+ * PHASE 4: Deterministic root routing
+ * 
+ * TASK 3: Implement deterministic root routing:
+ * - IF no valid session → /auth/sign-in
+ * - IF BUYER → /buyer/agent
+ * - IF SELLER and no setup (no categories/display name) → /seller/complete-profile
+ * - IF SELLER and has setup → /seller/dashboard
+ * 
+ * IMPORTANT: "/" must NEVER route to /seller/feed
+ * This logic must NOT exist anywhere else
+ */
+export default async function RootPage() {
+  // Read auth cookie
+  const cookieStore = await cookies();
+  const cookieName = getAuthCookieName();
+  const token = cookieStore.get(cookieName)?.value;
+
+  // If no token, redirect to sign-in (not /login - that's just a redirect route)
+  if (!token) {
+    redirect("/auth/sign-in");
+  }
+
+  // Verify JWT token
+  const payload = await verifyAuthToken(token);
+  if (!payload) {
+    // Invalid token, redirect to sign-in
+    redirect("/auth/sign-in");
+  }
+
+  // Load user from database (same logic as /api/auth/me)
+  const prisma = getPrisma();
+  const dbUser = await prisma.user.findUnique({
+    where: { id: payload.userId },
+  });
+
+  // If user doesn't exist, redirect to sign-in
+  if (!dbUser) {
+    redirect("/auth/sign-in");
+  }
+
+  // CRITICAL: Validate role is valid
+  if (!dbUser.role || (dbUser.role !== "BUYER" && dbUser.role !== "SELLER")) {
+    // Invalid role - redirect to sign-in
+    redirect("/auth/sign-in");
+  }
+
+  // Build User object matching /api/auth/me format
+  let categoriesServed: string[] = [];
+  try {
+    if (dbUser.categoriesServed) {
+      categoriesServed = JSON.parse(dbUser.categoriesServed);
+    }
+  } catch {
+    // Invalid JSON, treat as empty
+  }
+
+  const me: User = {
+    id: dbUser.id,
+    email: dbUser.email,
+    fullName: dbUser.fullName || "",
+    companyName: dbUser.companyName || "",
+    role: dbUser.role,
+    categoriesServed,
+    serviceArea: dbUser.serviceArea || undefined,
+  };
+
+  // Deterministic redirect logic (no helpers, no guessing)
+  if (!me || !me.role) {
+    redirect("/auth/sign-in");
+  }
+  
+  if (me.role === "BUYER") {
+    redirect("/buyer/agent");
+  }
+  
+  if (me.role === "SELLER") {
+    // Check if seller has setup (categories or display name)
+    const hasCategories = me.categoriesServed && Array.isArray(me.categoriesServed) && me.categoriesServed.length > 0;
+    const hasDisplayName = !!(dbUser.companyName?.trim() || dbUser.fullName?.trim());
+    const sellerHasSetup = hasCategories || hasDisplayName;
+    
+    if (!sellerHasSetup) {
+      redirect("/seller/complete-profile");
+    } else {
+      redirect("/seller/dashboard");
+    }
+  }
+  
+  // Unknown role - redirect to sign-in
+  redirect("/auth/sign-in");
 }

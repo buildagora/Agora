@@ -1,15 +1,19 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { AuthProvider } from "@/lib/auth/AuthProvider";
 
+// Font loading with error handling - these are synchronous but Next.js handles them
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
+  display: "swap", // Fail fast if font can't load
 });
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+  display: "swap", // Fail fast if font can't load
 });
 
 export const metadata: Metadata = {
@@ -22,13 +26,22 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return (
+  console.log("[SERVER] RootLayout: rendering start");
+  
+  // Root layout is synchronous - no blocking operations
+  // If this hangs, it's a Next.js issue, not our code
+  const result = (
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <AuthProvider>
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );
+  
+  console.log("[SERVER] RootLayout: rendering complete");
+  return result;
 }

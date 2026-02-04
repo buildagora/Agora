@@ -39,3 +39,17 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+/src/generated/prisma
+
+# dev DB lock file
+scripts/.agora-db-lock.json
+
+# accidental nested folder (do not run from here)
+/agora/
+
+# dev DB lock file
+scripts/.agora-db-lock.json
+
+# accidental nested folder (do not run from here)
+/agora/
