@@ -3,8 +3,9 @@
  * Handles dispatching posted requests to suppliers
  */
 
+import "server-only";
 import { RFQRequest, getRequest } from "./request";
-import { routeSuppliersForRequest, type RoutingResult } from "./requestRouting";
+import { routeSuppliersForRequestServer, type RoutingResult } from "./requestRouting.server";
 import { generateThreadId, createSystemMessage } from "./messages";
 import { SLA_NO_RESPONSE_MINUTES } from "./slaConfig";
 import { logEvent } from "./eventLog";
@@ -97,7 +98,7 @@ export function updateDispatchStatus(
  * @param requestId Request ID
  * @param sellerId Seller ID
  */
-export function markDispatchAsResponded(requestId: string, sellerId: string): void {
+export async function markDispatchAsResponded(requestId: string, sellerId: string): Promise<void> {
   // Check if already responded (idempotency check)
   const records = getDispatchRecords(requestId);
   const existingRecord = records.find(
@@ -125,7 +126,7 @@ export function markDispatchAsResponded(requestId: string, sellerId: string): vo
       // Try to get buyerId from request (if available)
       let buyerId: string | undefined;
       try {
-        const request = getRequest(requestId);
+        const request = await getRequest(requestId);
         buyerId = request?.buyerId;
       } catch {
         // Silently continue if request not found
@@ -154,11 +155,11 @@ export function markDispatchAsResponded(requestId: string, sellerId: string): vo
  * @param request Request object (must have status "posted")
  * @returns Dispatch result with counts
  */
-export function dispatchRequestToSuppliers(request: RFQRequest): {
+export async function dispatchRequestToSuppliers(request: RFQRequest): Promise<{
   primaryCount: number;
   fallbackCount: number;
   totalDispatched: number;
-} {
+}> {
   // Validate request status
   if (request.status !== "posted") {
     throw new Error(`dispatchRequestToSuppliers: Request must have status "posted", got "${request.status}"`);
@@ -185,7 +186,7 @@ export function dispatchRequestToSuppliers(request: RFQRequest): {
   }
 
   // Compute routing
-  const routing: RoutingResult = routeSuppliersForRequest(request);
+  const routing: RoutingResult = await routeSuppliersForRequestServer(request);
 
   // Create dispatch records and messaging threads
   const dispatchRecords: DispatchRecord[] = [];
@@ -351,11 +352,11 @@ function isFallbackDispatched(requestId: string): boolean {
  * @param request Request object
  * @returns Dispatch result if fallback was expanded, null otherwise
  */
-export function checkAndExpandFallback(request: RFQRequest): {
+export async function checkAndExpandFallback(request: RFQRequest): Promise<{
   primaryCount: number;
   fallbackCount: number;
   totalDispatched: number;
-} | null {
+} | null> {
   // Only check posted requests
   if (request.status !== "posted") {
     return null;
@@ -425,7 +426,7 @@ export function checkAndExpandFallback(request: RFQRequest): {
   }
 
   // Get routing to find fallback suppliers
-  const routing = routeSuppliersForRequest(request);
+  const routing = await routeSuppliersForRequestServer(request);
 
   // Only dispatch fallback suppliers (primary were already dispatched)
   const fallbackSellerIds = routing.fallback;

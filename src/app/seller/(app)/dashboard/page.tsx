@@ -8,6 +8,7 @@
 //   - Explicitly empty with TODO until API exists
 // No inferred data. No client synthesis.
 
+import { Suspense } from "react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -59,6 +60,16 @@ interface Bid {
   status?: "SUBMITTED" | "WON" | "LOST";
   seenByBuyerAt?: string | null;
   seenBySellerAt?: string | null;
+  // RFQ summary fields (included from bids API)
+  rfq?: {
+    id: string;
+    rfqNumber: string;
+    title: string;
+    category: string;
+    categoryId: string | null;
+    jobNameOrPo: string | null;
+    status: string;
+  } | null;
 }
 
 interface Message {
@@ -70,97 +81,75 @@ interface Message {
 
 type BidStatus = "SUBMITTED" | "WON";
 
-export default function SellerDashboardPage() {
+function SellerDashboardPageInner() {
+  // ALWAYS call all hooks unconditionally at the top level
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, status } = useAuth(); // NEW FOUNDATION: Server is source of truth
   
-  // CRITICAL: Safety net - BUYER must NEVER render seller pages
-  if (user?.role !== "SELLER") {
-    return null;
-  }
-  
+  // All state hooks must be called unconditionally
   const [bids, setBids] = useState<Bid[]>([]);
-  const [rfqs, setRfqs] = useState<RFQ[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   // Action queue removed - will be added when API route exists
   const [activeTab, setActiveTab] = useState<BidStatus>("SUBMITTED");
   const [showSuccessBanner, setShowSuccessBanner] = useState(false);
   // Removed markedSeenTabs - seen/unseen logic disabled until API supports it
 
-  const loadData = async () => {
-    // NEW FOUNDATION: AuthGuard handles auth/role checks
-    if (!user) return;
-
-    try {
-      // Load bids from API (server queries database)
-      const bidsRes = await fetch("/api/seller/bids", {
-        cache: "no-store",
-        credentials: "include",
-      });
-      if (bidsRes.ok) {
-        const bidsData = await bidsRes.json();
-        const apiBids = Array.isArray(bidsData) ? bidsData : (bidsData.data || []);
-        // Default status to SUBMITTED if missing
-        const bidsWithStatus = apiBids.map((bid: Bid) => ({
-          ...bid,
-          status: bid.status || "SUBMITTED",
-        }));
-        setBids(bidsWithStatus);
-      } else {
-        setBids([]);
-      }
-
-      // Load RFQs from API (for lookup)
-      const rfqsRes = await fetch("/api/seller/rfqs", {
-        cache: "no-store",
-        credentials: "include",
-      });
-      if (rfqsRes.ok) {
-        const rfqsData = await rfqsRes.json();
-        const apiRfqs = Array.isArray(rfqsData) ? rfqsData : (rfqsData.data || []);
-        setRfqs(apiRfqs);
-      } else {
-        setRfqs([]);
-      }
-
-      // Load messages from API
-      const messagesRes = await fetch("/api/seller/messages", {
-        cache: "no-store",
-        credentials: "include",
-      });
-      if (messagesRes.ok) {
-        const messagesData = await messagesRes.json();
-        const apiMessages = Array.isArray(messagesData) ? messagesData : (messagesData.data || []);
-        setMessages(apiMessages);
-      } else {
-        setMessages([]);
-      }
-
-      // TODO: Load action queue from API when available
-    } catch (error) {
-      console.error("Error loading seller dashboard data:", error);
-      // Gracefully handle errors - show empty state
-      setBids([]);
-      setRfqs([]);
-      setMessages([]);
-    }
-  };
-
+  // useEffect MUST be called unconditionally (before any early returns)
+  // Guards are INSIDE the effect, not around it
   useEffect(() => {
-    // NEW FOUNDATION: AuthGuard handles auth/role checks
-    // This effect only loads data when user is authenticated and role matches
+    // Guard: Don't run if still loading
     if (status === "loading") {
       return;
     }
 
-    // AuthGuard handles all auth/role redirects - no manual checks needed
+    // Guard: Don't load data if not authenticated or wrong role
     if (!user || user.role !== "SELLER") {
-      return; // AuthGuard will redirect
+      return;
     }
 
-    // TODO: Profile completion check - removed manual redirect
-    // AuthGuard should handle this, or move to a separate middleware/guard
+    // Load data function (defined inside effect to avoid dependency issues)
+    const loadData = async () => {
+      try {
+        // Load bids from API (server queries database with RFQ summary included)
+        const bidsRes = await fetch("/api/seller/bids", {
+          cache: "no-store",
+          credentials: "include",
+        });
+        if (bidsRes.ok) {
+          const bidsData = await bidsRes.json();
+          const apiBids = Array.isArray(bidsData) ? bidsData : (bidsData.data || []);
+          // Default status to SUBMITTED if missing
+          const bidsWithStatus = apiBids.map((bid: Bid) => ({
+            ...bid,
+            status: bid.status || "SUBMITTED",
+          }));
+          setBids(bidsWithStatus);
+        } else {
+          setBids([]);
+        }
+
+        // Load messages from API
+        const messagesRes = await fetch("/api/seller/messages", {
+          cache: "no-store",
+          credentials: "include",
+        });
+        if (messagesRes.ok) {
+          const messagesData = await messagesRes.json();
+          const apiMessages = Array.isArray(messagesData) ? messagesData : (messagesData.data || []);
+          setMessages(apiMessages);
+        } else {
+          setMessages([]);
+        }
+
+        // TODO: Load action queue from API when available
+      } catch (error) {
+        console.error("Error loading seller dashboard data:", error);
+        // Gracefully handle errors - show empty state
+        setBids([]);
+        setMessages([]);
+      }
+    };
 
     loadData();
 
@@ -173,6 +162,36 @@ export default function SellerDashboardPage() {
       setTimeout(() => setShowSuccessBanner(false), 5000);
     }
   }, [searchParams, router, user, status]);
+
+  // Redirect effects - must be in useEffect, not during render
+  useEffect(() => {
+    if (status === "loading") {
+      return; // Don't redirect while loading
+    }
+
+    // Redirect if not authenticated
+    if (!user) {
+      router.replace("/seller/login?returnTo=/seller/dashboard");
+      return;
+    }
+
+    // CRITICAL: Safety net - BUYER must NEVER render seller pages
+    if (user.role !== "SELLER") {
+      router.replace("/auth/switch-role?target=SELLER");
+      return;
+    }
+  }, [user, status, router]);
+  
+  // Gate rendering AFTER all hooks are called
+  // Show loading state while auth is being checked
+  if (status === "loading") {
+    return null; // or <LoadingSpinner /> if you have one
+  }
+  
+  // Show nothing while redirecting
+  if (!user || user.role !== "SELLER") {
+    return null;
+  }
 
   // TODO: Mark bids as seen when viewing Won tab - removed until API supports seen/unseen
   // The API currently returns placeholder data, so seen/unseen logic is disabled
@@ -190,10 +209,6 @@ export default function SellerDashboardPage() {
   };
 
   const filteredBids = bids.filter((bid) => bid.status === activeTab);
-
-  const getRFQForBid = (rfqId: string): RFQ | undefined => {
-    return rfqs.find((rfq) => rfq.id === rfqId);
-  };
 
   const calculateBidTotal = (bid: Bid): number => {
     return bid.lineItems.reduce((sum, item) => {
@@ -359,7 +374,8 @@ export default function SellerDashboardPage() {
           ) : (
             <div className="flex flex-col gap-3">
               {filteredBids.map((bid) => {
-                const rfq = getRFQForBid(bid.rfqId);
+                // Use RFQ summary from bid object (included from bids API)
+                const rfq = bid.rfq;
                 const total = calculateBidTotal(bid);
                 // TODO: Seen/unseen logic removed until API supports it
                 const unreadMessages = getUnreadMessageCount(bid.rfqId);
@@ -433,5 +449,13 @@ export default function SellerDashboardPage() {
         </div>
       </div>
     </AppShell>
+  );
+}
+
+export default function SellerDashboardPage() {
+  return (
+    <Suspense fallback={null}>
+      <SellerDashboardPageInner />
+    </Suspense>
   );
 }

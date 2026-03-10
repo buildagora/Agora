@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth/AuthProvider";
+import { FEATURES } from "@/config/features";
 import Button from "@/components/ui2/Button";
 import Card, { CardContent } from "@/components/ui2/Card";
 
@@ -73,10 +74,12 @@ export default function BuyerDashboardPage() {
                   Create New Request
                 </h3>
                 <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                  Start a conversation with Agora Agent to create a material request
+                  {FEATURES.AGENT_ENABLED
+                    ? "Start a conversation with Agora Agent to create a material request"
+                    : "Create a new material request"}
                 </p>
               </div>
-              <Link href="/buyer/agent">
+              <Link href="/buyer/rfqs/new">
                 <Button variant="primary" size="lg">
                   New Request
                 </Button>
@@ -125,35 +128,6 @@ export default function BuyerDashboardPage() {
               </div>
             </CardContent>
           </Card>
-        </div>
-
-        {/* Quick Links */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Link href="/buyer/rfqs">
-            <Card className="hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors cursor-pointer">
-              <CardContent className="p-6">
-                <h3 className="font-semibold text-black dark:text-zinc-50 mb-2">
-                  View All Requests
-                </h3>
-                <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                  Manage your material requests and track supplier responses
-                </p>
-              </CardContent>
-            </Card>
-          </Link>
-
-          <Link href="/buyer/orders/open">
-            <Card className="hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors cursor-pointer">
-              <CardContent className="p-6">
-                <h3 className="font-semibold text-black dark:text-zinc-50 mb-2">
-                  View Orders
-                </h3>
-                <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                  Track your open and completed purchase orders
-                </p>
-              </CardContent>
-            </Card>
-          </Link>
         </div>
       </div>
     </div>

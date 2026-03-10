@@ -29,7 +29,7 @@ export default function RoleOnboardingPage() {
     // If user already has a role, redirect to their dashboard
     if (user.role === "BUYER" || user.role === "SELLER") {
       if (user.role === "BUYER") {
-        router.push("/buyer/agent");
+        router.push("/buyer/dashboard");
       } else {
         router.push("/seller/dashboard");
       }
@@ -44,7 +44,7 @@ export default function RoleOnboardingPage() {
     // For now, redirect to appropriate dashboard
     // The server should handle role assignment
     if (role === "BUYER") {
-      router.push("/buyer/agent");
+      router.push("/buyer/dashboard");
     } else {
       router.push("/seller/dashboard");
     }

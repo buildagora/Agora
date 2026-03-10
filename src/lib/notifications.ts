@@ -197,28 +197,20 @@ export interface Notification {
 /**
  * Legacy pushNotification for backward compatibility
  * This is for the old global notification system
+ * NOTE: Legacy notifications are no longer stored - this is a no-op
  */
 export function pushLegacyNotification(notification: Notification): void {
-  if (typeof window === "undefined") {
-    return;
+  // Removed legacy storage - notifications are now stored in database via API
+  // This function is kept for backwards compatibility but is a no-op
+  if (process.env.NODE_ENV === "development") {
+    console.warn("⚠️ pushLegacyNotification: Legacy notification storage removed, use canonical API instead");
   }
-  
-  const notifications = getLegacyNotifications();
-  notifications.unshift(notification);
-  saveLegacyNotifications(notifications);
-  
-  // Removed window.dispatchEvent - no event listeners exist in production code
 }
 
 export function listNotificationsForRole(role: UserRole): Notification[] {
-  const notifications = getLegacyNotifications();
-  return notifications.filter((n) => {
-    if (n.toRole) {
-      return n.toRole === role;
-    }
-    // If no toRole specified, include for all roles (backward compatibility)
-    return true;
-  });
+  // Removed legacy storage - notifications are now stored in database via API
+  // This function is kept for backwards compatibility but returns empty array
+  return [];
 }
 
 export function markRead(notificationId: string): void {

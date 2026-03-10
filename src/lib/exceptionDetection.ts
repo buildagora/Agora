@@ -7,7 +7,7 @@
  */
 
 import { RFQRequest } from "./request";
-import { DispatchRecord } from "./requestDispatch";
+import type { DispatchRecord } from "./requestDispatch";
 import { Order } from "./order";
 import {
   SLA_NO_RESPONSE_MINUTES,

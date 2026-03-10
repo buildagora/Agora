@@ -1,8 +1,10 @@
 "use client";
 
+import { Suspense } from "react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import SmartBackButton from "@/components/nav/SmartBackButton";
 // Removed getRfqs import - using API instead
 import { smartSortRfqs, normalizeRfq, isClosingSoon, type NormalizedRFQ } from "@/lib/rfqSort";
 import { type RFQ } from "@/lib/rfqs";
@@ -40,14 +42,10 @@ function normalizedRfqToRfq(normalized: NormalizedRFQ): RFQWithDueAt {
   };
 }
 
-export default function SellerFeedPage() {
+function SellerFeedPageInner() {
   const { user } = useAuth();
   
-  // CRITICAL: Safety net - BUYER must NEVER render seller pages
-  if (user?.role !== "SELLER") {
-    return null;
-  }
-  
+  // CRITICAL: All hooks must be called unconditionally (Rules of Hooks)
   const router = useRouter();
   const searchParams = useSearchParams();
   const [rfqs, setRfqs] = useState<RFQWithDueAt[]>([]);
@@ -56,16 +54,57 @@ export default function SellerFeedPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [selectedFulfillment, setSelectedFulfillment] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const historySeededRef = useRef(false);
+
+  // Check if user is seller (used for guards and render gate)
+  const isSeller = user?.role === "SELLER";
+
+  // Seed history when landing from email link (so back button goes to dashboard, not sign-in)
+  useEffect(() => {
+    // Guard: Only seed history if user is a seller
+    if (!isSeller) {
+      return;
+    }
+
+    // Only run once per page load
+    if (historySeededRef.current) return;
+    
+    // Check if we landed from an email link
+    const fromParam = searchParams.get("from");
+    if (fromParam === "email") {
+      // Check if history was already seeded (prevents double-seeding on re-renders)
+      if (window.history.state?.seededFromEmail) {
+        historySeededRef.current = true;
+        return;
+      }
+      
+      // Seed history: replace current with dashboard, then push current URL
+      const current = window.location.pathname + window.location.search + window.location.hash;
+      window.history.replaceState({ seededFromEmail: true }, "", "/seller/dashboard");
+      window.history.pushState({ seededFromEmail: true }, "", current);
+      historySeededRef.current = true;
+    }
+  }, [searchParams, isSeller]);
 
   // Initialize category from URL query parameter
   useEffect(() => {
+    // Guard: Only initialize category if user is a seller
+    if (!isSeller) {
+      return;
+    }
+
     const categoryParam = searchParams.get("category");
     if (categoryParam) {
       setSelectedCategory(categoryParam);
     }
-  }, [searchParams]);
+  }, [searchParams, isSeller]);
 
   useEffect(() => {
+    // Guard: Only fetch if user is a seller
+    if (!isSeller) {
+      return;
+    }
+
     // Load RFQs from API (server is source of truth)
     // CRITICAL: Never cache seller feed - always fetch fresh data
     // CRITICAL: Only fetch broadcast RFQs for Live Feed
@@ -105,7 +144,7 @@ export default function SellerFeedPage() {
     };
     
     loadRFQs();
-  }, []);
+  }, [isSeller]);
 
   // Apply filters to broadcast RFQs (Live Feed only)
   useEffect(() => {
@@ -154,9 +193,35 @@ export default function SellerFeedPage() {
     });
   };
 
+  // Render gate: AFTER all hooks are called
+  // If auth is still loading or user is undefined, show loading state
+  if (!user) {
+    return (
+      <div className="flex flex-1 px-6 py-8">
+        <div className="w-full max-w-6xl mx-auto">
+          <p className="text-zinc-600 dark:text-zinc-400">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If user exists but is not a seller, redirect to switch role
+  if (!isSeller) {
+    router.replace("/auth/switch-role?role=seller");
+    return null;
+  }
+
   return (
     <div className="flex flex-1 px-6 py-8">
         <div className="w-full max-w-6xl mx-auto">
+          {/* Back to Dashboard button */}
+          <div className="mb-4">
+            <SmartBackButton
+              fallback="/seller/dashboard"
+              label="← Back to Dashboard"
+            />
+          </div>
+
           {/* Page Header */}
           <div className="mb-6">
             <h1 className="text-3xl font-semibold text-black dark:text-zinc-50">
@@ -310,6 +375,14 @@ export default function SellerFeedPage() {
           </div>
         </div>
       </div>
+  );
+}
+
+export default function SellerFeedPage() {
+  return (
+    <Suspense fallback={null}>
+      <SellerFeedPageInner />
+    </Suspense>
   );
 }
 

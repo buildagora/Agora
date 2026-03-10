@@ -8,6 +8,8 @@ export const labelToCategoryId = {
     Framing: "framing",
     Drywall: "drywall",
     Concrete: "concrete",
+    "Lumber / Siding": "lumber_siding",
+    "Lumber/Siding": "lumber_siding",
   } as const;
   
   export const categoryIdToLabel = {
@@ -18,6 +20,7 @@ export const labelToCategoryId = {
     framing: "Framing",
     drywall: "Drywall",
     concrete: "Concrete",
+    lumber_siding: "Lumber / Siding",
   } as const;
   
   export type CategoryId = keyof typeof categoryIdToLabel;

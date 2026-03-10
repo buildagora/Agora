@@ -45,8 +45,60 @@ export function getDashboardForRole(
 }
 
 /**
+ * List of auth/login pages that should never be used as returnTo destinations
+ */
+const AUTH_PAGES = [
+  "/buyer/login",
+  "/seller/login",
+  "/auth/sign-in",
+  "/auth/sign-up",
+  "/auth/switch-role",
+  "/seller/team/invite/signup",
+];
+
+/**
+ * Check if a path is an auth/login page
+ */
+function isAuthPage(path: string): boolean {
+  if (!path) return false;
+  const normalizedPath = path.split("?")[0]; // Strip query params for comparison
+  return AUTH_PAGES.some((authPage) => normalizedPath === authPage || normalizedPath.startsWith(authPage + "/"));
+}
+
+/**
+ * Extract nested returnTo from a URL string recursively
+ * Handles nested returnTo params like: /buyer/login?returnTo=/buyer/login?returnTo=...
+ */
+function extractNestedReturnTo(path: string): string | null {
+  try {
+    const url = new URL(path, "http://localhost");
+    let returnTo = url.searchParams.get("returnTo") || url.searchParams.get("next");
+    
+    // If returnTo itself contains another returnTo, extract the innermost one
+    if (returnTo) {
+      const nested = extractNestedReturnTo(returnTo);
+      if (nested) {
+        return nested;
+      }
+    }
+    
+    return returnTo;
+  } catch {
+    // If URL parsing fails, try manual extraction
+    const returnToMatch = path.match(/[?&]returnTo=([^&]+)/) || path.match(/[?&]next=([^&]+)/);
+    if (returnToMatch) {
+      const decoded = decodeURIComponent(returnToMatch[1]);
+      const nested = extractNestedReturnTo(decoded);
+      return nested || decoded;
+    }
+    return null;
+  }
+}
+
+/**
  * Sanitize a returnTo path parameter
- * Rejects full URLs, paths not starting with "/", and double-slash paths
+ * Rejects full URLs, paths not starting with "/", double-slash paths, and auth/login pages
+ * Also strips nested returnTo recursion
  * @param returnTo The returnTo path to sanitize
  * @returns Sanitized path, or empty string if invalid
  */
@@ -55,22 +107,42 @@ export function sanitizeReturnTo(returnTo: string | null | undefined): string {
     return "";
   }
 
+  // Decode the returnTo to handle URL encoding
+  let decoded: string;
+  try {
+    decoded = decodeURIComponent(returnTo);
+  } catch {
+    decoded = returnTo;
+  }
+
+  // Extract nested returnTo if present (handles recursion)
+  const nestedReturnTo = extractNestedReturnTo(decoded);
+  const finalReturnTo = nestedReturnTo || decoded;
+
   // Reject full URLs (http/https)
-  if (returnTo.startsWith("http://") || returnTo.startsWith("https://")) {
+  if (finalReturnTo.startsWith("http://") || finalReturnTo.startsWith("https://")) {
     return "";
   }
 
   // Reject paths not starting with "/"
-  if (!returnTo.startsWith("/")) {
+  if (!finalReturnTo.startsWith("/")) {
     return "";
   }
 
   // Reject paths starting with "//"
-  if (returnTo.startsWith("//")) {
+  if (finalReturnTo.startsWith("//")) {
     return "";
   }
 
-  return returnTo;
+  // Extract pathname for auth page check (strip query params)
+  const pathname = finalReturnTo.split("?")[0];
+
+  // CRITICAL: Reject auth/login pages to prevent recursive redirects
+  if (isAuthPage(pathname)) {
+    return "";
+  }
+
+  return finalReturnTo;
 }
 
 /**

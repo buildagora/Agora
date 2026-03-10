@@ -17,7 +17,7 @@ export default function AuthenticatedHomePage() {
 
     // If signed in, redirect to dashboard
     if (status === "authenticated" && user) {
-      const dashboardRoute = getDashboardRoute();
+      const dashboardRoute = getDashboardRoute(user);
       router.replace(dashboardRoute);
       return;
     }

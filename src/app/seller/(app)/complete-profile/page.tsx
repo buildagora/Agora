@@ -4,7 +4,8 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { enforceRoleClient } from "@/lib/auth/requireRoleClient";
-import { CATEGORY_OPTIONS, labelToCategoryId } from "@/lib/categoryDisplay";
+import { CATEGORY_OPTIONS } from "@/lib/categoryDisplay";
+import { labelToCategoryId } from "@/lib/categoryIds";
 import Header from "@/components/Header";
 
 export default function SellerCompleteProfilePage() {
@@ -36,6 +37,7 @@ export default function SellerCompleteProfilePage() {
 
     // If seller already has categoryIds (canonical ids), redirect to dashboard
     // CRITICAL: Check for categoryIds, not labels
+    if (!user) return;
     const hasCategoryIds = user.categoriesServed &&
       Array.isArray(user.categoriesServed) &&
       user.categoriesServed.length > 0 &&

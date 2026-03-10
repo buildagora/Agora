@@ -9,7 +9,8 @@ import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { enforceRoleClient } from "@/lib/auth/requireRoleClient";
-import { CATEGORY_OPTIONS, categoryIdToLabel, type CategoryId } from "@/lib/categoryDisplay";
+import { CATEGORY_OPTIONS } from "@/lib/categoryDisplay";
+import { categoryIdToLabel, type CategoryId } from "@/lib/categoryIds";
 // RFQ creation via direct API call - no wrapper
 import { 
   getRequest, 
@@ -483,20 +484,20 @@ function CreateRFQPageInner() {
     }
 
     // CRITICAL: Do not route to /auth/sign-in here; preserve deep link via role-specific login + returnTo (AuthGuard invariant).
-    if (!enforceRoleClient({
+    const allowed = enforceRoleClient({
       userRole: user?.role || null,
       requiredRole: "BUYER",
       routerReplace: router.replace,
-      onDenied: () => {
-        showToast({ type: "error", message: "You must be logged in as a buyer to create an RFQ." });
-      },
-    })) {
+    });
+
+    if (!allowed) {
+      showToast({ type: "error", message: "You must be logged in as a buyer to create an RFQ." });
       return;
     }
 
     // If editing a draft, validate it before posting
     if (isEditingDraft && draftId) {
-      const draft = getRequest(draftId, user!.id);
+      const draft = await getRequest(draftId, user!.id);
       if (draft) {
         const validation = validateRequestDraft(draft);
         // Only show modal if there are actually missing fields
@@ -660,11 +661,11 @@ function CreateRFQPageInner() {
     const result = await response.json();
 
     // Validate canonical response shape
-    if (!result.ok || !result.rfqId || !result.rfqNumber) {
+    // API returns { ok: true, data: { id, rfqId, rfqNumber, status } }
+    if (!result.ok || !result.data) {
       const missingFields = [];
       if (!result.ok) missingFields.push("ok");
-      if (!result.rfqId) missingFields.push("rfqId");
-      if (!result.rfqNumber) missingFields.push("rfqNumber");
+      if (!result.data) missingFields.push("data");
       
       console.error("[RFQ_CREATE_INVALID_RESPONSE]", {
         status: response.status,
@@ -680,15 +681,37 @@ function CreateRFQPageInner() {
       return;
     }
 
+    const rfqData = result.data;
+
+    // Validate RFQ data fields
+    if (!rfqData.rfqId || !rfqData.rfqNumber) {
+      const missingFields = [];
+      if (!rfqData.rfqId) missingFields.push("rfqId");
+      if (!rfqData.rfqNumber) missingFields.push("rfqNumber");
+      
+      console.error("[RFQ_CREATE_INVALID_RESPONSE]", {
+        status: response.status,
+        result,
+        missingFields,
+        message: "Server returned invalid RFQ data shape",
+      });
+      
+      showToast({ 
+        type: "error", 
+        message: `RFQ created but invalid response from server. Missing: ${missingFields.join(", ")}` 
+      });
+      return;
+    }
+
     // Show success toast
     showToast({
       type: "success",
-      message: `RFQ posted successfully! RFQ Number: ${result.rfqNumber}`,
+      message: `RFQ posted successfully! RFQ Number: ${rfqData.rfqNumber}`,
     });
 
     // Navigate to RFQ detail page using returned id (DB primary key)
-    // CRITICAL: Use result.id (canonical) or fallback to result.rfqId for backward compatibility
-    const rfqId = result.id || result.rfqId;
+    // CRITICAL: Use rfqData.id (canonical) or fallback to rfqData.rfqId for backward compatibility
+    const rfqId = rfqData.id || rfqData.rfqId;
     if (!rfqId) {
       console.error("[RFQ_NAVIGATION_ERROR]", {
         result,

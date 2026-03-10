@@ -16,8 +16,8 @@ export default function ChooseFlowPage() {
     if (!user || user.role !== "BUYER") {
       return; // AuthGuard will redirect
     }
-    // Redirect to agent (primary interface)
-    router.replace("/buyer/agent");
+    // Redirect to dashboard
+    router.replace("/buyer/dashboard");
   }, [user, router]);
 
   return (

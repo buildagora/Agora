@@ -10,7 +10,8 @@ import { useAuth } from "@/lib/auth/AuthProvider";
 import MarkNotificationsRead from "@/components/MarkNotificationsRead";
 import UnreadBidBadge from "@/components/UnreadBidBadge";
 import { generateThreadId, createSystemMessage } from "@/lib/messages";
-import { checkAndExpandFallback } from "@/lib/requestDispatch";
+// DO NOT IMPORT server-only modules here
+// Use API routes instead
 import { getRequest, rfqToRequest } from "@/lib/request";
 import { type RFQ } from "@/lib/rfqs";
 import { mapBidsToQuotes } from "@/lib/quote";
@@ -139,7 +140,7 @@ export default function RFQDetailPage() {
     // This section can be expanded later if needed for message-specific events
 
     // Add order status history
-    if (order) {
+    if (order && order.statusHistory && Array.isArray(order.statusHistory)) {
       order.statusHistory.forEach((event) => {
         events.push({
           id: `order-${event.status}-${event.at}`,
@@ -383,26 +384,34 @@ export default function RFQDetailPage() {
     // Check and expand fallback suppliers if conditions are met
     // NEW FOUNDATION: user comes from useAuth hook (server is source of truth)
     if (user) {
-      try {
-        // Convert RFQ to Request format for fallback check
-        const request = rfqToRequest(rfq);
-        // Ensure status is "posted" (RFQ status "OPEN" maps to "posted")
-        if (request.status === "posted") {
-          const expansionResult = checkAndExpandFallback(request);
-          // If fallback was expanded, reload data to show new suppliers
-          if (expansionResult && expansionResult.fallbackCount > 0) {
-            // Small delay to ensure dispatch records are saved
-            setTimeout(() => {
-              loadData();
-            }, 100);
+      (async () => {
+        try {
+          // Convert RFQ to Request format for fallback check
+          const request = rfqToRequest(rfq);
+          // Ensure status is "posted" (RFQ status "OPEN" maps to "posted")
+          if (request.status === "posted") {
+            // Call API route instead of server-only function
+            const res = await fetch(`/api/rfqs/${id}/expand-fallback`, {
+              method: "POST",
+              credentials: "include",
+            });
+            const data = res.ok ? await res.json() : null;
+            const expansionResult = data?.result;
+            // If fallback was expanded, reload data to show new suppliers
+            if (expansionResult && expansionResult.fallbackCount > 0) {
+              // Small delay to ensure dispatch records are saved
+              setTimeout(() => {
+                loadData();
+              }, 100);
+            }
+          }
+        } catch (error) {
+          // Silently fail - don't block page load
+          if (process.env.NODE_ENV === "development") {
+            console.error("Error checking fallback expansion:", error);
           }
         }
-      } catch (error) {
-        // Silently fail - don't block page load
-        if (process.env.NODE_ENV === "development") {
-          console.error("Error checking fallback expansion:", error);
-        }
-      }
+      })();
     }
   }, [rfq, id]);
 
@@ -640,7 +649,12 @@ export default function RFQDetailPage() {
                               try {
                                 const request = await getRequest(id, user.id) || rfqToRequest(rfq);
                                 if (request && request.status === "posted") {
-                                  const result = checkAndExpandFallback(request);
+                                  const res = await fetch(`/api/rfqs/${id}/expand-fallback`, {
+                                    method: "POST",
+                                    credentials: "include",
+                                  });
+                                  const data = res.ok ? await res.json() : null;
+                                  const result = data?.result;
                                   if (result && result.fallbackCount > 0) {
                                     showToast({
                                       type: "success",
@@ -1646,7 +1660,13 @@ export default function RFQDetailPage() {
                                       try {
                                         const request = await getRequest(id, user.id) || rfqToRequest(rfq);
                                         if (request && request.status === "posted") {
-                                          const result = checkAndExpandFallback(request);
+                                          // Call API route instead of server-only function
+                                         const expandResponse = await fetch(`/api/rfqs/${id}/expand-fallback`, {
+                                           method: "POST",
+                                           headers: { "Content-Type": "application/json" },
+                                           credentials: "include",
+                                         });
+                                         const result = expandResponse.ok ? await expandResponse.json() : null;
                                           if (result && result.fallbackCount > 0) {
                                             showToast({
                                               type: "success",
@@ -1778,40 +1798,42 @@ export default function RFQDetailPage() {
               <div className="mt-6">
                 <Card>
                   <CardContent className="p-6">
-                    <div className="text-center py-12">
-                      <p className="text-zinc-600 dark:text-zinc-400 mb-4">
-                        Messages are handled in dedicated conversation threads.
-                      </p>
-                      {bids.length > 0 && (
-                        <div className="space-y-2">
-                          {bids.map((bid) => {
-                            if (!bid.sellerId) return null;
-                            // Use sellerDisplayName (canonical field from API) - never shows email
-                            const sellerDisplayName = bid.sellerDisplayName || bid.sellerName || "Supplier";
-                            return (
-                              <Link
-                                key={bid.id}
-                                href={`/buyer/messages/${id}?sellerId=${bid.sellerId}`}
-                                className="block p-4 border border-zinc-200 dark:border-zinc-800 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-900"
-                              >
-                                <div className="flex items-center justify-between">
-                                  <div>
-                                    <p className="font-medium text-black dark:text-zinc-50">{sellerDisplayName}</p>
-                                    <p className="text-sm text-zinc-600 dark:text-zinc-400">View conversation</p>
-                                  </div>
-                                  <Button variant="outline" size="sm">Open Messages</Button>
+                    {bids.length > 0 ? (
+                      <div className="space-y-2">
+                        {bids.map((bid) => {
+                          if (!bid.sellerId) return null;
+                          // Use sellerDisplayName (canonical field from API) - never shows email
+                          const sellerDisplayName = bid.sellerDisplayName || bid.sellerName || "Supplier";
+                          // Use supplierId (supplier org ID) for Talk to Suppliers link
+                          // If supplierId is not available, fall back to sellerId (will need lookup on server)
+                          const supplierId = (bid as any).supplierId || bid.sellerId;
+                          // Build link to canonical Talk to Suppliers thread with RFQ context
+                          // Pass rfqId so server can find/create the RFQ-scoped conversation
+                          const talkLink = `/buyer/suppliers/talk/${supplierId}${rfq?.id ? `?rfqId=${rfq.id}` : ""}`;
+                          return (
+                            <Link
+                              key={bid.id}
+                              href={talkLink}
+                              className="block p-4 border border-zinc-200 dark:border-zinc-800 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors"
+                            >
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <p className="font-medium text-black dark:text-zinc-50">{sellerDisplayName}</p>
+                                  <p className="text-sm text-zinc-600 dark:text-zinc-400">View conversation</p>
                                 </div>
-                              </Link>
-                            );
-                          })}
-                        </div>
-                      )}
-                      {bids.length === 0 && (
+                                <span className="text-sm text-zinc-500 dark:text-zinc-400">→</span>
+                              </div>
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="text-center py-12">
                         <p className="text-sm text-zinc-500 dark:text-zinc-500">
                           No bids yet. Messages will be available once suppliers respond.
                         </p>
-                      )}
-                    </div>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </div>

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 // Removed unused useSearchParams import
 // Removed getRfqs import - using API instead
 import { getCurrentSupplierId } from "@/lib/sellerIdentity";
@@ -17,18 +18,23 @@ import { useAuth } from "@/lib/auth/AuthProvider";
 export default function SellerInvitesPage() {
   const { user } = useAuth();
   
-  // CRITICAL: Safety net - BUYER must NEVER render seller pages
-  if (user?.role !== "SELLER") {
-    return null;
-  }
-  // Removed unused router and searchParams - not needed for this page
+  // CRITICAL: All hooks must be called unconditionally (Rules of Hooks)
+  const router = useRouter();
   const [rfqs, setRfqs] = useState<NormalizedRFQ[]>([]);
   const [filteredRfqs, setFilteredRfqs] = useState<NormalizedRFQ[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [selectedFulfillment, setSelectedFulfillment] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
+  // Check if user is seller (used for guards and render gate)
+  const isSeller = user?.role === "SELLER";
+
   useEffect(() => {
+    // Guard: Only fetch if user is a seller
+    if (!isSeller) {
+      return;
+    }
+
     // Load RFQs from API (server is source of truth)
     // CRITICAL: Only fetch direct RFQs for Direct Invites page
     const loadRFQs = async () => {
@@ -86,7 +92,7 @@ export default function SellerInvitesPage() {
     };
     
     loadRFQs();
-  }, []);
+  }, [isSeller]);
 
   // Apply filters
   useEffect(() => {
@@ -129,6 +135,24 @@ export default function SellerInvitesPage() {
       year: "numeric",
     });
   };
+
+  // Render gate: AFTER all hooks are called
+  // If auth is still loading or user is undefined, show loading state
+  if (!user) {
+    return (
+      <div className="flex flex-1 px-6 py-8">
+        <div className="w-full max-w-6xl mx-auto">
+          <p className="text-zinc-600 dark:text-zinc-400">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If user exists but is not a seller, redirect to switch role
+  if (!isSeller) {
+    router.replace("/auth/switch-role?role=seller");
+    return null;
+  }
 
   return (
     <div className="flex flex-1 px-6 py-8">

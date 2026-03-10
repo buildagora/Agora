@@ -20,11 +20,7 @@ export function normalizeEmail(email: string): string {
 export const SignUpInputSchema = z.object({
   email: z.string().email("Invalid email address"),
   password: z.string().min(8, "Password must be at least 8 characters"),
-  role: z.enum(["BUYER", "SELLER"], {
-    required_error: "Role is required",
-    invalid_type_error: "Role must be BUYER or SELLER",
-    errorMap: () => ({ message: "Role must be BUYER or SELLER" }),
-  }),
+  role: z.enum(["BUYER", "SELLER"], { message: "Role must be BUYER or SELLER" }),
   // Optional fields that may be provided during signup
   fullName: z.string().optional(),
   companyName: z.string().optional(),
@@ -51,7 +47,7 @@ export type LoginInput = z.infer<typeof LoginInputSchema>;
 export function validateSignUpInput(body: unknown): { success: true; data: SignUpInput } | { success: false; error: string } {
   const result = SignUpInputSchema.safeParse(body);
   if (!result.success) {
-    const firstError = result.error.errors[0];
+    const firstError = result.error.issues[0];
     return { success: false, error: firstError?.message || "Invalid sign-up data" };
   }
   return { success: true, data: result.data };
@@ -63,7 +59,7 @@ export function validateSignUpInput(body: unknown): { success: true; data: SignU
 export function validateLoginInput(body: unknown): { success: true; data: LoginInput } | { success: false; error: string } {
   const result = LoginInputSchema.safeParse(body);
   if (!result.success) {
-    const firstError = result.error.errors[0];
+    const firstError = result.error.issues[0];
     return { success: false, error: firstError?.message || "Invalid login data" };
   }
   return { success: true, data: result.data };

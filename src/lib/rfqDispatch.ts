@@ -7,9 +7,12 @@
  * Routing MUST use CategoryId only. Category labels are display-only.
  */
 
-import type { AgentDraftRFQ, AgentPriority } from "@/lib/agent/contracts";
-import type { DraftRFQ } from "@/lib/routing/types";
-import { getBuyerProfile, getSupplierIndex } from "@/lib/routing/adapters";
+// Agent types moved to experimental/agent/lib - commenting out to prevent build errors
+// import type { AgentDraftRFQ, AgentPriority } from "@/lib/agent/contracts";
+// TODO: Re-enable when agent is reintroduced
+type AgentDraftRFQ = any;
+type AgentPriority = any;
+import type { DraftRFQ, Category } from "@/lib/routing/types";
 import { getEligibleSuppliers, type EligibilityInput } from "@/lib/routing/eligibility";
 import { buildRoutingPlan } from "@/lib/routing/planner";
 import { dispatchRFQ } from "@/lib/routing/dispatcher";
@@ -165,7 +168,7 @@ export async function sendRfqToSuppliers(
     : "broadcast";
 
   // Build API payload (matches RFQPayloadSchema)
-  const categoryLabel = categoryIdToLabel[categoryId] || draft.category || categoryId;
+  const categoryLabel: Category = categoryIdToLabel[categoryId] as Category;
   const apiPayload = {
     title: draft.jobNameOrPo || draft.title || "Material Request",
     notes: draft.notes || "",

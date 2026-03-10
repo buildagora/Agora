@@ -5,7 +5,9 @@
  */
 
 import { Message, BuyerMessageIntent, parseThreadId } from "./messages";
-import { autoResolveBuyerIntent } from "./autoResolution";
+// Removed autoResolution import - not used (was async but function is sync)
+// If auto-resolution is needed, refactor this function to be async and call API route
+import { readUserJson } from "@/lib/storage/userJson";
 
 /**
  * Message summary for a request
@@ -45,12 +47,9 @@ export function generateMessageSummaries(sellerId: string): MessageSummary[] {
     if (readBy.includes(sellerId)) return false;
     
     // Check if auto-resolvable (if auto-resolved, don't include in summary)
-    try {
-      const autoResolution = autoResolveBuyerIntent(message, sellerId);
-      if (!autoResolution.shouldEscalate) return false;
-    } catch {
-      // If auto-resolution fails, include it (safe fallback)
-    }
+    // NOTE: autoResolveBuyerIntent is async, but this is a sync filter function
+    // For now, we'll include all messages that need escalation (safe fallback)
+    // TODO: Refactor generateMessageSummaries to be async if auto-resolution is needed
     
     return true;
   });

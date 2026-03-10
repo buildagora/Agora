@@ -7,6 +7,25 @@ import "server-only";
 import { getPrisma } from "@/lib/db.server";
 import { sendBidAwardedEmail, sendPoGeneratedEmail } from "@/lib/notifications/resend.server";
 
+/**
+ * Regression guard: Ensures seller email links never point to buyer routes.
+ * This prevents cross-discipline contamination where buyers clicking seller links
+ * get redirected to buyer dashboard.
+ * 
+ * @param link The link to validate
+ * @returns The validated link
+ * @throws Error if link doesn't start with /seller/
+ */
+function assertSellerLink(link: string): string {
+  if (!link.startsWith("/seller/")) {
+    throw new Error(
+      `Seller email link must start with /seller/ but got: ${link}. ` +
+      "This prevents cross-discipline contamination (buyer clicking seller link)."
+    );
+  }
+  return link;
+}
+
 export interface NotifySellerOfAwardParams {
   rfqId: string;
   rfqNumber: string;
@@ -60,7 +79,6 @@ export async function notifySellerOfAward(
         userId: params.sellerId,
         type: "PO_GENERATED",
         rfqId: params.rfqId,
-        orderId: params.orderId,
         data: {
           rfqNumber: params.rfqNumber,
           orderId: params.orderId,
@@ -76,66 +94,111 @@ export async function notifySellerOfAward(
       });
     }
 
-    // Send email notifications (BID_AWARDED + PO_GENERATED)
-    attempted = 2; // Two emails: award + PO
+    // Find supplier org from sellerId (via SupplierMember)
+    // Then get ALL ACTIVE SupplierMember users for that org
+    const sellerMembership = await prisma.supplierMember.findFirst({
+      where: {
+        userId: params.sellerId,
+        status: "ACTIVE",
+      },
+      select: { supplierId: true },
+    });
 
-    if (!params.sellerEmail) {
+    let recipientEmails: string[] = [];
+
+    if (sellerMembership) {
+      // Find all ACTIVE members for this supplier org
+      const activeMembers = await prisma.supplierMember.findMany({
+        where: {
+          supplierId: sellerMembership.supplierId,
+          status: "ACTIVE",
+        },
+        include: {
+          user: {
+            select: { email: true },
+          },
+        },
+      });
+
+      // Collect emails from active members
+      recipientEmails = activeMembers
+        .map((member) => member.user.email)
+        .filter((email): email is string => Boolean(email));
+    }
+
+    // Fallback to single sellerEmail if no org members found (legacy behavior)
+    if (recipientEmails.length === 0 && params.sellerEmail) {
+      recipientEmails = [params.sellerEmail];
+    }
+
+    if (recipientEmails.length === 0) {
       console.log("[NOTIFY_SELLER_AWARD_NO_EMAIL]", {
         sellerId: params.sellerId,
         rfqId: params.rfqId,
         bidId: params.bidId,
-        reason: "Seller has no email address",
+        reason: "No active supplier members with email addresses",
       });
-      return { attempted, sent: 0, errors: 0 };
+      return { attempted: 0, sent: 0, errors: 0 };
     }
 
-    // Email 1: Bid Awarded
-    try {
-      await sendBidAwardedEmail({
-        to: params.sellerEmail,
-        sellerName: params.sellerName,
-        rfqNumber: params.rfqNumber,
-        rfqTitle: params.rfqTitle,
-        buyerName: params.buyerName || "Buyer",
-        bidTotal: params.bidTotal,
-        link: `/seller/rfqs/${params.rfqId}`,
-      });
-      sent++;
-    } catch (emailError) {
-      errors++;
-      console.error("[NOTIFY_SELLER_AWARD_EMAIL_FAILED]", {
-        sellerId: params.sellerId,
-        sellerEmail: params.sellerEmail,
-        rfqId: params.rfqId,
-        bidId: params.bidId,
-        emailType: "BID_AWARDED",
-        error: emailError instanceof Error ? emailError.message : String(emailError),
-      });
-    }
+    // Send email notifications (BID_AWARDED + PO_GENERATED) to all recipients
+    attempted = recipientEmails.length * 2; // Two emails per recipient: award + PO
 
-    // Email 2: PO Generated
-    try {
-      await sendPoGeneratedEmail({
-        to: params.sellerEmail,
-        sellerName: params.sellerName,
-        orderNumber: params.orderId,
-        rfqNumber: params.rfqNumber,
-        rfqTitle: params.rfqTitle,
-        buyerName: params.buyerName || "Buyer",
-        orderTotal: params.bidTotal,
-        link: `/seller/rfqs/${params.rfqId}`,
-      });
-      sent++;
-    } catch (emailError) {
-      errors++;
-      console.error("[NOTIFY_SELLER_PO_EMAIL_FAILED]", {
-        sellerId: params.sellerId,
-        sellerEmail: params.sellerEmail,
-        rfqId: params.rfqId,
-        orderId: params.orderId,
-        emailType: "PO_GENERATED",
-        error: emailError instanceof Error ? emailError.message : String(emailError),
-      });
+    const bidLink = `/seller/rfqs/${params.rfqId}`;
+    const orderLink = `/seller/orders/${params.orderId}?from=email`;
+    assertSellerLink(bidLink);
+    assertSellerLink(orderLink);
+
+    // Email all recipients
+    for (const recipientEmail of recipientEmails) {
+      // Email 1: Bid Awarded
+      try {
+        await sendBidAwardedEmail({
+          to: recipientEmail,
+          sellerName: params.sellerName,
+          rfqNumber: params.rfqNumber,
+          rfqTitle: params.rfqTitle,
+          buyerName: params.buyerName || "Buyer",
+          bidTotal: params.bidTotal,
+          link: bidLink,
+        });
+        sent++;
+      } catch (emailError) {
+        errors++;
+        console.error("[NOTIFY_SELLER_AWARD_EMAIL_FAILED]", {
+          sellerId: params.sellerId,
+          recipientEmail,
+          rfqId: params.rfqId,
+          bidId: params.bidId,
+          emailType: "BID_AWARDED",
+          error: emailError instanceof Error ? emailError.message : String(emailError),
+        });
+      }
+
+      // Email 2: PO Generated
+      try {
+        await sendPoGeneratedEmail({
+          to: recipientEmail,
+          sellerName: params.sellerName,
+          orderNumber: params.orderId,
+          rfqNumber: params.rfqNumber,
+          rfqTitle: params.rfqTitle,
+          buyerName: params.buyerName || "Buyer",
+          orderTotal: params.bidTotal,
+          link: orderLink,
+        });
+        sent++;
+      } catch (emailError) {
+        errors++;
+        console.error("[NOTIFY_SELLER_PO_EMAIL_FAILED]", {
+          sellerId: params.sellerId,
+          recipientEmail,
+          rfqId: params.rfqId,
+          orderId: params.orderId,
+          emailType: "PO_GENERATED",
+          error: emailError instanceof Error ? emailError.message : String(emailError),
+        });
+      }
     }
 
     return { attempted, sent, errors };

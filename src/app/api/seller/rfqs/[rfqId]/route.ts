@@ -93,32 +93,90 @@ export async function GET(
 
       const visibility = dbRfq.visibility || "broadcast";
       
+      // CRITICAL: Resolve supplier ID from SupplierMember (org-scoped)
+      const membership = await prisma.supplierMember.findFirst({
+        where: {
+          userId: user.id,
+          status: "ACTIVE",
+        },
+        select: {
+          supplierId: true,
+        },
+      });
+
+      if (!membership) {
+        return jsonError(
+          "FORBIDDEN",
+          "Your seller account is not attached to an active supplier organization. Please contact support.",
+          403
+        );
+      }
+
+      const sellerSupplierId = membership.supplierId;
+
       if (visibility === "direct") {
-        // Direct RFQ: only show if seller is in targetSupplierIds
-        if (!targetSupplierIds.includes(user.id)) {
-          return jsonError("FORBIDDEN", "RFQ not available", 403);
+        // Direct RFQ: only show if seller's supplier org is in targetSupplierIds
+        // CRITICAL: targetSupplierIds contains SUPPLIER ORGANIZATION IDs, not seller user IDs
+        if (targetSupplierIds.includes(sellerSupplierId)) {
+          // Primary check passed - org ID match
+        } else {
+          // COMPATIBILITY FALLBACK: Handle legacy records that contain seller user IDs
+          // Check if any target IDs are seller user IDs that map to this org
+          const matchingMembers = await prisma.supplierMember.findMany({
+            where: {
+              userId: { in: targetSupplierIds },
+              supplierId: sellerSupplierId,
+              status: "ACTIVE",
+            },
+            select: { userId: true },
+          });
+
+          if (matchingMembers.length === 0) {
+            // No match found (neither org ID nor legacy user ID)
+            return jsonError("FORBIDDEN", "RFQ not available", 403);
+          }
+
+          // Legacy record detected - log for migration tracking
+          console.log("[SELLER_RFQ_DETAIL_LEGACY_DIRECT_RFQ]", {
+            rfqId: id,
+            sellerUserId: user.id,
+            supplierId: sellerSupplierId,
+            legacyUserIds: matchingMembers.map(m => m.userId),
+          });
         }
       } else if (visibility === "broadcast") {
-        // Broadcast RFQ: check if seller's categories match
-        // Get seller's categories from database
-        const dbUser = await prisma.user.findUnique({
-          where: { id: user.id },
-          select: { categoriesServed: true },
+        // Broadcast RFQ: check if supplier org's categories match
+        // Get categories from SupplierCategoryLink (org-scoped, canonical source)
+        const categoryLinks = await prisma.supplierCategoryLink.findMany({
+          where: { supplierId: sellerSupplierId },
+          select: { categoryId: true },
         });
 
-        let sellerCategories: string[] = [];
-        try {
-          if (dbUser?.categoriesServed) {
-            sellerCategories = JSON.parse(dbUser.categoriesServed);
+        let sellerCategoryIds: string[] = categoryLinks.map((link: { categoryId: string }) => link.categoryId);
+
+        // Legacy fallback: if no category links exist, try parsing User.categoriesServed
+        if (sellerCategoryIds.length === 0) {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: user.id },
+            select: { categoriesServed: true },
+          });
+
+          try {
+            if (dbUser?.categoriesServed) {
+              const parsed = JSON.parse(dbUser.categoriesServed);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                sellerCategoryIds = parsed;
+              }
+            }
+          } catch {
+            // Invalid JSON, treat as empty
           }
-        } catch {
-          // Invalid JSON, treat as empty
         }
 
-        const sellerCategoriesTrimmed = sellerCategories.length > 0
-          ? sellerCategories.map(cat => String(cat).trim())
+        const sellerCategoriesTrimmed = sellerCategoryIds.length > 0
+          ? sellerCategoryIds.map((cat: string) => String(cat).trim())
           : [];
-        const sellerCategoriesLower = sellerCategoriesTrimmed.map(cat => cat.toLowerCase());
+        const sellerCategoriesLower = sellerCategoriesTrimmed.map((cat: string) => cat.toLowerCase());
 
         // Check category match
         const rfqCategoryId = dbRfq.categoryId ? String(dbRfq.categoryId).trim() : "";

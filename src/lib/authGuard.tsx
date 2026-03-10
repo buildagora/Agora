@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "./auth/AuthProvider";
 import type { UserRole } from "./auth/types";
+import { sanitizeReturnTo } from "./auth/routeIntent";
 
 interface AuthGuardProps {
   children: React.ReactNode;
@@ -49,40 +50,31 @@ export default function AuthGuard({
     }
 
     // 🚨 CRITICAL: NEVER redirect if already on a login route (prevents infinite loop)
-    const isLoginRoute = pathname?.startsWith("/buyer/login") || 
-                         pathname?.startsWith("/seller/login") ||
-                         pathname?.startsWith("/auth/");
+    // Use window.location.pathname as fallback in case usePathname() is null or stale
+    const currentPathname = pathname || (typeof window !== "undefined" ? window.location.pathname : "");
+    const isLoginRoute = currentPathname.startsWith("/buyer/login") || 
+                         currentPathname.startsWith("/seller/login") ||
+                         currentPathname.startsWith("/auth/");
     
     if (isLoginRoute) {
       return; // Stop here - login pages are public and unguarded
     }
 
-    // If unauthenticated: redirect to role-specific login with returnTo
+    // If unauthenticated: redirect to landing page
     // AuthGuard must NEVER redirect on /auth/* or login routes (checked above)
+    // CRITICAL: Only redirect when status is definitively "unauthenticated" (not during loading or transient errors)
     if (status === "unauthenticated") {
-      const currentPath = typeof window !== "undefined" 
-        ? window.location.pathname + window.location.search 
-        : "";
-      
-      // Determine route intent from pathname
-      const routeIntent = requiredRole || (pathname?.startsWith("/seller/") ? "SELLER" : pathname?.startsWith("/buyer/") ? "BUYER" : null);
-      
-      // Build returnTo parameter
-      const returnToParam = currentPath ? `returnTo=${encodeURIComponent(currentPath)}` : "";
-      
-      // Redirect to role-specific login
-      let loginPath: string;
-      if (routeIntent === "SELLER") {
-        loginPath = returnToParam ? `/seller/login?${returnToParam}` : "/seller/login";
-      } else if (routeIntent === "BUYER") {
-        loginPath = returnToParam ? `/buyer/login?${returnToParam}` : "/buyer/login";
-      } else {
-        // Fallback to generic sign-in
-        const nextParam = currentPath ? `?next=${encodeURIComponent(currentPath)}` : "";
-        loginPath = redirectTo || `/auth/sign-in${nextParam}`;
+      // Dev-only logging for redirect debugging
+      if (process.env.NODE_ENV === "development") {
+        console.log("[AUTH_GUARD_REDIRECT]", {
+          status,
+          requiredRole,
+          pathname,
+          message: "Redirecting unauthenticated user to landing page",
+        });
       }
       
-      router.replace(loginPath);
+      router.replace("/");
       return;
     }
 
@@ -103,8 +95,9 @@ export default function AuthGuard({
 
       // REGRESSION GUARD: Log role-mismatch attempt (non-destructive)
       if (process.env.NODE_ENV === "development") {
-        console.warn("[AUTH_ROLE_MISMATCH]", {
-          routeIntent: requiredRole,
+        console.warn("[AUTH_GUARD_REDIRECT]", {
+          status,
+          requiredRole,
           currentUserRole: user.role,
           pathname: pathname,
           message: "Route intent does not match user role - redirecting to switch-role page (session preserved)",
@@ -116,8 +109,11 @@ export default function AuthGuard({
         ? window.location.pathname + window.location.search 
         : pathname || "";
       
+      // CRITICAL: Sanitize returnTo to prevent recursive redirects
+      const sanitizedReturnTo = sanitizeReturnTo(currentPath);
+      
       // Redirect to switch-role page with target role and returnTo
-      const returnToParam = currentPath ? `&returnTo=${encodeURIComponent(currentPath)}` : "";
+      const returnToParam = sanitizedReturnTo ? `&returnTo=${encodeURIComponent(sanitizedReturnTo)}` : "";
       const switchRolePath = `/auth/switch-role?target=${requiredRole}${returnToParam}`;
       
       router.replace(switchRolePath);
@@ -143,9 +139,11 @@ export default function AuthGuard({
   // TASK 2: Not authenticated - return null (redirect happens in effect)
   // 🚨 CRITICAL: Login routes are public - always render children
   if (status === "unauthenticated") {
-    const isLoginRoute = pathname?.startsWith("/buyer/login") || 
-                         pathname?.startsWith("/seller/login") ||
-                         pathname?.startsWith("/auth/");
+    // Use window.location.pathname as fallback in case usePathname() is null or stale
+    const currentPathname = pathname || (typeof window !== "undefined" ? window.location.pathname : "");
+    const isLoginRoute = currentPathname.startsWith("/buyer/login") || 
+                         currentPathname.startsWith("/seller/login") ||
+                         currentPathname.startsWith("/auth/");
     
     if (isLoginRoute) {
       return <>{children}</>; // Login pages are public

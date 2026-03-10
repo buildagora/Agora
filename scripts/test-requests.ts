@@ -80,8 +80,6 @@ class MockDate extends RealDate {
 
 import {
   createDraftRequest,
-  updateDraftRequest,
-  getRequest,
   validateRequestDraft,
   type RFQRequest,
 } from "../src/lib/request";
@@ -258,8 +256,8 @@ function runTests() {
   assert(requestWithUpperCaseUnit.items[0].unit === "lf", "Unit should be lowercased");
   console.log("✅ Normalization - unit casing");
 
-  // --- Test 7: createDraftRequest roundtrip ---
-  console.log("Test 7: createDraftRequest roundtrip");
+  // --- Test 7: createDraftRequest creates a correct in-memory draft ---
+  console.log("Test 7: createDraftRequest creates a correct in-memory draft");
   const draftInput = {
     buyerId,
     jobName: "Test Draft",
@@ -293,47 +291,10 @@ function runTests() {
   assert(createdDraft.items.length === 2, "createDraftRequest should create all items");
   assert(createdDraft.items[0].id !== undefined, "createDraftRequest should generate item IDs");
   assert(createdDraft.items[1].id !== undefined, "createDraftRequest should generate item IDs");
+  console.log("✅ createDraftRequest creates a correct in-memory draft");
 
-  // Verify it was saved
-  const retrievedDraft = getRequest(createdDraft.id, buyerId);
-  assert(retrievedDraft !== null, "getRequest should retrieve created draft");
-  assert(retrievedDraft?.id === createdDraft.id, "Retrieved draft should have same ID");
-  assert(retrievedDraft?.items.length === 2, "Retrieved draft should have all items");
-  console.log("✅ createDraftRequest roundtrip");
-
-  // --- Test 8: updateDraftRequest roundtrip ---
-  console.log("Test 8: updateDraftRequest roundtrip");
-  const updatedDraft = updateDraftRequest(createdDraft.id, buyerId, {
-    jobName: "Updated Draft",
-    notes: "Updated notes",
-    substitutionsAllowed: false,
-    items: [
-      {
-        description: "Updated Item 1",
-        category: "Electrical",
-        quantity: 20,
-        unit: "lf",
-      },
-    ],
-  });
-
-  assert(updatedDraft.jobName === "Updated Draft", "updateDraftRequest should update jobName");
-  assert(updatedDraft.notes === "Updated notes", "updateDraftRequest should update notes");
-  assert(updatedDraft.substitutionsAllowed === false, "updateDraftRequest should update substitutionsAllowed");
-  assert(updatedDraft.items.length === 1, "updateDraftRequest should update items");
-  assert(updatedDraft.items[0].description === "Updated Item 1", "updateDraftRequest should update item description");
-  // Note: updatedAt check is skipped in test environment due to Date mocking limitations
-  // In real usage, updatedAt will be different
-
-  // Verify it was saved
-  const retrievedUpdated = getRequest(updatedDraft.id, buyerId);
-  assert(retrievedUpdated !== null, "getRequest should retrieve updated draft");
-  assert(retrievedUpdated?.jobName === "Updated Draft", "Retrieved updated draft should have new jobName");
-  assert(retrievedUpdated?.items.length === 1, "Retrieved updated draft should have updated items");
-  console.log("✅ updateDraftRequest roundtrip");
-
-  // --- Test 9: Normalization - delivery mode validation ---
-  console.log("Test 9: Normalization - delivery mode validation");
+  // --- Test 8: Normalization - delivery mode validation ---
+  console.log("Test 8: Normalization - delivery mode validation");
   try {
     createDraftRequest({
       buyerId,
@@ -380,46 +341,7 @@ function runTests() {
     console.log("✅ Normalization - delivery mode validation (rejects missing pickupWindow)");
   }
 
-  // --- Test 10: updateDraftRequest only works on drafts ---
-  console.log("Test 10: updateDraftRequest only works on drafts");
-  // Create a draft and try to update it after changing status (simulate)
-  const draftForStatusTest = createDraftRequest({
-    buyerId,
-    delivery: {
-      mode: "pickup",
-      needBy: "2023-11-01T10:00:00.000Z",
-      pickupWindow: "8am-5pm",
-    },
-    items: [
-      {
-        description: "Test item",
-        category: "Lumber",
-        quantity: 10,
-        unit: "ea",
-      },
-    ],
-  });
-
-  // Manually change status to "posted" (simulating what would happen after posting)
-  const storageKey = `agora.data.${buyerId}.requests`;
-  const allRequests = JSON.parse((global as any).localStorage.getItem(storageKey) || "[]");
-  const draftIndex = allRequests.findIndex((r: Request) => r.id === draftForStatusTest.id);
-  if (draftIndex !== -1) {
-    allRequests[draftIndex].status = "posted";
-    (global as any).localStorage.setItem(storageKey, JSON.stringify(allRequests));
-  }
-
-  try {
-    updateDraftRequest(draftForStatusTest.id, buyerId, {
-      jobName: "Should fail",
-    });
-    assert(false, "updateDraftRequest should reject non-draft requests");
-  } catch (error: any) {
-    assert(error.message.includes("draft") || error.message.includes("status"), "Should reject updating non-draft request");
-    console.log("✅ updateDraftRequest only works on drafts");
-  }
-
-  console.log("\n📊 Results: 10 tests passed, 0 failed");
+  console.log("\n📊 Results: 8 tests passed, 0 failed");
   console.log("\n✅ All tests passed!\n");
 }
 

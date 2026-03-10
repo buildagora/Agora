@@ -128,7 +128,7 @@ export default function FindMaterialsPage() {
                   Discover suppliers in your area. Browse options without creating a request.
                 </p>
               </div>
-              <Link href="/buyer/agent">
+              <Link href="/buyer/dashboard">
                 <Button variant="outline" size="md">
                   Back
                 </Button>

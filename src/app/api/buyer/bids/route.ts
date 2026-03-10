@@ -80,6 +80,25 @@ export async function GET(request: NextRequest) {
       count: dbBids.length,
     });
 
+    // Get supplier org IDs for all seller users (for Talk to Suppliers links)
+    const sellerUserIds = dbBids.map((bid: any) => bid.sellerId);
+    const supplierMemberships = await prisma.supplierMember.findMany({
+      where: {
+        userId: { in: sellerUserIds },
+        status: "ACTIVE",
+      },
+      select: {
+        userId: true,
+        supplierId: true,
+      },
+    });
+
+    // Build map of seller user ID -> supplier org ID
+    const sellerToSupplierMap = new Map<string, string>();
+    for (const membership of supplierMemberships) {
+      sellerToSupplierMap.set(membership.userId, membership.supplierId);
+    }
+
     // Parse JSON fields and return with seller display fields
     const bids = dbBids.map((bid: any) => {
       // Use canonical getSellerDisplayName helper (never returns email in production)
@@ -94,12 +113,16 @@ export async function GET(request: NextRequest) {
         sellerProfile: null,
       });
       
+      // Get supplier org ID for this seller user
+      const supplierId = sellerToSupplierMap.get(bid.sellerId) || null;
+      
       return {
         id: bid.id,
         rfqId: bid.rfqId,
         rfqNumber: bid.rfq.rfqNumber,
         rfqTitle: bid.rfq.title,
         sellerId: bid.sellerId,
+        supplierId, // Supplier org ID for Talk to Suppliers links
         sellerName: sellerDisplayName, // Use computed display name (backward compatibility)
         sellerDisplayName, // Canonical field for UI
         sellerCompanyName: bid.seller.companyName || null,

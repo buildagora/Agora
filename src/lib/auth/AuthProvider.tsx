@@ -27,9 +27,22 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 /**
+ * Check if a pathname is a public auth/login route
+ * AuthProvider should be passive on these routes and NOT call /api/auth/me
+ */
+function isPublicAuthPath(pathname?: string | null): boolean {
+  if (!pathname) return false;
+  return (
+    pathname.startsWith("/auth") ||
+    pathname.startsWith("/buyer/login") ||
+    pathname.startsWith("/seller/login")
+  );
+}
+
+/**
  * AuthProvider - Provides authentication state to the app
  * Fetches user from /api/auth/me (server is source of truth)
- * TASK 2: Does NOT call /api/auth/me on /auth/* routes
+ * Does NOT call /api/auth/me on public auth/login routes
  */
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -71,9 +84,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (data.ok && data.user) {
         const fetchedUser = data.user as User;
         
-        // TASK 1: NEVER infers role - uses only user.role from /api/auth/me
-        // Validate role is valid (BUYER or SELLER)
-        if (!fetchedUser.role || (fetchedUser.role !== "BUYER" && fetchedUser.role !== "SELLER")) {
+        // TASK 1: NEVER infers role - uses only user.activeRole from /api/auth/me
+        // Validate activeRole is valid (BUYER or SELLER)
+        if (!fetchedUser.activeRole || (fetchedUser.activeRole !== "BUYER" && fetchedUser.activeRole !== "SELLER")) {
           setUser(null);
           setStatus("unauthenticated");
           return;
@@ -94,18 +107,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // Fetch user on mount
-  // TASK 2: Do NOT call /api/auth/me on /auth/* routes
+  // Do NOT call /api/auth/me on public auth/login routes
   useEffect(() => {
-    const isAuthRoute = pathname?.startsWith("/auth");
+    // Use window.location.pathname as fallback in case usePathname() is null or stale
+    const currentPathname = pathname || (typeof window !== "undefined" ? window.location.pathname : "");
+    const isAuthRoute = isPublicAuthPath(currentPathname);
     
     if (isAuthRoute) {
-      // On auth routes, immediately set unauthenticated and return early
+      // On public auth/login routes, immediately set unauthenticated and return early
       setUser(null);
       setStatus("unauthenticated");
       return;
     }
     
-    // Only call /api/auth/me when NOT on auth routes
+    // Only call /api/auth/me when NOT on public auth/login routes
     fetchUser();
   }, [fetchUser, pathname]);
 
@@ -137,12 +152,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [user, status]);
 
   // Refresh function for manual refresh (e.g., after login)
-  // TASK 2: Do NOT call /api/auth/me on /auth/* routes
+  // Do NOT call /api/auth/me on public auth/login routes
   const refresh = useCallback(async () => {
-    const isAuthRoute = pathname?.startsWith("/auth");
+    // Use window.location.pathname as fallback in case usePathname() is null or stale
+    const currentPathname = pathname || (typeof window !== "undefined" ? window.location.pathname : "");
+    const isAuthRoute = isPublicAuthPath(currentPathname);
     
     if (isAuthRoute) {
-      // On auth routes, immediately set unauthenticated and return early
+      // On public auth/login routes, immediately set unauthenticated and return early
       setUser(null);
       setStatus("unauthenticated");
       return;

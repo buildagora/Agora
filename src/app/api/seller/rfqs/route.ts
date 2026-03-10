@@ -7,7 +7,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { requireServerEnv } from "@/lib/env";
-import { jsonOk, jsonError, withErrorHandling } from "@/lib/apiResponse";
+import { jsonError, withErrorHandling } from "@/lib/apiResponse";
 import { requireCurrentUserFromRequest } from "@/lib/auth/server";
 import { getPrisma } from "@/lib/db.server";
 
@@ -29,37 +29,87 @@ export async function GET(request: NextRequest) {
       return jsonError("FORBIDDEN", "Seller access required", 403);
     }
 
-    // Get seller's categories from database
+    // CRITICAL: Resolve supplier ID from SupplierMember (org-scoped)
     const prisma = getPrisma();
-    const dbUser = await prisma.user.findUnique({
-      where: { id: user.id },
-      select: { categoriesServed: true },
+    
+    // Find ACTIVE SupplierMember for this user to resolve supplierId
+    const membership = await prisma.supplierMember.findFirst({
+      where: {
+        userId: user.id,
+        status: "ACTIVE",
+      },
+      select: {
+        supplierId: true,
+        supplier: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
     });
 
-    // Parse seller's categories
-    let sellerCategories: string[] = [];
-    try {
-      if (dbUser?.categoriesServed) {
-        sellerCategories = JSON.parse(dbUser.categoriesServed);
-      }
-    } catch {
-      // Invalid JSON, treat as empty
+    if (!membership) {
+      return jsonError(
+        "FORBIDDEN",
+        "Your seller account is not attached to an active supplier organization. Please contact support.",
+        403
+      );
     }
+
+    const sellerSupplierId = membership.supplierId;
+
+    // Get categories from SupplierCategoryLink (org-scoped, canonical source)
+    const categoryLinks = await prisma.supplierCategoryLink.findMany({
+      where: { supplierId: sellerSupplierId },
+      select: { categoryId: true },
+    });
+
+    let sellerCategoryIds: string[] = categoryLinks.map((link: { categoryId: string }) => link.categoryId);
+
+    // Legacy fallback: if no category links exist, try parsing User.categoriesServed
+    // This supports old accounts that haven't been migrated yet
+    if (sellerCategoryIds.length === 0) {
+      const dbUser = await prisma.user.findUnique({
+        where: { id: user.id },
+        select: { categoriesServed: true },
+      });
+
+      try {
+        if (dbUser?.categoriesServed) {
+          const parsed = JSON.parse(dbUser.categoriesServed);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            sellerCategoryIds = parsed;
+            // Log fallback usage for migration tracking
+            console.log("[SELLER_FEED_LEGACY_CATEGORIES]", {
+              sellerUserId: user.id,
+              supplierId: sellerSupplierId,
+              legacyCategories: sellerCategoryIds,
+            });
+          }
+        }
+      } catch {
+        // Invalid JSON, treat as empty
+      }
+    }
+
+    // sellerCategoryIds now contains the canonical category IDs for this supplier org
 
     // CRITICAL: Only return OPEN RFQs (not PUBLISHED, DRAFT, etc.)
     // Filter by visibility and category:
     // - broadcast: show if seller's categoriesServed includes RFQ.category
-    // - direct: show if seller.id is in RFQ.targetSupplierIds (regardless of category)
+    // - direct: show if seller's supplier org ID is in RFQ.targetSupplierIds (regardless of category)
     
     // Normalize seller categories for matching (CategoryId-first, label fallback)
-    const sellerCategoriesTrimmed = sellerCategories.length > 0
-      ? sellerCategories.map(cat => String(cat).trim())
+    const sellerCategoriesTrimmed = sellerCategoryIds.length > 0
+      ? sellerCategoryIds.map((cat: string) => String(cat).trim())
       : [];
 
-    const sellerCategoriesLower = sellerCategoriesTrimmed.map(cat => cat.toLowerCase());
+    const sellerCategoriesLower = sellerCategoriesTrimmed.map((cat: string) => cat.toLowerCase());
 
     // Get visibility filter from query param (if provided)
     const visParam = new URL(request.url).searchParams.get("visibility");
+    const countOnly = new URL(request.url).searchParams.get("count") === "true";
     
     // Build Prisma query: fetch OPEN RFQs that could be visible to this seller
     // 🚨 CRITICAL: Filter by visibility at database level to prevent direct RFQs from entering broadcast feed
@@ -67,18 +117,19 @@ export async function GET(request: NextRequest) {
       status: "OPEN", // CRITICAL: Only OPEN RFQs
     };
     
-    // HARD FILTER: If visibility=broadcast, exclude direct RFQs at database level
-    if (visParam === "broadcast") {
-      // Only return broadcast RFQs (explicit "broadcast" or null/undefined for legacy)
+    // CRITICAL: Default behavior is to return ONLY broadcast RFQs (live feed)
+    // Direct RFQs should never appear in the live feed unless explicitly requested
+    if (visParam === "direct") {
+      // If visibility=direct, only return direct RFQs (must be explicitly "direct")
+      whereClause.visibility = "direct";
+    } else {
+      // Default: Only return broadcast RFQs (explicit "broadcast" or null/undefined for legacy)
+      // This ensures DIRECT RFQs never appear on the live feed
       whereClause.OR = [
         { visibility: "broadcast" },
         { visibility: null }, // Legacy RFQs without visibility field default to broadcast
       ];
-    } else if (visParam === "direct") {
-      // If visibility=direct, only return direct RFQs (must be explicitly "direct")
-      whereClause.visibility = "direct";
     }
-    // If no visibility param, return both (backward compatibility - no filter)
 
     // Query OPEN RFQs with visibility filter applied at database level
     const dbRfqs = await prisma.rFQ.findMany({
@@ -86,12 +137,45 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: "desc" },
     });
 
+    // Pre-fetch legacy user ID mappings for compatibility fallback
+    // Collect all targetSupplierIds from direct RFQs to batch-check for legacy user IDs
+    const directRfqs = dbRfqs.filter(rfq => (rfq.visibility || "broadcast") === "direct" && rfq.targetSupplierIds);
+    const allTargetIds = new Set<string>();
+    for (const rfq of directRfqs) {
+      try {
+        const targetIds = JSON.parse(rfq.targetSupplierIds || "[]");
+        if (Array.isArray(targetIds)) {
+          targetIds.forEach((id: string) => allTargetIds.add(id));
+        }
+      } catch {
+        // Skip invalid JSON
+      }
+    }
+
+    // Batch-check which target IDs are user IDs that map to this supplier org
+    const legacyUserIds: string[] = [];
+    if (allTargetIds.size > 0 && sellerSupplierId) {
+      const matchingMembers = await prisma.supplierMember.findMany({
+        where: {
+          userId: { in: Array.from(allTargetIds) },
+          supplierId: sellerSupplierId,
+          status: "ACTIVE",
+        },
+        select: { userId: true },
+      });
+      legacyUserIds.push(...matchingMembers.map((m: { userId: string }) => m.userId));
+    }
+
     // Filter RFQs visible to this seller
     let visibleRfqs = dbRfqs.filter(rfq => {
       const visibility = rfq.visibility || "broadcast"; // Default to broadcast
       
       if (visibility === "direct") {
-        // Direct RFQ: only show if seller is in targetSupplierIds (ignore category)
+        // Direct RFQ: only show if seller's supplier org ID is in targetSupplierIds (ignore category)
+        // CRITICAL: targetSupplierIds contains SUPPLIER ORGANIZATION IDs, not seller user IDs
+        if (!sellerSupplierId) {
+          return false; // No supplier org ID = cannot see direct RFQs
+        }
         if (!rfq.targetSupplierIds) {
           return false; // Direct RFQ with no targets = not visible
         }
@@ -100,22 +184,41 @@ export async function GET(request: NextRequest) {
           if (!Array.isArray(targetIds)) {
             return false;
           }
-          return targetIds.includes(user.id);
+          
+          // PRIMARY CHECK: Match using supplier org ID (canonical format)
+          if (targetIds.includes(sellerSupplierId)) {
+            return true;
+          }
+
+          // COMPATIBILITY FALLBACK: Check if any target IDs are legacy user IDs that map to this org
+          const hasLegacyMatch = targetIds.some((id: string) => legacyUserIds.includes(id));
+          if (hasLegacyMatch) {
+            // Legacy record detected - log for migration tracking
+            console.log("[SELLER_FEED_LEGACY_DIRECT_RFQ]", {
+              rfqId: rfq.id,
+              sellerUserId: user.id,
+              supplierId: sellerSupplierId,
+              legacyUserIds: targetIds.filter((id: string) => legacyUserIds.includes(id)),
+            });
+            return true;
+          }
+
+          return false; // No match found
         } catch {
           return false; // Invalid JSON = not visible
         }
       } else if (visibility === "broadcast") {
-        // Broadcast RFQ: show if seller's categoriesServed includes RFQ.categoryId (or category label as fallback)
+        // Broadcast RFQ: show if supplier org's categories include RFQ.categoryId (or category label as fallback)
         if (!rfq.category && !(rfq as any).categoryId) {
           return false; // Broadcast RFQ must have a category or categoryId
         }
         if (sellerCategoriesTrimmed.length === 0) {
-          return false; // Seller has no categories = can't see broadcast RFQs
+          return false; // Supplier org has no categories = can't see broadcast RFQs
         }
         const rfqCategoryId = (rfq as any).categoryId ? String((rfq as any).categoryId).trim() : "";
         const rfqCategoryLabelLower = String(rfq.category || "").toLowerCase().trim();
 
-        // Match CategoryId (new foundation)
+        // Match CategoryId first (canonical)
         if (rfqCategoryId && sellerCategoriesTrimmed.includes(rfqCategoryId)) return true;
 
         // Fallback match by label (legacy)
@@ -131,17 +234,37 @@ export async function GET(request: NextRequest) {
     // This in-memory filter is now redundant but kept for backward compatibility
     // when no visibility param is provided
     
+    // CRITICAL: Exclude RFQs that the seller has already bid on
+    // The feed should only show RFQs the seller can still act on
+    const visibleRfqIds = visibleRfqs.map(r => r.id);
+    
+    if (visibleRfqIds.length > 0) {
+      const existingBids = await prisma.bid.findMany({
+        where: {
+          sellerId: user.id,
+          rfqId: { in: visibleRfqIds },
+        },
+        select: { rfqId: true },
+      });
+      
+      const bidRfqIdSet = new Set(existingBids.map(b => b.rfqId));
+      visibleRfqs = visibleRfqs.filter(rfq => !bidRfqIdSet.has(rfq.id));
+    }
+    
     // CRITICAL: Log seller feed query (always, not just dev)
     const broadcastCount = visibleRfqs.filter(r => (r.visibility || "broadcast") === "broadcast").length;
     const directCount = visibleRfqs.filter(r => r.visibility === "direct").length;
     
     console.log("[SELLER_FEED_QUERY]", {
-      sellerId: user.id,
-      sellerCategoryIds: sellerCategories,
+      sellerUserId: user.id,
+      supplierId: sellerSupplierId,
+      supplierName: membership.supplier.name,
+      visibilityParam: visParam || "default",
+      sellerCategoryIds: sellerCategoryIds,
       totalOpenRfqs: dbRfqs.length,
       visibleCount: visibleRfqs.length,
-      broadcastCount,
       directCount,
+      broadcastCount,
     });
 
     // Return array with summary fields
@@ -161,10 +284,27 @@ export async function GET(request: NextRequest) {
 
     // CRITICAL: Log feed count for diagnostics
     console.log("[SELLER_FEED_COUNT]", {
-      sellerId: user.id,
+      sellerUserId: user.id,
+      supplierId: sellerSupplierId,
       count: summaryRfqs.length,
-      sellerCategories,
+      sellerCategoryIds,
     });
+
+    // If count-only mode, return just the count
+    if (countOnly) {
+      return NextResponse.json(
+        { ok: true, count: visibleRfqs.length },
+        {
+          status: 200,
+          headers: {
+            "Content-Type": "application/json",
+            "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0",
+            "Pragma": "no-cache",
+            "Expires": "0",
+          },
+        }
+      ) as any;
+    }
 
     // CRITICAL: Never cache seller feed - always return fresh data
     return NextResponse.json(

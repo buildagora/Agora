@@ -26,9 +26,11 @@ export default function RequestPreviewPage() {
     }
 
     // Load request
-    const foundRequest = getRequest(requestId, user.id);
-    setRequest(foundRequest);
-    setLoading(false);
+    (async () => {
+      const foundRequest = await getRequest(requestId, user.id);
+      setRequest(foundRequest);
+      setLoading(false);
+    })();
   }, [requestId, user, status]);
 
   const formatDate = (dateString: string) => {

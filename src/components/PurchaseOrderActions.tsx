@@ -9,10 +9,27 @@ import Card, { CardContent, CardHeader } from "@/components/ui2/Card";
 import Button from "@/components/ui2/Button";
 import { type RFQ } from "@/lib/rfqs";
 
+/**
+ * Minimal RFQ shape required by PurchaseOrderActions
+ * Component can fetch full RFQ from API if prop is missing or incomplete
+ */
+type PurchaseOrderRFQ = {
+  id: string;
+  status?: string;
+  awardedBidId?: string | null;
+  terms?: {
+    fulfillmentType?: string;
+    requestedDate?: string;
+    deliveryPreference?: string;
+    deliveryInstructions?: string;
+    location?: string;
+  };
+};
+
 interface PurchaseOrderActionsProps {
   rfqId: string;
   role: "BUYER" | "SELLER";
-  rfq?: RFQ | null; // Optional RFQ prop (if already loaded)
+  rfq?: PurchaseOrderRFQ | null; // Optional RFQ prop (if already loaded)
   order?: null; // Order prop removed - order status is now handled at page level
 }
 
@@ -24,7 +41,7 @@ interface PurchaseOrderActionsProps {
 export default function PurchaseOrderActions({ rfqId, role, rfq: rfqProp }: PurchaseOrderActionsProps) {
   const { user: currentUser } = useAuth();
   const [po, setPo] = useState<PO | null>(null);
-  const [rfq, setRfq] = useState<RFQ | null>(rfqProp || null);
+  const [rfq, setRfq] = useState<RFQ | PurchaseOrderRFQ | null>(rfqProp || null);
   const [loading, setLoading] = useState(true);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const { showToast, toasts, removeToast } = useToast();
@@ -40,7 +57,8 @@ export default function PurchaseOrderActions({ rfqId, role, rfq: rfqProp }: Purc
     }
 
     // Use provided RFQ prop or load it from API
-    let foundRFQ: RFQ | null = rfqProp || null;
+    // foundRFQ can be partial (from prop) or full (from API)
+    let foundRFQ: RFQ | PurchaseOrderRFQ | null = rfqProp || null;
     if (!foundRFQ) {
       try {
         const endpoint = role === "BUYER" 
@@ -66,15 +84,21 @@ export default function PurchaseOrderActions({ rfqId, role, rfq: rfqProp }: Purc
     setRfq(foundRFQ);
 
     // Check if RFQ is won/awarded
+    // Use optional chaining since status and awardedBidId are optional in partial RFQ type
     const isWon = foundRFQ.status === "AWARDED" || foundRFQ.status === "CLOSED";
     if (!isWon || !foundRFQ.awardedBidId) {
       setLoading(false);
       return; // Don't show PO actions for non-awarded RFQs
     }
 
-    // Load PO from API
+    // Load PO from API - use role-aware endpoint
     try {
-      const res = await fetch(`/api/buyer/orders?rfqId=${rfqId}`, {
+      const orderEndpoint =
+        role === "BUYER"
+          ? `/api/buyer/orders?rfqId=${rfqId}`
+          : `/api/seller/orders?rfqId=${rfqId}`;
+
+      const res = await fetch(orderEndpoint, {
         credentials: "include",
       });
       
@@ -97,23 +121,32 @@ export default function PurchaseOrderActions({ rfqId, role, rfq: rfqProp }: Purc
           }
           
           // Convert order to PO format
+          // Prefer order API data, fallback to currentUser for buyer-side when appropriate
+          const buyerName = order.buyerName || (role === "BUYER" ? (currentUser?.companyName || currentUser?.fullName || "Buyer") : "Buyer");
+          const buyerPhone = order.buyerPhone || (role === "BUYER" ? currentUser?.phone : undefined);
+          const sellerName = order.sellerName || "Seller";
+          
           foundPO = {
             id: order.id,
-            poNumber: order.orderNumber,
+            poNumber: order.orderNumber || `PO-${order.id.slice(0, 8).toUpperCase()}`,
             rfqId: order.rfqId,
-            winningBidId: order.awardedBidId || foundRFQ.awardedBidId,
-            buyerName: currentUser.companyName || "Buyer",
-            sellerName: order.sellerName || "Seller",
+            rfqNumber: foundRFQ.rfqNumber || (foundRFQ as any).rfqNumber || undefined,
+            winningBidId: order.bidId || foundRFQ.awardedBidId,
+            buyerName,
+            buyerPhone,
+            sellerName,
             issuedAt: order.createdAt,
             lineItems,
-            subtotal: order.subtotal || (order.total ? order.total - (order.total * 0.08 / 1.08) : 0),
-            taxes: order.taxes || (order.total ? order.total * 0.08 / 1.08 : 0),
+            // CRITICAL: PO shows only the awarded bid total (no tax)
+            // Tax will be handled later when the order is entered into the supplier's ERP system
+            subtotal: order.total || 0,
+            taxes: 0, // Tax removed from PO - will be handled in supplier ERP
             total: order.total || 0,
-            fulfillmentType: order.fulfillmentType || foundRFQ.terms.fulfillmentType,
-            requestedDate: order.requestedDate || foundRFQ.terms.requestedDate,
-            deliveryPreference: order.deliveryPreference || foundRFQ.terms.deliveryPreference,
-            deliveryInstructions: order.deliveryInstructions || foundRFQ.terms.deliveryInstructions,
-            location: order.location || foundRFQ.terms.location,
+            fulfillmentType: order.fulfillmentType || foundRFQ.terms?.fulfillmentType,
+            requestedDate: order.requestedDate || foundRFQ.terms?.requestedDate,
+            deliveryPreference: order.deliveryPreference || foundRFQ.terms?.deliveryPreference,
+            deliveryInstructions: order.deliveryInstructions || foundRFQ.terms?.deliveryInstructions,
+            location: order.location || foundRFQ.terms?.location,
             notes: order.notes || undefined,
           };
         }
@@ -221,6 +254,7 @@ export default function PurchaseOrderActions({ rfqId, role, rfq: rfqProp }: Purc
   }
 
   // Only show for won/awarded RFQs
+  // Use optional chaining since status and awardedBidId are optional in partial RFQ type
   const isWon = rfq.status === "AWARDED" || rfq.status === "CLOSED";
   if (!isWon || !rfq.awardedBidId) {
     return null;

@@ -5,9 +5,16 @@ export interface PO {
   id: string;
   poNumber: string;
   rfqId: string;
+  rfqNumber?: string; // Friendly RFQ number (e.g., "RFQ-24-0001")
   winningBidId: string;
   buyerName: string;
+  buyerPhone?: string;
+  buyerEmail?: string;
+  buyerAddress?: string;
   sellerName: string;
+  sellerEmail?: string;
+  sellerPhone?: string;
+  sellerAddress?: string;
   issuedAt: string;
   lineItems: Array<{
     description: string;
@@ -15,9 +22,11 @@ export interface PO {
     quantity: number;
     unitPrice: number;
     total: number;
+    sku?: string;
   }>;
   subtotal: number;
   taxes: number;
+  shipping?: number;
   total: number;
   fulfillmentType: string;
   requestedDate?: string;
@@ -35,121 +44,210 @@ export interface PO {
 export function generatePurchaseOrderPdfBytes(po: PO): Uint8Array {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
   const margin = 20;
+  
+  // Simple colors
+  const darkGray = [51, 65, 85]; // #334155 - dark gray for text
+  const lightGray = [226, 232, 240]; // #E2E8F0 - light gray for table lines
+  
   let yPos = margin;
 
-  // Title
-  doc.setFontSize(20);
+  // ============================================
+  // HEADER SECTION (Clean & Minimal)
+  // ============================================
+  
+  // Title: "AGORA PURCHASE ORDER"
+  doc.setFontSize(24);
   doc.setFont("helvetica", "bold");
-  doc.text("Purchase Order", margin, yPos);
-  yPos += 15;
-
-  // PO Number and Date
-  doc.setFontSize(12);
+  doc.setTextColor(...darkGray);
+  doc.text("AGORA PURCHASE ORDER", margin, yPos);
+  
+  yPos += 16;
+  
+  // Metadata (right-aligned)
+  const poDate = new Date(po.issuedAt).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+  
+  doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
-  doc.text(`PO Number: ${po.poNumber}`, margin, yPos);
-  doc.text(`Date: ${new Date(po.issuedAt).toLocaleDateString("en-US")}`, pageWidth - margin - 40, yPos);
-  yPos += 10;
+  doc.setTextColor(...darkGray);
+  
+  // PO Number (right-aligned)
+  doc.text(`PO Number: ${po.poNumber}`, pageWidth - margin, yPos, { align: "right" });
+  yPos += 6;
+  
+  // PO Date (right-aligned)
+  doc.text(`PO Date: ${poDate}`, pageWidth - margin, yPos, { align: "right" });
+  yPos += 6;
+  
+  // RFQ Reference (right-aligned)
+  if (po.rfqNumber) {
+    doc.text(`RFQ Reference: ${po.rfqNumber}`, pageWidth - margin, yPos, { align: "right" });
+  }
+  
+  yPos += 24;
 
-  // RFQ Number
+  // ============================================
+  // BUYER / SUPPLIER SECTION (Clean Two-Column)
+  // ============================================
+  
+  const sectionWidth = (pageWidth - 2 * margin - 20) / 2;
+  const buyerX = margin;
+  const supplierX = margin + sectionWidth + 20;
+  
+  // BILL TO (left-aligned)
   doc.setFontSize(10);
-  doc.text(`RFQ: ${po.rfqId}`, margin, yPos);
-  yPos += 15;
-
-  // Buyer and Seller Info
-  doc.setFontSize(11);
   doc.setFont("helvetica", "bold");
-  doc.text("Buyer:", margin, yPos);
-  doc.text("Seller:", pageWidth / 2 + margin, yPos);
-  yPos += 7;
-
+  doc.setTextColor(...darkGray);
+  let buyerY = yPos;
+  doc.text("Bill To", buyerX, buyerY);
+  buyerY += 7;
+  
+  doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
-  doc.text(po.buyerName, margin, yPos);
-  doc.text(po.sellerName, pageWidth / 2 + margin, yPos);
-  yPos += 15;
-
-  // Fulfillment Details
+  doc.text(po.buyerName, buyerX, buyerY);
+  buyerY += 6;
+  
+  if (po.buyerPhone) {
+    doc.text(po.buyerPhone, buyerX, buyerY);
+    buyerY += 6;
+  }
+  
+  // SUPPLIER (right-aligned)
   doc.setFontSize(10);
   doc.setFont("helvetica", "bold");
-  doc.text("Fulfillment Details:", margin, yPos);
-  yPos += 7;
-
+  doc.setTextColor(...darkGray);
+  let supplierY = yPos;
+  doc.text("Supplier", supplierX, supplierY);
+  supplierY += 7;
+  
+  doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
-  doc.text(`Type: ${po.fulfillmentType}`, margin, yPos);
-  yPos += 5;
+  doc.text(po.sellerName, supplierX, supplierY);
+  
+  yPos = Math.max(buyerY, supplierY) + 24;
+
+  // ============================================
+  // FULFILLMENT SECTION (Clean Single Row)
+  // ============================================
+  
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(...darkGray);
+  
+  const fulfillmentLabel = po.fulfillmentType === "PICKUP" ? "Pickup" : 
+                           po.fulfillmentType === "DELIVERY" ? "Delivery" : 
+                           po.fulfillmentType || "Not specified";
+  
+  let fulfillmentText = `Fulfillment: ${fulfillmentLabel}`;
+  
   if (po.requestedDate) {
-    doc.text(
-      `${po.fulfillmentType === "PICKUP" ? "Pickup" : "Delivery"} Date: ${new Date(po.requestedDate).toLocaleDateString()}`,
-      margin,
-      yPos
-    );
-    yPos += 5;
+    const dateLabel = po.fulfillmentType === "PICKUP" ? "Pickup Date" : "Delivery Date";
+    const formattedDate = new Date(po.requestedDate).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+    fulfillmentText += `  |  ${dateLabel}: ${formattedDate}`;
   }
-  if (po.deliveryPreference) {
-    doc.text(`Delivery Preference: ${po.deliveryPreference}`, margin, yPos);
-    yPos += 5;
-  }
-  if (po.location) {
-    doc.text(`Location: ${po.location}`, margin, yPos);
-    yPos += 5;
-  }
-  if (po.deliveryInstructions) {
-    doc.text(`Delivery Instructions: ${po.deliveryInstructions}`, margin, yPos);
-    yPos += 5;
-  }
-  yPos += 5;
+  
+  doc.text(fulfillmentText, margin, yPos);
+  yPos += 16;
 
-  // Line Items Table
+  // ============================================
+  // LINE ITEM TABLE (Clean with Light Grid)
+  // ============================================
+  
   autoTable(doc, {
     startY: yPos,
-    head: [["Description", "Unit", "Quantity", "Unit Price", "Total"]],
-    body: po.lineItems.map((item) => {
-      // Safely convert unitPrice and total to numbers (handle string values from API)
+    head: [["#", "Description", "Qty", "Unit Price", "Total"]],
+    body: po.lineItems.map((item, index) => {
+      // Safely convert unitPrice and total to numbers
       const unitPrice = typeof item.unitPrice === "number" ? item.unitPrice : parseFloat(String(item.unitPrice || 0));
       const total = typeof item.total === "number" ? item.total : parseFloat(String(item.total || 0));
       
       return [
-        item.description,
-        item.unit,
+        (index + 1).toString(),
+        item.description || "",
         item.quantity.toString(),
         `$${unitPrice.toFixed(2)}`,
         `$${total.toFixed(2)}`,
       ];
     }),
-    theme: "striped",
-    headStyles: { fillColor: [0, 0, 0], textColor: 255 },
-    styles: { fontSize: 9 },
-    columnStyles: {
-      0: { cellWidth: 80 },
-      1: { cellWidth: 30 },
-      2: { cellWidth: 30 },
-      3: { cellWidth: 35 },
-      4: { cellWidth: 35 },
+    theme: "plain",
+    headStyles: { 
+      fillColor: [255, 255, 255],
+      textColor: darkGray,
+      fontStyle: "bold",
+      fontSize: 9,
+      cellPadding: { top: 8, bottom: 8, left: 5, right: 5 },
+      lineColor: lightGray,
+      lineWidth: 0.3,
     },
+    bodyStyles: {
+      fontSize: 9,
+      textColor: darkGray,
+      cellPadding: { top: 6, bottom: 6, left: 5, right: 5 },
+      lineColor: lightGray,
+      lineWidth: 0.2,
+    },
+    columnStyles: {
+      0: { cellWidth: 15, halign: "left" }, // #
+      1: { cellWidth: "auto", halign: "left" }, // Description
+      2: { cellWidth: 25, halign: "right" }, // Qty
+      3: { cellWidth: 40, halign: "right" }, // Unit Price
+      4: { cellWidth: 40, halign: "right" }, // Total
+    },
+    styles: { 
+      lineColor: lightGray,
+      lineWidth: 0.2,
+    },
+    margin: { left: margin, right: margin },
+    tableWidth: "wrap",
   });
 
   const finalY = (doc as any).lastAutoTable.finalY || yPos + 50;
 
-  // Totals (safely convert to numbers in case they're strings)
-  const subtotal = typeof po.subtotal === "number" ? po.subtotal : parseFloat(String(po.subtotal || 0));
-  const taxes = typeof po.taxes === "number" ? po.taxes : parseFloat(String(po.taxes || 0));
+  // ============================================
+  // PAYMENT SUMMARY (Bottom Right, No Box)
+  // ============================================
+  
+  // Total content (safely convert to number)
+  // CRITICAL: TOTAL DUE equals the awarded bid total only (no tax added)
+  // Tax will be handled later when the order is entered into the supplier's ERP system
   const total = typeof po.total === "number" ? po.total : parseFloat(String(po.total || 0));
+  
+  const totalsWidth = 80;
+  const totalsX = pageWidth - margin - totalsWidth;
+  let totalsY = finalY + 24;
+  
+  // TOTAL DUE (bold and slightly larger)
+  // This is the supplier's quoted price / awarded bid total
+  doc.setFontSize(11);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...darkGray);
+  doc.text("TOTAL DUE", totalsX, totalsY, { align: "right" });
+  doc.setFontSize(12);
+  doc.text(`$${total.toFixed(2)}`, pageWidth - margin, totalsY, { align: "right" });
+
+  // ============================================
+  // AUTHORIZATION (Bottom Left)
+  // ============================================
+  
+  const authY = finalY + 24;
+  
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...darkGray);
+  doc.text("Authorized By", margin, authY);
   
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
-  doc.text(`Subtotal: $${subtotal.toFixed(2)}`, pageWidth - margin - 50, finalY + 10, { align: "right" });
-  doc.text(`Taxes: $${taxes.toFixed(2)}`, pageWidth - margin - 50, finalY + 15, { align: "right" });
-  doc.setFont("helvetica", "bold");
-  doc.text(`Total: $${total.toFixed(2)}`, pageWidth - margin - 50, finalY + 22, { align: "right" });
-
-  // Notes
-  if (po.notes) {
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);
-    doc.text("Notes:", margin, finalY + 30);
-    const splitNotes = doc.splitTextToSize(po.notes, pageWidth - 2 * margin);
-    doc.text(splitNotes, margin, finalY + 35);
-  }
+  doc.text(po.buyerName, margin, authY + 8);
 
   // Return PDF as Uint8Array
   const arrayBuffer = doc.output("arraybuffer");

@@ -1,27 +1,86 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Sidebar, { SidebarHeader, SidebarContent, SidebarItem } from "@/components/ui2/Sidebar";
+import Badge from "@/components/ui2/Badge";
 import AgoraLogo from "@/components/brand/AgoraLogo";
+
+interface BuyerSidebarProps {
+  onNavigate?: () => void;
+}
 
 /**
  * BuyerSidebar - Clean buyer navigation
  * 
  * Structure:
- * - Agent (primary) → /buyer/agent
+ * - Dashboard → /buyer/dashboard
  * - Requests → /buyer/rfqs
- * - Orders (Open, Completed)
  * - Suppliers (Preferred)
  * - Settings (optional)
  */
-export default function BuyerSidebar() {
+export default function BuyerSidebar({ onNavigate }: BuyerSidebarProps) {
   const pathname = usePathname();
+  const [unreadCount, setUnreadCount] = useState<number>(0);
+  const [unreadRfqActivityCount, setUnreadRfqActivityCount] = useState<number>(0);
+
+  // Fetch unread notification count (for messages)
+  const fetchUnreadCount = () => {
+    fetch("/api/buyer/notifications/unread-count", {
+      credentials: "include",
+      cache: "no-store",
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.ok && typeof data.unread === "number") {
+          setUnreadCount(data.unread);
+        }
+      })
+      .catch(() => {
+        // Silently fail - badge just won't show
+      });
+  };
+
+  // Fetch unread RFQ activity count (for Material Requests badge)
+  const fetchUnreadRfqActivityCount = () => {
+    fetch("/api/buyer/rfqs/unread-activity-count", {
+      credentials: "include",
+      cache: "no-store",
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.ok && typeof data.count === "number") {
+          setUnreadRfqActivityCount(data.count);
+        }
+      })
+      .catch(() => {
+        // Silently fail - badge just won't show
+      });
+  };
+
+  // Fetch on mount
+  useEffect(() => {
+    fetchUnreadCount();
+    fetchUnreadRfqActivityCount();
+  }, []);
+
+  // Poll for updates every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchUnreadCount();
+      fetchUnreadRfqActivityCount();
+    }, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Refresh on route change
+  useEffect(() => {
+    fetchUnreadCount();
+    fetchUnreadRfqActivityCount();
+  }, [pathname]);
 
   const isActive = (href: string) => {
-    if (href === "/buyer/agent") {
-      return pathname === "/buyer/agent" || pathname?.startsWith("/buyer/agent/thread");
-    }
     if (href === "/buyer/dashboard") {
       return pathname === "/buyer/dashboard";
     }
@@ -35,9 +94,9 @@ export default function BuyerSidebar() {
       </SidebarHeader>
       <SidebarContent>
         <nav className="py-2">
-          {/* Primary: Agent */}
-          <SidebarItem href="/buyer/agent" active={isActive("/buyer/agent")}>
-            Agent
+          {/* Primary: Dashboard */}
+          <SidebarItem href="/buyer/dashboard" active={isActive("/buyer/dashboard")} onClick={onNavigate}>
+            Dashboard
           </SidebarItem>
 
           {/* Requests Section */}
@@ -49,29 +108,19 @@ export default function BuyerSidebar() {
               href="/buyer/rfqs" 
               active={isActive("/buyer/rfqs")}
               className="pl-4"
+              onClick={onNavigate}
             >
-              All Requests
-            </SidebarItem>
-          </div>
-
-          {/* Orders Section */}
-          <div className="mt-6">
-            <div className="px-4 py-2 text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-              Orders
-            </div>
-            <SidebarItem 
-              href="/buyer/orders/open" 
-              active={isActive("/buyer/orders/open")}
-              className="pl-4"
-            >
-              Open
-            </SidebarItem>
-            <SidebarItem 
-              href="/buyer/orders/completed" 
-              active={isActive("/buyer/orders/completed")}
-              className="pl-4"
-            >
-              Completed
+              <div className="flex items-center justify-between w-full">
+                <span>All Requests</span>
+                {unreadRfqActivityCount === 1 && (
+                  <div className="ml-2 w-2 h-2 rounded-full bg-blue-500 dark:bg-blue-400" />
+                )}
+                {unreadRfqActivityCount > 1 && (
+                  <Badge variant="info" className="ml-2">
+                    {unreadRfqActivityCount > 99 ? "99+" : unreadRfqActivityCount}
+                  </Badge>
+                )}
+              </div>
             </SidebarItem>
           </div>
 
@@ -84,8 +133,27 @@ export default function BuyerSidebar() {
               href="/buyer/suppliers/preferred" 
               active={isActive("/buyer/suppliers/preferred")}
               className="pl-4"
+              onClick={onNavigate}
             >
               Preferred
+            </SidebarItem>
+            <SidebarItem 
+              href="/buyer/suppliers/talk" 
+              active={isActive("/buyer/suppliers/talk")}
+              className="pl-4"
+              onClick={onNavigate}
+            >
+              <div className="flex items-center justify-between w-full">
+                <span>Talk to Suppliers</span>
+                {unreadCount === 1 && (
+                  <div className="ml-2 w-2 h-2 rounded-full bg-blue-500 dark:bg-blue-400" />
+                )}
+                {unreadCount > 1 && (
+                  <Badge variant="info" className="ml-2">
+                    {unreadCount > 99 ? "99+" : unreadCount}
+                  </Badge>
+                )}
+              </div>
             </SidebarItem>
           </div>
 
@@ -94,6 +162,7 @@ export default function BuyerSidebar() {
             <SidebarItem 
               href="/buyer/settings" 
               active={isActive("/buyer/settings")}
+              onClick={onNavigate}
             >
               Settings
             </SidebarItem>

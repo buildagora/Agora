@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Button from "@/components/ui2/Button";
 import Card, { CardContent, CardHeader } from "@/components/ui2/Card";
 import AgoraLogo from "@/components/brand/AgoraLogo";
+import { sanitizeReturnTo } from "@/lib/auth/routeIntent";
 
 /**
  * Buyer Login Page (Client Component)
@@ -15,35 +16,15 @@ import AgoraLogo from "@/components/brand/AgoraLogo";
  * This page is used when route intent is BUYER and user is unauthenticated.
  * It provides a simple UI that navigates to /auth/sign-in with the correct role.
  */
-export default function BuyerLoginPage() {
+function BuyerLoginPageInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const [mounted, setMounted] = useState(false);
 
   // Get returnTo from search params (preferred) or next (legacy)
-  const returnTo = searchParams.get("returnTo") || searchParams.get("next") || "";
+  const rawReturnTo = searchParams.get("returnTo") || searchParams.get("next") || "";
 
-  // Mark as mounted after first paint
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // Auto-navigate after first paint (optional - doesn't block rendering)
-  useEffect(() => {
-    if (!mounted) return;
-    
-    // Small delay to ensure page renders first
-    const timer = setTimeout(() => {
-      const urlParams = new URLSearchParams();
-      urlParams.set("role", "buyer");
-      if (returnTo) {
-        urlParams.set("returnTo", returnTo);
-      }
-      router.replace(`/auth/sign-in?${urlParams.toString()}`);
-    }, 100);
-
-    return () => clearTimeout(timer);
-  }, [mounted, returnTo, router]);
+  // CRITICAL: Sanitize returnTo to prevent recursive redirects
+  const returnTo = useMemo(() => sanitizeReturnTo(rawReturnTo), [rawReturnTo]);
 
   const handleContinue = () => {
     const urlParams = new URLSearchParams();
@@ -51,7 +32,7 @@ export default function BuyerLoginPage() {
     if (returnTo) {
       urlParams.set("returnTo", returnTo);
     }
-    router.replace(`/auth/sign-in?${urlParams.toString()}`);
+    window.location.href = `/auth/sign-in?${urlParams.toString()}`;
   };
 
   return (
@@ -72,7 +53,7 @@ export default function BuyerLoginPage() {
             <Button
               onClick={handleContinue}
               className="w-full"
-              variant="default"
+              variant="primary"
             >
               Continue
             </Button>
@@ -80,5 +61,13 @@ export default function BuyerLoginPage() {
         </Card>
       </div>
     </div>
+  );
+}
+
+export default function BuyerLoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <BuyerLoginPageInner />
+    </Suspense>
   );
 }

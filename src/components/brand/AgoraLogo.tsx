@@ -26,7 +26,7 @@ export default function AgoraLogo({
   const getHomeRoute = () => {
     switch (variant) {
       case "buyer":
-        return "/buyer/agent";
+        return "/buyer/dashboard";
       case "seller":
         return "/seller/dashboard";
       case "auth":

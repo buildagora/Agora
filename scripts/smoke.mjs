@@ -4,7 +4,7 @@
  * Verifies JSON responses, content-type, and basic functionality
  */
 
-const BASE_URL = process.env.BASE_URL || "http://localhost:3000";
+const BASE_URL = process.env.BASE_URL || "http://127.0.0.1:3000";
 
 async function fetchJson(url, options = {}) {
   const response = await fetch(url, {

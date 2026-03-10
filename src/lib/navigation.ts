@@ -13,7 +13,7 @@ export function getDashboardRoute(user?: User | null): string {
   }
   
   if (user.role === "BUYER") {
-    return "/buyer/agent";
+    return "/buyer/dashboard";
   } else if (user.role === "SELLER") {
     // CRITICAL: Seller home is /seller/dashboard
     return "/seller/dashboard";

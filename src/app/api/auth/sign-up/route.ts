@@ -1,9 +1,8 @@
 /**
  * POST /api/auth/sign-up
- * Canonical sign-up endpoint
+ * Compatibility alias for /api/auth/signup (canonical endpoint)
  * 
- * Creates new user account in database with hashed password.
- * Does NOT auto-login (user must sign in after sign-up).
+ * Forwards to the canonical signup handler to ensure both endpoints behave identically.
  */
 
 import { NextRequest } from "next/server";
@@ -13,5 +12,6 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
+  // Forward to canonical signup handler
   return signUpHandler(request);
 }

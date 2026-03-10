@@ -9,7 +9,7 @@ import { jsonOk, jsonError, withErrorHandling } from "@/lib/apiResponse";
 import { requireCurrentUserFromRequest } from "@/lib/auth/server";
 import { getPrisma } from "@/lib/db.server";
 import { normalizeCategory } from "@/lib/categories/normalizeCategory";
-import { labelToCategoryId } from "@/lib/categoryDisplay";
+import { labelToCategoryId } from "@/lib/categoryIds";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

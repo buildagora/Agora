@@ -245,15 +245,16 @@ export function getPrisma(): PrismaClient {
     }
     
     // Runtime guard: Verify prisma.agentThread exists (Prisma Client matches schema)
-    if (!globalThis.__prisma.agentThread) {
-      const prismaKeys = Object.keys(globalThis.__prisma).filter(key => !key.startsWith("$") && !key.startsWith("_"));
-      throw new Error(
-        "CRITICAL: Prisma Client does not include AgentThread model. " +
-        `Available models: ${prismaKeys.join(", ")}. ` +
-        "Run 'npx prisma generate' from /agora directory to regenerate the client. " +
-        "Then restart the dev server."
-      );
-    }
+    // TEMPORARILY DISABLED: Agent is moved to src/agent and not part of build
+    // if (!globalThis.__prisma.agentThread) {
+    //   const prismaKeys = Object.keys(globalThis.__prisma).filter(key => !key.startsWith("$") && !key.startsWith("_"));
+    //   throw new Error(
+    //     "CRITICAL: Prisma Client does not include AgentThread model. " +
+    //     `Available models: ${prismaKeys.join(", ")}. ` +
+    //     "Run 'npx prisma generate' from /agora directory to regenerate the client. " +
+    //     "Then restart the dev server."
+    //   );
+    // }
   }
   return globalThis.__prisma;
 }

@@ -131,7 +131,7 @@ export function normalizeRfq(rfq: any): NormalizedRFQ {
  * Get sort priority for RFQ grouping
  * Returns a number where lower = higher priority (appears first)
  */
-function getSortPriority(rfq: NormalizedRFQ, now: Date): number {
+export function getSortPriority(rfq: NormalizedRFQ, now: Date): number {
   // Priority 1: Closing soon (due within 24h) - highest priority
   if (isOpen(rfq.status) && rfq.dueAt && isClosingSoon(rfq.dueAt, now)) {
     return 1;

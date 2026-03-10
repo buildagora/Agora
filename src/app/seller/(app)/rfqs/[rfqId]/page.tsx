@@ -1,14 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
+import SmartBackButton from "@/components/nav/SmartBackButton";
 // Removed pushNotification import - notifications will be created server-side via API
 // PO actions now handled by PurchaseOrderActions component
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { enforceRoleClient } from "@/lib/auth/requireRoleClient";
 // Removed localStorage imports - using APIs instead
 import { generateThreadId, createSystemMessage } from "@/lib/messages";
-import { markDispatchAsResponded } from "@/lib/requestDispatch";
+// DO NOT IMPORT server-only modules here
+// Use API routes instead
 import { getOrderByRequestId, updateOrderStatus, type Order } from "@/lib/order";
 import { logEvent } from "@/lib/eventLog";
 import { getRequest } from "@/lib/request";
@@ -18,6 +20,7 @@ import PurchaseOrderActions from "@/components/PurchaseOrderActions";
 import Header from "@/components/Header";
 import Badge from "@/components/ui2/Badge";
 import Button from "@/components/ui2/Button";
+import RFQClarifications from "./RFQClarifications";
 
 interface LineItem {
   description: string;
@@ -72,9 +75,18 @@ interface Bid {
 export default function SellerRFQDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user: currentUser, status } = useAuth();
   const id = params.rfqId as string;
   const [rfq, setRfq] = useState<RFQ | null>(null);
+  
+  // Build fallback URL to feed, preserving category from RFQ or URL params
+  const getFeedFallback = () => {
+    const category = rfq?.category || searchParams.get("category") || searchParams.get("categoryId");
+    return category 
+      ? `/seller/feed?category=${encodeURIComponent(category)}`
+      : "/seller/feed";
+  };
   const [existingBid, setExistingBid] = useState<Bid | null>(null);
   const [loading, setLoading] = useState(true);
   const [showBidForm, setShowBidForm] = useState(false);
@@ -321,6 +333,10 @@ export default function SellerRFQDetailPage() {
       showToast({ type: "error", message: "You must be logged in as a seller to submit a bid." });
       return;
     }
+    if (!currentUser) {
+      showToast({ type: "error", message: "You must be logged in as a seller." });
+      return;
+    }
     const sellerName = currentUser.companyName;
 
     // Parse leadTimeDays (validated in validateBid, so safe to parse here)
@@ -426,14 +442,12 @@ export default function SellerRFQDetailPage() {
       {/* Main content */}
       <main className="flex flex-1 px-6 py-8 max-w-4xl mx-auto w-full">
         <div className="w-full">
-          {/* Back to Live Feed link */}
+          {/* Back to Live Feed link - uses smart back navigation */}
           <div className="mb-4">
-            <a
-              href={`/seller/feed${rfq.category ? `?category=${encodeURIComponent(rfq.category)}` : ""}`}
-              className="text-sm text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-zinc-50"
-            >
-              ← Back to Live Feed
-            </a>
+            <SmartBackButton
+              fallback={getFeedFallback()}
+              label="← Back to Live Feed"
+            />
           </div>
 
           {/* V1 FIX: Page Header - Job Name/PO as primary identifier */}
@@ -676,6 +690,11 @@ export default function SellerRFQDetailPage() {
 
           {/* Purchase Order Section - PO details + Download/Email only */}
           <PurchaseOrderActions rfqId={id} role="SELLER" rfq={rfq} />
+
+          {/* Clarifications Section - RFQ-scoped messaging */}
+          <div className="mb-8">
+            <RFQClarifications rfqId={id} />
+          </div>
 
           {/* Line Items */}
           <div className="flex flex-col gap-6 mb-8">

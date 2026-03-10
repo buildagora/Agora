@@ -17,13 +17,15 @@ import {
 } from "@/lib/messages";
 import { setRequestReviewStatus } from "@/lib/request";
 import { getRequest } from "@/lib/request";
-import { getDispatchRecords } from "@/lib/requestDispatch";
+// DO NOT IMPORT server-only modules here
+// Use API routes instead
 import { getOrderByRequestId } from "@/lib/order";
 // Removed unused rfqToRequest import
 import { detectAllExceptions, Exception } from "@/lib/exceptionDetection";
 import { useToast } from "@/components/Toast";
 import Button from "@/components/ui2/Button";
 import Badge from "@/components/ui2/Badge";
+import AppShell from "@/components/ui2/AppShell";
 
 interface RFQ {
   id: string;
@@ -125,8 +127,12 @@ export default function SellerMessagesPage() {
     // PRIORITY 4: Dispatch record (if seller was dispatched, try to get buyerId from request)
     if (!buyerId) {
       try {
-        const dispatchRecords = getDispatchRecords(rfqId);
-        const sellerDispatch = dispatchRecords.find((r) => r.sellerId === sellerId);
+        const res = await fetch(`/api/rfqs/${rfqId}/dispatch`, {
+          credentials: "include",
+        });
+        const data = res.ok ? await res.json() : null;
+        const dispatchRecords = data?.records || [];
+        const sellerDispatch = dispatchRecords.find((r: any) => r.sellerId === sellerId);
         if (sellerDispatch) {
           // If we have a dispatch record, try to get buyerId from the request
           try {
@@ -234,7 +240,12 @@ export default function SellerMessagesPage() {
         setActiveExceptions([]);
         return;
       }
-      const dispatchRecords = getDispatchRecords(rfqId);
+      // Fetch dispatch records from API
+      const dispatchRes = await fetch(`/api/rfqs/${rfqId}/dispatch`, {
+        credentials: "include",
+      });
+      const dispatchData = dispatchRes.ok ? await dispatchRes.json() : null;
+      const dispatchRecords = dispatchData?.records || [];
       const order = getOrderByRequestId(rfqId, sellerId);
       
       const exceptions = detectAllExceptions({
@@ -730,7 +741,6 @@ export default function SellerMessagesPage() {
           )}
         </div>
       </div>
-    </div>
     </AppShell>
   );
 }

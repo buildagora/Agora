@@ -32,6 +32,7 @@ export type RoutingStrategy =
 export interface Supplier {
   id: string;
   name?: string;
+  email: string | null; // Required for dispatch notifications
   categories: Category[]; // Legacy: display labels
   categoryIds: string[]; // NEW: canonical IDs (e.g., ["roofing", "hvac"])
   isActive: boolean;

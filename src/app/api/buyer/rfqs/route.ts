@@ -8,6 +8,7 @@ import { requireServerEnv } from "@/lib/env";
 import { jsonOk, jsonError, withErrorHandling, type ApiSuccess } from "@/lib/apiResponse";
 import { requireCurrentUserFromRequest } from "@/lib/auth/server";
 import { getPrisma } from "@/lib/db.server";
+import { sendSupplierOnboardingEmail } from "@/lib/notifications/resend.server";
 
 // CRITICAL: Explicitly set nodejs runtime - Prisma cannot run in Edge runtime
 export const runtime = "nodejs";
@@ -252,6 +253,54 @@ export async function POST(request: NextRequest) {
       return jsonError("BAD_REQUEST", "Direct RFQs must specify at least one targetSupplierId", 400);
     }
 
+    // NORMALIZE targetSupplierIds: Convert seller user IDs to supplier org IDs
+    // CRITICAL: targetSupplierIds must contain SUPPLIER ORGANIZATION IDs, not seller user IDs
+    let normalizedTargetSupplierIds: string[] = [];
+    if (validatedPayload.targetSupplierIds && validatedPayload.targetSupplierIds.length > 0) {
+      // Check if incoming IDs are seller user IDs or supplier org IDs
+      // Strategy: Try to find SupplierMember records for each ID
+      // If found, use the supplierId (org ID); if not found, assume it's already an org ID
+      const incomingIds = validatedPayload.targetSupplierIds;
+      
+      // Query SupplierMember to see which IDs are user IDs
+      const memberships = await prisma.supplierMember.findMany({
+        where: {
+          userId: { in: incomingIds },
+          status: "ACTIVE",
+        },
+        select: {
+          userId: true,
+          supplierId: true,
+        },
+      });
+
+      // Build map: userId -> supplierId
+      const userIdToOrgId = new Map(memberships.map(m => [m.userId, m.supplierId]));
+
+      // Normalize: convert user IDs to org IDs, keep org IDs as-is
+      const orgIdSet = new Set<string>();
+      for (const id of incomingIds) {
+        if (userIdToOrgId.has(id)) {
+          // This is a user ID, convert to org ID
+          orgIdSet.add(userIdToOrgId.get(id)!);
+        } else {
+          // Assume it's already an org ID (or invalid, but we'll let it through)
+          orgIdSet.add(id);
+        }
+      }
+
+      normalizedTargetSupplierIds = Array.from(orgIdSet);
+
+      // Log normalization for debugging
+      if (memberships.length > 0) {
+        console.log("[RFQ_TARGET_SUPPLIER_NORMALIZATION]", {
+          incomingCount: incomingIds.length,
+          normalizedCount: normalizedTargetSupplierIds.length,
+          convertedUserIds: memberships.length,
+        });
+      }
+    }
+
     // Determine RFQ status: default to OPEN for all RFQs (direct RFQs are also OPEN by default)
     const defaultStatus = "OPEN";
     const rfqStatus = validatedPayload.status || defaultStatus;
@@ -271,8 +320,8 @@ export async function POST(request: NextRequest) {
         lineItems: JSON.stringify(validatedPayload.lineItems),
         terms: JSON.stringify(validatedPayload.terms),
         visibility: validatedPayload.visibility || "broadcast",
-        targetSupplierIds: validatedPayload.targetSupplierIds 
-          ? JSON.stringify(validatedPayload.targetSupplierIds) 
+        targetSupplierIds: normalizedTargetSupplierIds.length > 0
+          ? JSON.stringify(normalizedTargetSupplierIds)
           : null,
         createdAt: validatedPayload.createdAt 
           ? new Date(validatedPayload.createdAt) 
@@ -297,10 +346,9 @@ export async function POST(request: NextRequest) {
     
     // Build response body (without supplierCount - will be added back later safely)
     const responseBody = {
-      ok: true,
       id: created.id, // CRITICAL: DB primary key (canonical id)
       rfqId: created.id, // Alias for backward compatibility
-        rfqNumber: created.rfqNumber,
+      rfqNumber: created.rfqNumber,
       status: created.status,
     };
 
@@ -325,143 +373,282 @@ export async function POST(request: NextRequest) {
           const rfqCategoryId = validatedPayload.categoryId;
           const rfqLocation = validatedPayload.terms.location;
 
+          // Declare recipients at outer scope so it's accessible to all later logic
+          let recipients: Array<{
+            userId?: string; // Only for claimed suppliers
+            email: string;
+            supplierId: string;
+            displayName: string;
+            isUnclaimed?: boolean; // true for unclaimed suppliers
+          }> = [];
+
           // Check if targetSupplierIds is provided and non-empty
-          if (validatedPayload.targetSupplierIds && validatedPayload.targetSupplierIds.length > 0) {
-            // Use target supplier IDs
-            matchingSellers = await prisma.user.findMany({
+          // CRITICAL: targetSupplierIds now contains SUPPLIER ORGANIZATION IDs (after normalization)
+          // We need to expand these to all active SupplierMember users
+          if (normalizedTargetSupplierIds && normalizedTargetSupplierIds.length > 0) {
+            // Find all ACTIVE SupplierMember users in the targeted supplier orgs
+            const activeMembers = await prisma.supplierMember.findMany({
               where: {
-                role: "SELLER",
-                id: {
-                  in: validatedPayload.targetSupplierIds,
+                supplierId: { in: normalizedTargetSupplierIds },
+                status: "ACTIVE",
+              },
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    email: true,
+                    fullName: true,
+                    companyName: true,
+                    categoriesServed: true,
+                    serviceArea: true,
+                  },
                 },
               },
-              select: {
-                id: true,
-                email: true,
-                fullName: true,
-                companyName: true,
-                categoriesServed: true,
-                serviceArea: true,
-              },
             });
+
+            // Extract user records from memberships
+            matchingSellers = activeMembers
+              .map(m => m.user)
+              .filter((u): u is NonNullable<typeof u> => u !== null);
+
+            // Build recipients for direct RFQs (all active members in targeted orgs)
+            const directRecipientMap = new Map<string, {
+              userId: string;
+              email: string;
+              supplierId: string;
+              displayName: string;
+              isUnclaimed: false;
+            }>();
+
+            for (const member of activeMembers) {
+              if (!member.user.email) continue; // Skip members without email
+              const key = `${member.supplierId}:${member.user.email}`;
+              if (directRecipientMap.has(key)) continue; // Already added
+
+              directRecipientMap.set(key, {
+                userId: member.user.id,
+                email: member.user.email,
+                supplierId: member.supplierId,
+                displayName: member.user.fullName || member.user.companyName || member.user.email || "Supplier",
+                isUnclaimed: false,
+              });
+            }
+
+            recipients = Array.from(directRecipientMap.values());
           } else {
-            // Broadcast RFQ: resolve sellers by category + location
-            const allSellers = await prisma.user.findMany({
+            // Broadcast RFQ: resolve supplier orgs by category using SupplierCategoryLink (canonical source)
+            // CRITICAL: SupplierCategoryLink is the canonical broadcast matching source
+            // This supports both claimed suppliers (with ACTIVE members) and unclaimed suppliers (no members yet)
+            
+            // STEP 1: Find matching supplier orgs by categoryId using SupplierCategoryLink
+            const categoryLinks = await prisma.supplierCategoryLink.findMany({
               where: {
-                role: "SELLER",
-                categoriesServed: {
-                  not: null,
-                },
+                categoryId: rfqCategoryId, // Match by canonical categoryId
               },
               select: {
-                id: true,
-                email: true,
-                fullName: true,
-                companyName: true,
-                categoriesServed: true,
-                serviceArea: true,
+                supplierId: true,
               },
             });
 
-            // Filter by category match
-            matchingSellers = allSellers.filter((seller) => {
-              if (!seller.categoriesServed) return false;
-              try {
-                const categories = JSON.parse(seller.categoriesServed);
-                if (!Array.isArray(categories)) return false;
-                const categoryMatch = categories.some((cat: string) => {
-                  const v = String(cat).trim();
-                  // Match by categoryId (canonical)
-                  if (v === rfqCategoryId) return true;
-                  // Match by label (legacy)
-                  return v.toLowerCase().trim() === (categoryLabel || "").toLowerCase().trim();
-                });
-                if (!categoryMatch) return false;
+            let supplierOrgIds: string[] = categoryLinks.map(link => link.supplierId);
 
-                // If location is provided, filter by serviceArea
-                if (rfqLocation && seller.serviceArea) {
-                  try {
-                    const serviceAreas = JSON.parse(seller.serviceArea);
-                    if (Array.isArray(serviceAreas) && serviceAreas.length > 0) {
-                      // Check if RFQ location matches any service area
-                      const locationMatch = serviceAreas.some((area: string) => {
-                        const normalizedArea = String(area).toLowerCase().trim();
-                        const normalizedLocation = rfqLocation.toLowerCase().trim();
-                        return normalizedLocation.includes(normalizedArea) || normalizedArea.includes(normalizedLocation);
-                      });
-                      return locationMatch;
-                    }
-                  } catch {
-                    // Invalid serviceArea JSON, include seller (don't filter by location)
-                  }
-                }
+            // Legacy fallback: if no category links found, try to find suppliers by category label
+            if (supplierOrgIds.length === 0) {
+              const suppliersByLabel = await prisma.supplier.findMany({
+                where: {
+                  category: categoryLabel.toUpperCase(), // ROOFING, etc. (display/legacy uppercase form)
+                },
+                select: {
+                  id: true,
+                },
+              });
+              supplierOrgIds = suppliersByLabel.map(s => s.id);
+            }
 
-                return true; // Category matches, location check passed or not applicable
-              } catch {
-                return false;
+            console.log("[RFQ_BROADCAST_MATCHED_SUPPLIER_ORGS]", {
+              rfqId: created.id,
+              categoryId: rfqCategoryId,
+              supplierOrgCount: supplierOrgIds.length,
+            });
+
+            // STEP 2: For each supplier org, check if it has ACTIVE members
+            // Claimed suppliers route through SupplierMember users
+            // Unclaimed suppliers route through Supplier.email invite delivery
+            const activeMembers = supplierOrgIds.length > 0
+              ? await prisma.supplierMember.findMany({
+                  where: {
+                    supplierId: { in: supplierOrgIds },
+                    status: "ACTIVE",
+                  },
+                  include: {
+                    user: {
+                      select: {
+                        id: true,
+                        email: true,
+                        fullName: true,
+                        companyName: true,
+                      },
+                    },
+                    supplier: {
+                      select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                      },
+                    },
+                  },
+                })
+              : [];
+
+            // Group members by supplier org
+            const orgMembersMap = new Map<string, typeof activeMembers>();
+            for (const member of activeMembers) {
+              const orgId = member.supplierId;
+              if (!orgMembersMap.has(orgId)) {
+                orgMembersMap.set(orgId, []);
               }
+              orgMembersMap.get(orgId)!.push(member);
+            }
+
+            // Get supplier details for all matched orgs (needed for unclaimed orgs)
+            const supplierOrgs = await prisma.supplier.findMany({
+              where: {
+                id: { in: supplierOrgIds },
+              },
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            });
+
+            // Build recipient list: claimed suppliers (from members) + unclaimed suppliers (from Supplier.email)
+            const recipientMap = new Map<string, {
+              userId?: string; // Only for claimed suppliers
+              email: string;
+              supplierId: string;
+              displayName: string;
+              isUnclaimed: boolean; // true for unclaimed suppliers
+            }>();
+
+            // Add claimed supplier recipients (from ACTIVE members)
+            for (const member of activeMembers) {
+              if (!member.user.email) continue; // Skip members without email
+              const key = `${member.supplierId}:${member.user.email}`;
+              if (recipientMap.has(key)) continue; // Already added
+
+              recipientMap.set(key, {
+                userId: member.user.id,
+                email: member.user.email,
+                supplierId: member.supplierId,
+                displayName: member.user.fullName || member.user.companyName || member.user.email || "Supplier",
+                isUnclaimed: false,
+              });
+            }
+
+            // Add unclaimed supplier recipients (from Supplier.email)
+            for (const supplier of supplierOrgs) {
+              // Skip if this org already has active members (it's claimed)
+              if (orgMembersMap.has(supplier.id)) continue;
+              
+              // Skip if supplier has no email
+              if (!supplier.email) continue;
+
+              const key = `${supplier.id}:${supplier.email}`;
+              if (recipientMap.has(key)) continue; // Already added
+
+              recipientMap.set(key, {
+                email: supplier.email,
+                supplierId: supplier.id,
+                displayName: supplier.name || supplier.email || "Supplier",
+                isUnclaimed: true,
+              });
+            }
+
+            recipients = Array.from(recipientMap.values());
+
+            const claimedCount = recipients.filter(r => !r.isUnclaimed).length;
+            const unclaimedCount = recipients.filter(r => r.isUnclaimed).length;
+
+            console.log("[RFQ_BROADCAST_CLAIMED_RECIPIENTS]", {
+              rfqId: created.id,
+              count: claimedCount,
+            });
+
+            console.log("[RFQ_BROADCAST_UNCLAIMED_RECIPIENTS]", {
+              rfqId: created.id,
+              count: unclaimedCount,
             });
           }
 
-          // Log recipient resolution
-          console.log("[RFQ_NOTIFICATION_DISPATCH]", {
-            rfqId: created.id,
-            recipientCount: matchingSellers.length,
-            routing: validatedPayload.targetSupplierIds && validatedPayload.targetSupplierIds.length > 0 
-              ? "targetSupplierIds" 
-              : "category+location",
-          });
+          // Log recipient resolution (for direct RFQs only - broadcast logging is above)
+          if (normalizedTargetSupplierIds && normalizedTargetSupplierIds.length > 0) {
+            console.log("[RFQ_NOTIFICATION_DISPATCH]", {
+              rfqId: created.id,
+              matchingSellerCount: matchingSellers.length,
+              supplierOrgCount: normalizedTargetSupplierIds.length,
+              recipientCount: recipients.length,
+              routing: "targetSupplierIds",
+            });
+          }
 
-          // STEP 2: Create Notification rows for each supplier (with idempotency check)
+          // STEP 3: Create Notification rows for claimed suppliers only (unclaimed suppliers don't have userId)
+          // Unclaimed suppliers receive email invites but no in-app notifications (they don't have accounts yet)
           const { createNotification } = await import("@/lib/notifications/createNotification.server");
           const notificationPromises: Promise<string | null>[] = [];
 
-          // Batch check for existing notifications (more efficient)
-          const sellerIds = matchingSellers.map(s => s.id);
-          const existingNotifications = await prisma.notification.findMany({
-            where: {
-              userId: { in: sellerIds },
-              rfqId: created.id,
-              type: "RFQ_CREATED",
-            },
-            select: {
-              userId: true,
-            },
-          });
+          // Filter to only claimed recipients (those with userId)
+          const claimedRecipients = recipients.filter(r => r.userId);
 
-          const existingNotificationUserIds = new Set(
-            existingNotifications.map(n => n.userId)
-          );
-
-          for (const seller of matchingSellers) {
-            // IDEMPOTENCY CHECK: Skip if notification already exists
-            if (existingNotificationUserIds.has(seller.id)) {
-              // Notification already exists, skip creation
-              notificationPromises.push(Promise.resolve(null));
-              continue;
-            }
-
-            // Create notification
-            notificationPromises.push(
-              createNotification({
-                userId: seller.id,
-                type: "RFQ_CREATED", // Use RFQ_CREATED as specified
+          if (claimedRecipients.length > 0) {
+            // Batch check for existing notifications (more efficient)
+            const recipientUserIds = claimedRecipients.map(r => r.userId!);
+            const existingNotifications = await prisma.notification.findMany({
+              where: {
+                userId: { in: recipientUserIds },
                 rfqId: created.id,
-                data: {
-                  rfqNumber: created.rfqNumber,
-                  title: validatedPayload.title,
-                  category: categoryLabel,
-                  buyerName: user.fullName || user.companyName || "Buyer",
-                },
-              }).catch((error) => {
-                console.error("[RFQ_NOTIFICATION_CREATE_FAILED]", {
-                  rfqId: created.id,
-                  supplierId: seller.id,
-                  error: error instanceof Error ? error.message : String(error),
-                });
-                return null; // Return null on error instead of throwing
-              })
+                type: "RFQ_CREATED",
+              },
+              select: {
+                userId: true,
+              },
+            });
+
+            const existingNotificationUserIds = new Set(
+              existingNotifications.map(n => n.userId)
             );
+
+            for (const recipient of claimedRecipients) {
+              // IDEMPOTENCY CHECK: Skip if notification already exists
+              if (existingNotificationUserIds.has(recipient.userId!)) {
+                // Notification already exists, skip creation
+                notificationPromises.push(Promise.resolve(null));
+                continue;
+              }
+
+              // Create notification
+              notificationPromises.push(
+                createNotification({
+                  userId: recipient.userId!,
+                  type: "RFQ_CREATED",
+                  rfqId: created.id,
+                  data: {
+                    rfqNumber: created.rfqNumber,
+                    title: validatedPayload.title,
+                    category: categoryLabel,
+                    buyerName: user.fullName || user.companyName || "Buyer",
+                  },
+                }).catch((error) => {
+                  console.error("[RFQ_NOTIFICATION_CREATE_FAILED]", {
+                    rfqId: created.id,
+                    userId: recipient.userId,
+                    supplierId: recipient.supplierId,
+                    error: error instanceof Error ? error.message : String(error),
+                  });
+                  return null; // Return null on error instead of throwing
+                })
+              );
+            }
           }
 
           // Create all notifications in parallel (don't block on failures)
@@ -470,67 +657,105 @@ export async function POST(request: NextRequest) {
             r => r.status === "fulfilled" && r.value !== null
           ).length;
 
-          // STEP 3: Dispatch email by calling the existing RFQ-created email logic
-          // Use idempotency key: `rfq:{rfq.id}:supplier:{supplier.id}`
+          // STEP 4: Dispatch email to both claimed and unclaimed suppliers
+          // Claimed suppliers → rfq-created notification email
+          // Unclaimed suppliers → onboarding invite email with account creation link
           const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
           const emailPromises: Promise<{ ok: boolean; error?: string }>[] = [];
 
-          for (const seller of matchingSellers) {
-            if (!seller.email) continue; // Skip sellers without email
+          for (const recipient of recipients) {
+            if (!recipient.email) continue; // Skip recipients without email
 
-            // IDEMPOTENCY KEY: rfq:{rfq.id}:supplier:{supplier.id}
-            const idempotencyKey = `rfq:${created.id}:supplier:${seller.id}`;
-
-            const emailPromise = fetch(`${baseUrl}/api/notifications/rfq-created`, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "Idempotency-Key": idempotencyKey,
-              },
-              body: JSON.stringify({
-                rfq: {
-            id: created.id,
-                  buyerName: user.fullName || user.companyName || "Buyer",
-                  category: categoryLabel,
-            title: validatedPayload.title,
-                  description: validatedPayload.notes || undefined,
-            createdAt: created.createdAt.toISOString(),
-                  dueAt: validatedPayload.terms.requestedDate,
-                  location: validatedPayload.terms.location,
-                  urlPath: `/seller/feed?category=${encodeURIComponent(categoryLabel)}`,
-                },
-                supplier: {
-                  id: seller.id,
-                  email: seller.email,
-                  name: seller.fullName || seller.companyName || undefined,
-                },
-              }),
-            })
-              .then(async (response) => {
-                const result = await response.json();
-                if (result.ok) {
-                  // Log exactly once per supplier
-                  console.log("[RFQ_NOTIFICATION_SENT]", {
+            // Branch: unclaimed suppliers get onboarding email, claimed suppliers get RFQ notification
+            if (recipient.isUnclaimed === true) {
+              // Unclaimed supplier: send onboarding email with invite token
+              const onboardingPromise = sendSupplierOnboardingEmail({
+                to: recipient.email,
+                supplierName: recipient.displayName,
+                buyerName: user.fullName || user.companyName || "Buyer",
+                messagePreview: validatedPayload.title,
+                supplierId: recipient.supplierId,
+                rfqId: created.id,
+              })
+                .then(() => {
+                  console.log("[RFQ_UNCLAIMED_SUPPLIER_INVITE_SENT]", {
                     rfqId: created.id,
-                    supplierId: seller.id,
-                    email: seller.email,
+                    supplierId: recipient.supplierId,
+                    email: recipient.email,
                   });
                   return { ok: true };
-                } else {
-                  throw new Error(result.error || "Email send failed");
-                }
-              })
-              .catch((error) => {
-                console.error("[RFQ_EMAIL_FAILED]", {
-                  rfqId: created.id,
-                  supplierId: seller.id,
-                  supplierEmail: seller.email,
-                  error: error instanceof Error ? error.message : String(error),
+                })
+                .catch((error) => {
+                  console.error("[RFQ_UNCLAIMED_SUPPLIER_INVITE_FAILED]", {
+                    rfqId: created.id,
+                    supplierId: recipient.supplierId,
+                    email: recipient.email,
+                    error: error instanceof Error ? error.message : String(error),
+                  });
+                  return { ok: false, error: error.message };
                 });
-                return { ok: false, error: error.message };
-              });
 
-            emailPromises.push(emailPromise);
+              emailPromises.push(onboardingPromise);
+            } else {
+              // Claimed supplier: send RFQ notification email via existing endpoint
+              // IDEMPOTENCY KEY: rfq:{rfq.id}:supplier:{supplierOrgId}:to:{recipientEmail}
+              const idempotencyKey = `rfq:${created.id}:supplier:${recipient.supplierId}:to:${recipient.email}`;
+
+              const emailPromise = fetch(`${baseUrl}/api/notifications/rfq-created`, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "Idempotency-Key": idempotencyKey,
+                },
+                body: JSON.stringify({
+                  rfq: {
+                    id: created.id,
+                    buyerName: user.fullName || user.companyName || "Buyer",
+                    category: categoryLabel,
+                    title: validatedPayload.title,
+                    description: validatedPayload.notes || undefined,
+                    createdAt: created.createdAt.toISOString(),
+                    dueAt: validatedPayload.terms.requestedDate,
+                    location: validatedPayload.terms.location,
+                    urlPath: `/seller/feed?category=${encodeURIComponent(categoryLabel)}`,
+                  },
+                  supplier: {
+                    id: recipient.supplierId, // Use supplier org ID
+                    email: recipient.email, // Use recipient email (member email for claimed)
+                    name: recipient.displayName,
+                  },
+                }),
+              })
+                .then(async (response) => {
+                  const result = await response.json();
+                  if (result.ok) {
+                    // Log exactly once per recipient
+                    console.log("[RFQ_NOTIFICATION_SENT]", {
+                      rfqId: created.id,
+                      userId: recipient.userId || null,
+                      supplierId: recipient.supplierId,
+                      email: recipient.email,
+                      isUnclaimed: false,
+                    });
+                    return { ok: true };
+                  } else {
+                    throw new Error(result.error || "Email send failed");
+                  }
+                })
+                .catch((error) => {
+                  console.error("[RFQ_EMAIL_FAILED]", {
+                    rfqId: created.id,
+                    userId: recipient.userId || null,
+                    supplierId: recipient.supplierId,
+                    recipientEmail: recipient.email,
+                    isUnclaimed: false,
+                    error: error instanceof Error ? error.message : String(error),
+                  });
+                  return { ok: false, error: error.message };
+                });
+
+              emailPromises.push(emailPromise);
+            }
           }
 
           // Send all emails in parallel (don't block on failures)
@@ -540,7 +765,7 @@ export async function POST(request: NextRequest) {
 
           console.log("[RFQ_NOTIFICATION_DISPATCH_COMPLETE]", {
             rfqId: created.id,
-            recipientCount: matchingSellers.length,
+            recipientCount: recipients.length,
             notificationsCreated,
             emailsSent,
             emailsFailed,
@@ -560,13 +785,7 @@ export async function POST(request: NextRequest) {
       rfqId: created.id,
     });
     
-    return NextResponse.json(
-      responseBody,
-      {
-        status: 201, // Created
-        headers: { "Content-Type": "application/json" },
-      }
-    );
+    return jsonOk(responseBody, 201);
   });
 }
 

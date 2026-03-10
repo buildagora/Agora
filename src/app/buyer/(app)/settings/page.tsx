@@ -15,33 +15,78 @@ export default function BuyerSettingsPage() {
 
   // Company/Profile state
   const [companyName, setCompanyName] = useState("");
+  const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [deliveryAddress, setDeliveryAddress] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   useEffect(() => {
     setMounted(true);
     if (status === "loading") return;
     if (!user || user.role !== "BUYER") {
-      router.push("/buyer/agent");
+      router.push("/buyer/dashboard");
       return;
     }
 
-    // Load user data
-    if (user.companyName) {
-      setCompanyName(user.companyName);
-    }
-    // TODO: Load phone, deliveryAddress from API when backend is ready
+    // Load user data from API
+    loadUserData();
   }, [user, status, router]);
 
+  const loadUserData = async () => {
+    try {
+      const response = await fetch("/api/buyer/settings", {
+        credentials: "include",
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data.companyName) setCompanyName(data.companyName);
+        if (data.fullName) setFullName(data.fullName);
+        if (data.phone) setPhone(data.phone);
+      }
+    } catch (error) {
+      console.error("Failed to load user data:", error);
+    }
+  };
+
   const handleSignOut = async () => {
-    await signOut();
-    // After sign out, redirect to buyer login (not /auth/sign-in) to preserve routing consistency
-    router.push("/buyer/login");
+    const redirectPath = await signOut();
+    router.replace(redirectPath);
+
   };
 
   const handleSaveProfile = async () => {
-    // TODO: Wire to API when backend is ready
-    console.log("Save profile:", { companyName, phone, deliveryAddress });
+    setIsSaving(true);
+    setSaveError(null);
+    setSaveSuccess(false);
+
+    try {
+      const response = await fetch("/api/buyer/settings", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          companyName: companyName.trim() || null,
+          fullName: fullName.trim() || null,
+          phone: phone.trim() || null,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.message || "Failed to save profile");
+      }
+
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : "Failed to save profile");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   if (!mounted || status === "loading") {
@@ -112,7 +157,13 @@ export default function BuyerSettingsPage() {
                   placeholder="Enter company name"
                 />
                 <Input
-                  label="Phone number"
+                  label="Full name"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="Enter full name"
+                />
+                <Input
+                  label="Phone"
                   type="tel"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
@@ -130,18 +181,29 @@ export default function BuyerSettingsPage() {
                     placeholder="Enter default delivery address"
                   />
                 </div>
+                {saveError && (
+                  <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded">
+                    <p className="text-sm text-red-600 dark:text-red-400">
+                      {saveError}
+                    </p>
+                  </div>
+                )}
+                {saveSuccess && (
+                  <div className="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded">
+                    <p className="text-sm text-green-600 dark:text-green-400">
+                      Profile updated successfully
+                    </p>
+                  </div>
+                )}
                 <div className="pt-2">
                   <Button
                     variant="primary"
                     onClick={handleSaveProfile}
-                    disabled={true}
+                    disabled={isSaving}
                     className="w-full sm:w-auto"
                   >
-                    Save changes
+                    {isSaving ? "Saving..." : "Save changes"}
                   </Button>
-                  <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
-                    Profile updates will be available soon
-                  </p>
                 </div>
               </div>
             </CardContent>

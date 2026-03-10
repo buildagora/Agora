@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { Suspense, useEffect, useState, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { signOut } from "@/lib/auth/client";
@@ -16,7 +16,7 @@ import AgoraLogo from "@/components/brand/AgoraLogo";
  * Shown when a user tries to access a route that requires a different role.
  * Preserves the current session until the user explicitly chooses to switch.
  */
-export default function SwitchRolePage() {
+function SwitchRolePageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, status } = useAuth();
@@ -65,9 +65,12 @@ export default function SwitchRolePage() {
     // If authenticated
     // If targetRole is invalid/null: redirect to dashboard
     if (!normalizedTargetRole) {
+      if (!user.activeRole) {
+        throw new Error("User activeRole is missing");
+      }
       return getDashboardForRole(
-        user.role,
-        user.role === "SELLER" ? {
+        user.activeRole,
+        user.activeRole === "SELLER" ? {
           categoriesServed: user.categoriesServed,
           companyName: user.companyName,
           fullName: user.fullName,
@@ -75,14 +78,17 @@ export default function SwitchRolePage() {
       );
     }
 
-    // If user.role === targetRole: redirect to returnTo or dashboard
-    if (user.role === normalizedTargetRole) {
+    // If user.activeRole === targetRole: redirect to returnTo or dashboard
+    if (user.activeRole === normalizedTargetRole) {
       if (sanitizedReturnTo) {
         return sanitizedReturnTo;
       }
+      if (!user.activeRole) {
+        throw new Error("User activeRole is missing");
+      }
       return getDashboardForRole(
-        user.role,
-        user.role === "SELLER" ? {
+        user.activeRole,
+        user.activeRole === "SELLER" ? {
           categoriesServed: user.categoriesServed,
           companyName: user.companyName,
           fullName: user.fullName,
@@ -90,7 +96,7 @@ export default function SwitchRolePage() {
       );
     }
 
-    // If user.role !== targetRole: return null to show role mismatch UI (no auto-redirect)
+    // If user.activeRole !== targetRole: return null to show role mismatch UI (no auto-redirect)
     return null;
   }, [status, user, normalizedTargetRole, sanitizedReturnTo]);
 
@@ -123,16 +129,19 @@ export default function SwitchRolePage() {
   // Only render interactive UI when:
   // - user is authenticated
   // - targetRole exists
-  // - user.role !== targetRole
-  if (!user || !normalizedTargetRole || user.role === normalizedTargetRole) {
+  // - user.activeRole !== targetRole
+  if (!user || !normalizedTargetRole || user.activeRole === normalizedTargetRole) {
     return null;
   }
 
   const handleContinue = () => {
     // Redirect to dashboard for current role
+    if (!user.activeRole) {
+      throw new Error("User activeRole is missing");
+    }
     const dashboardPath = getDashboardForRole(
-      user.role,
-      user.role === "SELLER" ? {
+      user.activeRole,
+      user.activeRole === "SELLER" ? {
         categoriesServed: user.categoriesServed,
         companyName: user.companyName,
         fullName: user.fullName,
@@ -149,22 +158,42 @@ export default function SwitchRolePage() {
     setIsSwitching(true);
     
     try {
-      // Logout current session
-      await signOut();
-      
-      // Redirect to sign-in with target role and returnTo
-      const params = new URLSearchParams();
-      params.set("role", normalizedTargetRole.toLowerCase());
-      if (sanitizedReturnTo) {
-        params.set("returnTo", sanitizedReturnTo);
+      // Call server API to switch role (updates JWT with new activeRole)
+      const response = await fetch("/api/auth/switch-role", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({ targetRole: normalizedTargetRole }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to switch role");
       }
-      const loginPath = `/auth/sign-in?${params.toString()}`;
+
+      const data = await response.json();
       
-      router.replace(loginPath);
+      // Role switch successful - redirect to returnTo or dashboard
+      if (sanitizedReturnTo) {
+        router.replace(sanitizedReturnTo);
+      } else {
+        // Redirect to dashboard for the new role
+        const dashboardPath = getDashboardForRole(
+          normalizedTargetRole,
+          normalizedTargetRole === "SELLER" ? {
+            categoriesServed: user.categoriesServed,
+            companyName: user.companyName,
+            fullName: user.fullName,
+          } : undefined
+        );
+        router.replace(dashboardPath);
+      }
     } catch (error) {
       console.error("[SWITCH_ROLE_ERROR]", error);
       setIsSwitching(false);
-      // Still redirect even if logout fails
+      // On error, still try to redirect (user may need to re-login)
       const params = new URLSearchParams();
       params.set("role", normalizedTargetRole.toLowerCase());
       if (sanitizedReturnTo) {
@@ -175,7 +204,7 @@ export default function SwitchRolePage() {
     }
   };
 
-  const currentRoleLabel = user.role === "BUYER" ? "Buyer" : "Seller";
+  const currentRoleLabel = user.activeRole === "BUYER" ? "Buyer" : "Seller";
   const targetRoleLabel = normalizedTargetRole === "BUYER" ? "Buyer" : "Seller";
 
   return (
@@ -225,5 +254,13 @@ export default function SwitchRolePage() {
         </Card>
       </div>
     </div>
+  );
+}
+
+export default function SwitchRolePage() {
+  return (
+    <Suspense fallback={null}>
+      <SwitchRolePageInner />
+    </Suspense>
   );
 }

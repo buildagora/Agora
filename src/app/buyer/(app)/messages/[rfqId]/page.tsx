@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import Link from "next/link";
 import { useEffect, useState, useRef } from "react";
 import { useParams, useSearchParams } from "next/navigation";
@@ -13,7 +14,10 @@ import {
   BuyerMessageIntent,
   getUnreadCountForThread,
 } from "@/lib/messages";
-import { autoResolveBuyerIntent, createAutoResponse } from "@/lib/autoResolution";
+// DO NOT IMPORT server-only modules here
+// Use client-safe version that calls API routes
+// Agent temporarily disabled - auto-resolution removed
+// import { autoResolveBuyerIntent } from "@/lib/autoResolution.client";
 import { setRequestReviewStatus } from "@/lib/request";
 import { useToast } from "@/components/Toast";
 import Button from "@/components/ui2/Button";
@@ -29,7 +33,7 @@ interface RFQ {
   awardedBidId?: string;
 }
 
-export default function BuyerMessagesPage() {
+function BuyerMessagesPageInner() {
   const params = useParams();
   const searchParams = useSearchParams();
   const rfqId = params.rfqId as string;
@@ -209,8 +213,8 @@ export default function BuyerMessagesPage() {
       // NEW FOUNDATION: Mark as read via API
       if (user) {
         // TODO: Call API to mark thread as read when Message model exists
-        // For now, just reload data
-        loadData();
+        // Do NOT call loadData() here - it causes an infinite refetch loop
+        // The initial load effect handles data loading
       }
     }
   }, [threadId, pageState]);
@@ -336,51 +340,26 @@ export default function BuyerMessagesPage() {
       // NOTE: Review status should be managed server-side via API
       await setRequestReviewStatus(requestId, "pending_review");
 
-      // Try auto-resolution first
-      const autoResolution = autoResolveBuyerIntent(savedMessage, targetSellerId);
+      // Agent temporarily disabled - always escalate to seller
+      // No auto-resolution - basic messaging only
+      createSystemMessage(
+        threadId,
+        "Request received. Supplier reviewing.",
+        {
+          eventType: "BUYER_MESSAGE_ACKNOWLEDGED",
+          requestId,
+          buyerId,
+          sellerId: targetSellerId,
+          isAcknowledgement: true,
+          needsEscalation: true,
+        }
+      );
 
-      if (!autoResolution.shouldEscalate && autoResolution.autoResponse) {
-        // Auto-resolved: create auto-response and skip seller notification
-        createAutoResponse(threadId, savedMessage, autoResolution.autoResponse);
+      // Mark acknowledgement as read via API (if supported)
+      // TODO: When message read API is implemented, mark acknowledgement as read here
 
-        // Still create acknowledgement for buyer peace of mind
-        createSystemMessage(
-          threadId,
-          "Request received. Supplier reviewing.",
-          {
-            eventType: "BUYER_MESSAGE_ACKNOWLEDGED",
-            requestId,
-            buyerId,
-            sellerId: targetSellerId,
-            isAcknowledgement: true,
-            isAutoResolved: true,
-          }
-        );
-
-        // Mark acknowledgement as read via API (if supported)
-        // TODO: When message read API is implemented, mark acknowledgement as read here
-      } else {
-        // Needs escalation: create acknowledgement and notify seller
-        createSystemMessage(
-          threadId,
-          "Request received. Supplier reviewing.",
-          {
-            eventType: "BUYER_MESSAGE_ACKNOWLEDGED",
-            requestId,
-            buyerId,
-            sellerId: targetSellerId,
-            isAcknowledgement: true,
-            needsEscalation: true,
-            escalationReason: autoResolution.reason,
-          }
-        );
-
-        // Mark acknowledgement as read via API (if supported)
-        // TODO: When message read API is implemented, mark acknowledgement as read here
-
-        // DO NOT send real-time notification to seller
-        // Messages will be batched into summaries shown in Action Queue only
-      }
+      // DO NOT send real-time notification to seller
+      // Messages will be batched into summaries shown in Action Queue only
 
       // Removed window event dispatch - notifications refresh via API fetch
 
@@ -856,6 +835,14 @@ export default function BuyerMessagesPage() {
           </div>
         </div>
       </div>
+  );
+}
+
+export default function BuyerMessagesPage() {
+  return (
+    <Suspense fallback={null}>
+      <BuyerMessagesPageInner />
+    </Suspense>
   );
 }
 

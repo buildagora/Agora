@@ -97,17 +97,42 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Set activeRole: use database role (for now, users have single role in DB)
+    const activeRole: "BUYER" | "SELLER" = (user.role === "BUYER" || user.role === "SELLER") 
+      ? user.role 
+      : "BUYER";
+
     // Mint a JWT the same way as normal login (same secret, same claims)
-    const token = await signAuthToken({ userId: user.id });
+    const token = await signAuthToken({ userId: user.id, activeRole });
+
+    // Parse categoriesServed for response
+    let categoriesServed: string[] = [];
+    if (user.categoriesServed) {
+      try {
+        categoriesServed = JSON.parse(user.categoriesServed);
+      } catch {
+        categoriesServed = [];
+      }
+    }
+
+    const userRoles: ("BUYER" | "SELLER")[] = [activeRole]; // For now, single role
 
     // Create response with user data (same format as normal login)
+    // CRITICAL: Always include both `role` (alias) and `activeRole` for backward compatibility
     const response = NextResponse.json(
       {
         ok: true,
         user: {
           id: user.id,
           email: user.email,
-          role: user.role as "BUYER" | "SELLER",
+          role: activeRole, // Alias for backward compatibility
+          activeRole,
+          roles: userRoles,
+          categoriesServed,
+          companyName: user.companyName || undefined,
+          fullName: user.fullName || undefined,
+          phone: user.phone || undefined,
+          serviceArea: user.serviceArea || undefined,
         },
       },
       {

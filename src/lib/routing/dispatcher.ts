@@ -2,10 +2,9 @@
  * RFQ Dispatcher - Sends RFQ to suppliers with idempotency
  */
 
-import type { DraftRFQ, RoutingPlan, Supplier } from "./types";
+import type { DraftRFQ, RoutingPlan, Supplier, BuyerProfile } from "./types";
 import { getEligibleSuppliers, type EligibilityInput } from "./eligibility";
-import type { BuyerProfile } from "./types";
-import { categoryIdToLabel } from "@/lib/categoryIds";
+import { categoryIdToLabel, type CategoryId } from "@/lib/categoryIds";
 // Removed storage imports - supplier dispatch will be API-backed
 // import { getSuppliers } from "@/lib/storage";
 // import { hasSent, markSent } from "@/lib/storage";
@@ -30,7 +29,7 @@ export async function dispatchRFQ(
     throw new Error("Draft must have categoryId and fulfillmentType for dispatch");
   }
 
-  const currentUser = getCurrentUser();
+  const currentUser = await getCurrentUser();
   if (!currentUser) {
     throw new Error("No current user");
   }
@@ -56,7 +55,7 @@ export async function dispatchRFQ(
     // For broadcast, we want ALL eligible suppliers, not just preferred
     // Use "best_price" intent to get all eligible suppliers
     const eligibilityInput: EligibilityInput = {
-      categoryId: draft.categoryId!,
+      categoryId: draft.categoryId as CategoryId,
       fulfillmentType: draft.fulfillmentType!,
       location: draft.location,
       priority: "best_price",
@@ -123,7 +122,9 @@ export async function dispatchRFQ(
     try {
       // Build notification payload with Job Name/PO as primary title
       // CRITICAL: Use categoryId only - derive label for display only
-      const categoryLabel = draft.categoryId ? (categoryIdToLabel[draft.categoryId] || "Materials") : "Materials";
+      const categoryLabel = draft.categoryId && draft.categoryId in categoryIdToLabel
+        ? (categoryIdToLabel[draft.categoryId as CategoryId] || "Materials")
+        : "Materials";
       const notificationTitle = draft.jobNameOrPo || draft.title || `${categoryLabel} Materials`;
       
       const notificationRfq = {
@@ -168,7 +169,9 @@ export async function dispatchRFQ(
 
   // Comprehensive dispatch summary logging (always log, not just dev)
   // CRITICAL: Use categoryId only - derive label for display only
-  const categoryLabel = draft.categoryId ? (categoryIdToLabel[draft.categoryId] || "Unknown") : "Unknown";
+  const categoryLabel = draft.categoryId && draft.categoryId in categoryIdToLabel
+    ? (categoryIdToLabel[draft.categoryId as CategoryId] || "Unknown")
+    : "Unknown";
   console.log("📧 DISPATCH_SUMMARY", {
     rfqId: draft.id,
     jobNameOrPo: draft.jobNameOrPo,

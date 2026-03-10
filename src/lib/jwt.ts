@@ -17,10 +17,11 @@ function getJwtSecret(): Uint8Array {
 
 /**
  * Sign an authentication token for a user
+ * activeRole is REQUIRED and must be either "BUYER" or "SELLER"
  */
-export async function signAuthToken(payload: { userId: string }): Promise<string> {
+export async function signAuthToken(payload: { userId: string; activeRole: "BUYER" | "SELLER" }): Promise<string> {
   const secret = getJwtSecret();
-  return await new SignJWT({ userId: payload.userId })
+  return await new SignJWT({ userId: payload.userId, activeRole: payload.activeRole })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime("7d")
@@ -29,15 +30,19 @@ export async function signAuthToken(payload: { userId: string }): Promise<string
 
 /**
  * Verify an authentication token
- * Returns the payload if valid, null otherwise
+ * Returns the payload with userId and activeRole if valid, null otherwise
  */
-export async function verifyAuthToken(token: string): Promise<{ userId: string } | null> {
+export async function verifyAuthToken(token: string): Promise<{ userId: string; activeRole: "BUYER" | "SELLER" } | null> {
   try {
     const secret = getJwtSecret();
     const { payload } = await jwtVerify(token, secret);
-    if (typeof payload.userId === "string") {
-      return { userId: payload.userId };
+    if (
+      typeof payload.userId === "string" &&
+      (payload.activeRole === "BUYER" || payload.activeRole === "SELLER")
+    ) {
+      return { userId: payload.userId, activeRole: payload.activeRole };
     }
+    // Legacy token without activeRole - invalid
     return null;
   } catch {
     return null;

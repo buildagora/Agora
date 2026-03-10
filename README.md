@@ -12,6 +12,8 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 **Important:** Always run commands from the app directory (`/agora/agora`), not the repo root.
 
+**Static Assets:** All static files (images, fonts, etc.) must be placed in `./agora/public/` because Next.js serves static assets only from the app's `public` directory. The repo root `/public` folder is not used by Next.js.
+
 1. **Install dependencies:**
    ```bash
    cd agora

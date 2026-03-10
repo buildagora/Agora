@@ -47,15 +47,21 @@ export async function getCurrentUserFromRequest(request: Request): Promise<User 
         });
 
         if (devUser) {
-          // Map Prisma user to User type (same format as cookie auth)
-          return {
-            id: devUser.id,
-            email: devUser.email,
-            fullName: devUser.fullName || "",
-            companyName: devUser.companyName || "",
-            role: (devUser.role as UserRole) || "BUYER",
-            createdAt: devUser.createdAt.toISOString(),
-          };
+    // For dev header auth, use database role as activeRole
+    const dbRole = (devUser.role as UserRole) || "BUYER";
+    const roles: UserRole[] = [dbRole];
+
+    // Map Prisma user to User type (same format as cookie auth)
+    return {
+      id: devUser.id,
+      email: devUser.email,
+      fullName: devUser.fullName || "",
+      companyName: devUser.companyName || "",
+      role: dbRole, // Legacy field
+      activeRole: dbRole, // For dev header, use DB role
+      roles, // All roles user has
+      createdAt: devUser.createdAt.toISOString(),
+    };
         }
       }
     }
@@ -100,14 +106,23 @@ export async function getCurrentUserFromRequest(request: Request): Promise<User 
       return null;
     }
 
+    // activeRole comes from JWT token (canonical source of truth)
+    const activeRole = payload.activeRole;
+    const dbRole = (dbUser.role as UserRole) || "BUYER";
+    // For now, users have single role in DB, so roles array is just [dbRole]
+    // TODO: If users can have multiple roles, derive from database
+    const roles: UserRole[] = [dbRole];
+
     // Map Prisma user to User type
-    // Server determines role - client must accept it
+    // activeRole comes from JWT, not database
     return {
       id: dbUser.id,
       email: dbUser.email,
       fullName: dbUser.fullName || "",
       companyName: dbUser.companyName || "",
-      role: (dbUser.role as UserRole) || "BUYER",
+      role: dbRole, // Legacy field
+      activeRole, // REQUIRED - from JWT
+      roles, // All roles user has
       createdAt: dbUser.createdAt.toISOString(),
     };
   } catch (error) {
@@ -154,13 +169,19 @@ export async function requireCurrentUserFromRequest(request: Request): Promise<U
       throw new Error("DEV_AUTH_USER_NOT_FOUND");
     }
 
+    // For dev header auth, use database role as activeRole
+    const dbRole = (devUser.role as UserRole) || "BUYER";
+    const roles: UserRole[] = [dbRole];
+
     // Map Prisma user to User type (same format as cookie auth)
     return {
       id: devUser.id,
       email: devUser.email,
       fullName: devUser.fullName || "",
       companyName: devUser.companyName || "",
-      role: (devUser.role as UserRole) || "BUYER",
+      role: dbRole, // Legacy field
+      activeRole: dbRole, // For dev header, use DB role
+      roles, // All roles user has
       createdAt: devUser.createdAt.toISOString(),
     };
   }

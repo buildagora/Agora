@@ -19,8 +19,8 @@ const CATEGORY_IDS = Object.keys(categoryIdToLabel) as CategoryId[];
  * Get buyer profile from current user
  * Reads preferred suppliers from storage and resolves references
  */
-export function getBuyerProfile(): BuyerProfile {
-  const currentUser = getCurrentUser();
+export async function getBuyerProfile(): Promise<BuyerProfile> {
+  const currentUser = await getCurrentUser();
   if (!currentUser) {
     throw new Error("No current user");
   }
@@ -88,13 +88,16 @@ function convertSupplier(storageSupplier: StorageSupplier): Supplier {
   if (storageSupplier.categoryIds && storageSupplier.categoryIds.length > 0) {
     for (const catId of storageSupplier.categoryIds) {
       if (catId && !seenIds.has(catId)) {
-        categoryIds.push(catId);
-        seenIds.add(catId);
-        // Also add display label for backward compatibility
-        const label = categoryIdToLabel[catId];
-        if (label && !seenLabels.has(label)) {
-          normalizedCategories.push(label as Category);
-          seenLabels.add(label);
+        // Type guard: ensure catId is a valid CategoryId
+        if (catId in categoryIdToLabel) {
+          categoryIds.push(catId);
+          seenIds.add(catId);
+          // Also add display label for backward compatibility
+          const label = categoryIdToLabel[catId as CategoryId];
+          if (label && !seenLabels.has(label)) {
+            normalizedCategories.push(label as Category);
+            seenLabels.add(label);
+          }
         }
       }
     }
@@ -107,10 +110,12 @@ function convertSupplier(storageSupplier: StorageSupplier): Supplier {
       categoryIds.push(categoryId);
       seenIds.add(categoryId);
       // Also add display label for backward compatibility (from categoryId, not normalized label)
-      const label = categoryIdToLabel[categoryId];
-      if (label && !seenLabels.has(label)) {
-        normalizedCategories.push(label as Category);
-        seenLabels.add(label);
+      if (categoryId in categoryIdToLabel) {
+        const label = categoryIdToLabel[categoryId as CategoryId];
+        if (label && !seenLabels.has(label)) {
+          normalizedCategories.push(label as Category);
+          seenLabels.add(label);
+        }
       }
     }
   }
@@ -140,6 +145,7 @@ function convertSupplier(storageSupplier: StorageSupplier): Supplier {
   const converted: Supplier = {
     id: storageSupplier.id,
     name: storageSupplier.name,
+    email: storageSupplier.email || null,
     categories: normalizedCategories, // Legacy: for backward compatibility
     categoryIds: categoryIds, // NEW: canonical IDs
     isActive: !storageSupplier.unsubscribed, // Active if not unsubscribed

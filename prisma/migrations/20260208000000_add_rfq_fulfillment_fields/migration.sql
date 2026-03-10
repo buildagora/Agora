@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE "RFQ" ADD COLUMN "fulfillmentType" TEXT;
+ALTER TABLE "RFQ" ADD COLUMN "deliveryAddress" TEXT;
+ALTER TABLE "RFQ" ADD COLUMN "needBy" TEXT;
+

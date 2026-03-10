@@ -1,5 +1,6 @@
 "use client";
 
+import { FEATURES } from "@/config/features";
 import Card, { CardContent } from "@/components/ui2/Card";
 
 /**
@@ -20,7 +21,9 @@ export default function RequestsDraftsPage() {
         <Card>
           <CardContent className="p-6 text-center">
             <p className="text-zinc-600 dark:text-zinc-400">
-              Draft requests will appear here. Create a request using Agora Agent.
+              {FEATURES.AGENT_ENABLED
+                ? "Draft requests will appear here. Create a request using Agora Agent."
+                : "Draft requests will appear here. Create a request from the dashboard."}
             </p>
           </CardContent>
         </Card>

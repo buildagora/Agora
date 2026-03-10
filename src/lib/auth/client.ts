@@ -61,10 +61,10 @@ export async function getCurrentUser(): Promise<User | null> {
 
 /**
  * Sign out the current user
- * CRITICAL: Clears cookie and returns the appropriate login path.
+ * CRITICAL: Clears cookie and redirects to landing page.
  * Navigation should be handled by the caller using router.replace() to avoid server redirects.
  * 
- * @returns The login path to navigate to (e.g., "/buyer/login" or "/seller/login")
+ * @returns Always returns "/" (landing page)
  */
 export async function signOut(): Promise<string> {
   // CANONICAL ENDPOINT: POST /api/auth/logout (clear cookie across all paths: /, /buyer, /seller)
@@ -80,19 +80,8 @@ export async function signOut(): Promise<string> {
   if (typeof window !== "undefined") {
     // Dispatch a custom event to notify AuthProvider to reset
     window.dispatchEvent(new CustomEvent("auth:logout"));
-    
-    // Determine login path based on current route
-    const pathname = window.location.pathname;
-    if (pathname.startsWith("/seller")) {
-      return "/seller/login";
-    } else if (pathname.startsWith("/buyer")) {
-      return "/buyer/login";
-    } else {
-      // Default to buyer login
-      return "/buyer/login";
-    }
   }
   
-  // Fallback (shouldn't happen in browser)
-  return "/buyer/login";
+  // Always redirect to landing page after sign out
+  return "/";
 }

@@ -3,9 +3,13 @@
  * Uses AgentDraftRFQ contract, categoryId only
  */
 
-import type { AgentDraftRFQ } from "@/lib/agent/contracts";
+// Agent types moved to experimental/agent/lib - commenting out to prevent build errors
+// import type { AgentDraftRFQ } from "@/lib/agent/contracts";
+// TODO: Re-enable when agent is reintroduced
+type AgentDraftRFQ = any;
 import type { BuyerProfile, Supplier, RoutingPlan } from "./types";
 import { getEligibleSuppliers, type EligibilityInput } from "./eligibility";
+import type { CategoryId } from "@/lib/categoryIds";
 
 /**
  * Infer urgency from needBy date
@@ -44,9 +48,12 @@ export function buildRoutingPlan(
     };
   }
 
+  // Cast categoryId to CategoryId after verifying it exists
+  const categoryId = draft.categoryId as CategoryId;
+
   // Create typed EligibilityInput for getEligibleSuppliers
   const eligibilityInput: EligibilityInput = {
-    categoryId: draft.categoryId,
+    categoryId: categoryId,
     fulfillmentType: draft.fulfillmentType,
     priority: draft.priority === "preferred_only" ? "preferred" : draft.priority === "best_price" ? "best_price" : draft.priority === "urgent" ? "fastest" : "not_sure",
   };
@@ -60,7 +67,7 @@ export function buildRoutingPlan(
   // Minimal dev-only logging
   if (process.env.NODE_ENV === "development") {
     console.log("🔍 ROUTING_DEBUG", {
-      categoryId: draft.categoryId,
+      categoryId: categoryId,
       fulfillmentType: draft.fulfillmentType,
       priority,
       eligibleCount: eligibleSuppliers.length,
@@ -85,7 +92,7 @@ export function buildRoutingPlan(
 
   // Get preferred supplier IDs for this specific categoryId only
   // CRITICAL: Use category-scoped lookup to prevent cross-category routing bugs
-  const preferredIdsForCategory = buyerProfile.preferredSuppliersByCategory?.[draft.categoryId] ?? [];
+  const preferredIdsForCategory = buyerProfile.preferredSuppliersByCategory?.[categoryId] ?? [];
   const preferredSupplierIds = preferredIdsForCategory.filter(id =>
     eligibleSuppliers.some(s => s.id === id)
   );

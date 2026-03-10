@@ -1,10 +1,11 @@
 "use client";
 
+import { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Card, { CardContent } from "@/components/ui2/Card";
 
-export default function RoleSelectionPage() {
+function SignUpRoleInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -75,6 +76,14 @@ export default function RoleSelectionPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function SignUpRolePage() {
+  return (
+    <Suspense fallback={<div className="flex flex-1 items-center justify-center"><p className="text-zinc-600 dark:text-zinc-400">Loading...</p></div>}>
+      <SignUpRoleInner />
+    </Suspense>
   );
 }
 

@@ -5,8 +5,10 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { sendEmail } from "@/lib/email.server";
+import { sendEmail, getEmailConfig } from "@/lib/email.server";
 import { getPrisma } from "@/lib/db.server";
+import { getBaseUrl } from "@/lib/urls/baseUrl.server";
+import crypto from "crypto";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -28,6 +30,13 @@ interface NotificationPayload {
     email: string;
     name?: string;
   };
+  invite?: {
+    token?: string | null;
+    expiresAt?: string;
+  };
+  preview?: {
+    lineItemCount?: number;
+  };
 }
 
 /**
@@ -36,6 +45,19 @@ interface NotificationPayload {
  * Idempotent: uses EmailEvent table to prevent duplicates
  */
 export async function POST(request: NextRequest) {
+  // Check if emails are enabled
+  const emailsEnabled = process.env.SUPPLIER_EMAILS_ENABLED === "1";
+
+  if (!emailsEnabled) {
+    console.log("[RFQ_EMAIL_SKIPPED]", {
+      reason: "SUPPLIER_EMAILS_DISABLED",
+      nodeEnv: process.env.NODE_ENV,
+      enabledFlag: process.env.SUPPLIER_EMAILS_ENABLED,
+    });
+
+    return NextResponse.json({ ok: true, skipped: true, reason: "SUPPLIER_EMAILS_DISABLED" });
+  }
+
   try {
     // Parse request body
     let body: NotificationPayload;
@@ -81,16 +103,14 @@ export async function POST(request: NextRequest) {
 
     const prisma = getPrisma();
 
-    // IDEMPOTENCY CHECK: Use header if provided, otherwise construct from rfq+supplier
-    const idempotencyKeyHeader = request.headers.get("Idempotency-Key");
-    const idempotencyKey = idempotencyKeyHeader || `rfq:${body.rfq.id}:supplier:${body.supplier.id}`;
-    
-    // Check EmailEvent table to prevent duplicate emails
+    // IDEMPOTENCY CHECK: Check EmailEvent table to prevent duplicate emails
+    // CRITICAL: Include recipient email (to) because multiple recipients share the same supplierId (org-scoped)
     const existingEvent = await prisma.emailEvent.findFirst({
       where: {
         rfqId: body.rfq.id,
-        supplierId: body.supplier.id,
-        status: { in: ["SENT", "OUTBOX"] }, // Only check successful/outbox events
+        supplierId: body.supplier.id, // Supplier org id
+        to: body.supplier.email, // Recipient email (member's email)
+        status: { in: ["SENT", "OUTBOX"] }, // Check both successful and outbox events
       },
     });
 
@@ -98,7 +118,8 @@ export async function POST(request: NextRequest) {
       // Idempotent success: email already sent
       console.log("[RFQ_EMAIL_IDEMPOTENT_SKIP]", {
         rfqId: body.rfq.id,
-        supplierId: body.supplier.id,
+        supplierId: body.supplier.id, // Supplier org id
+        recipientEmail: body.supplier.email, // Recipient email (member's email)
         reason: "Email already sent (idempotent)",
       });
       return NextResponse.json({
@@ -131,50 +152,106 @@ export async function POST(request: NextRequest) {
       emailBody += `<p><strong>Location:</strong> ${body.rfq.location}</p>`;
     }
 
-    // Build URL - link to specific RFQ detail page (deterministic deep link)
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-    const rfqUrl = `${baseUrl}/seller/rfqs/${body.rfq.id}`;
+    // Preview "bait" (Option B)
+    if (body.preview?.lineItemCount) {
+      emailBody += `<p><strong>Items:</strong> ${body.preview.lineItemCount} line item(s)</p>`;
+    }
+
+    // Determine call-to-action URL
+    // - If invite token exists: supplier can redeem invite to access RFQ (even without account)
+    // - Else: deep-link to feed using urlPath from RFQ or fallback to feed
+    const baseUrl = getBaseUrl();
+    const hasInviteToken = !!(body.invite && body.invite.token);
+    const inviteToken = body.invite?.token ? String(body.invite.token) : null;
+
+    // Helper to safely resolve absolute URLs
+    // Prevents malformed URLs like baseUrl + "http://..." by detecting absolute URLs early
+    function resolveAbsoluteUrl(baseUrl: string, urlPath: string | undefined | null, fallbackPath: string): string {
+      const raw = (urlPath || "").trim();
+
+      // If already absolute (starts with http:// or https://), return as-is
+      // This prevents accidentally generating baseUrl + "http://..." malformed URLs
+      if (/^https?:\/\//i.test(raw)) return raw;
+
+      // If empty, use fallback
+      const path = raw ? raw : fallbackPath;
+
+      // Ensure leading slash for relative paths
+      const normalized = path.startsWith("/") ? path : `/${path}`;
+
+      // Combine baseUrl with normalized path
+      return `${baseUrl}${normalized}`;
+    }
+
+    let rfqUrl: string;
+    let buttonText: string;
+
+    if (hasInviteToken) {
+      // Invite token path: for non-account suppliers
+      rfqUrl = `${baseUrl}/seller/rfqs/invite?token=${encodeURIComponent(inviteToken!)}&rfqId=${encodeURIComponent(body.rfq.id)}&supplierId=${encodeURIComponent(body.supplier.id)}`;
+      buttonText = "Create account & quote";
+      emailBody += `<p><em>Create an account to view full details and submit your quote.</em></p>`;
+    } else {
+      // Deep-link to feed: use urlPath from RFQ or fallback to feed
+      rfqUrl = resolveAbsoluteUrl(baseUrl, body.rfq.urlPath, "/seller/feed?from=email");
+      buttonText = "View in Agora";
+    }
+
+    // Log resolved URL for debugging
+    console.log("[RFQ_EMAIL_LINK]", {
+      rfqId: body.rfq.id,
+      to: body.supplier.email,
+      urlPath: body.rfq.urlPath || null,
+      resolvedUrl: rfqUrl,
+    });
     
     emailBody += `
-      <p><a href="${rfqUrl}" style="display: inline-block; padding: 10px 20px; background-color: #0070f3; color: white; text-decoration: none; border-radius: 5px;">View RFQ</a></p>
+      <p><a href="${rfqUrl}" style="display: inline-block; padding: 10px 20px; background-color: #0070f3; color: white; text-decoration: none; border-radius: 5px;">${buttonText}</a></p>
     `;
 
     // Send email using server-only module (same pattern as Award/PO emails)
-    const apiKey = process.env.RESEND_API_KEY;
-    const emailFrom = process.env.EMAIL_FROM;
-    const hasEmailConfig = !!(apiKey && apiKey.startsWith("re_") && emailFrom);
-    const isDev = process.env.NODE_ENV === "development";
     let emailEventId = crypto.randomUUID();
 
-    try {
-      if (isDev && !hasEmailConfig) {
-        // DEV FALLBACK: Log to outbox (same as other flows)
-        await prisma.emailEvent.create({
-          data: {
-            id: emailEventId,
-            to: body.supplier.email,
-            subject,
-            status: "OUTBOX",
-            rfqId: body.rfq.id,
-            supplierId: body.supplier.id,
-          },
-        });
+    // Validate email configuration before attempting to send
+    const emailConfig = getEmailConfig();
+    const hasEmailConfig = emailConfig.hasKey && emailConfig.from;
 
-        console.log("[RFQ_EMAIL_SENT]", {
+    if (!hasEmailConfig) {
+      const errorMessage = !emailConfig.hasKey
+        ? "RESEND_API_KEY is not set or invalid"
+        : "EMAIL_FROM is not set";
+      
+      // Write FAILED EmailEvent for missing config
+      await prisma.emailEvent.create({
+        data: {
+          id: emailEventId,
+          to: body.supplier.email,
+          subject,
+          status: "FAILED",
+          error: errorMessage,
           rfqId: body.rfq.id,
           supplierId: body.supplier.id,
-          supplierEmail: body.supplier.email,
-          status: "OUTBOX",
-        });
+        },
+      });
 
-        return NextResponse.json({
-          ok: true,
-          providerId: emailEventId,
-          outbox: true,
-        });
-      }
+      console.error("[RFQ_EMAIL_CONFIG_MISSING]", {
+        rfqId: body.rfq.id,
+        supplierId: body.supplier.id,
+        error: errorMessage,
+      });
 
-      // Production or dev with email config: send actual email
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "Email configuration is missing or invalid",
+          details: errorMessage,
+        },
+        { status: 500 }
+      );
+    }
+
+    try {
+      // Always send actual email when config is valid
       const result = await sendEmail({
         to: body.supplier.email,
         subject,
@@ -198,6 +275,7 @@ export async function POST(request: NextRequest) {
         rfqId: body.rfq.id,
         supplierId: body.supplier.id,
         supplierEmail: body.supplier.email,
+        providerMessageId: result.id,
       });
 
       return NextResponse.json({

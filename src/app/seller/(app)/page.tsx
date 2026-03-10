@@ -15,6 +15,7 @@ export default function SellerPage() {
 
   useEffect(() => {
     if (status === "loading") return;
+    if (!user) return;
 
     // CRITICAL: Do not route to /auth/sign-in here; preserve deep link via role-specific login + returnTo (AuthGuard invariant).
     if (!enforceRoleClient({

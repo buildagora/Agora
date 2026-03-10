@@ -45,19 +45,17 @@ export async function notifyBuyerOfAward(
         userId: params.buyerId,
         type: "AWARD_CONFIRMED",
         rfqId: params.rfqId,
-        orderId: params.orderId,
         data: {
           rfqNumber: params.rfqNumber,
-          orderId: params.orderId,
           sellerName: params.sellerName,
           bidTotal: params.bidTotal,
+          orderId: params.orderId,
         },
       });
     } catch (notifError) {
       console.error("[NOTIFY_BUYER_AWARD_NOTIFICATION_CREATE_FAILED]", {
         buyerId: params.buyerId,
         rfqId: params.rfqId,
-        orderId: params.orderId,
         error: notifError instanceof Error ? notifError.message : String(notifError),
       });
     }
@@ -69,7 +67,6 @@ export async function notifyBuyerOfAward(
       console.log("[NOTIFY_BUYER_AWARD_NO_EMAIL]", {
         buyerId: params.buyerId,
         rfqId: params.rfqId,
-        orderId: params.orderId,
         reason: "Buyer has no email address",
       });
       return { attempted, sent: 0, errors: 0 };
@@ -94,7 +91,6 @@ export async function notifyBuyerOfAward(
         buyerId: params.buyerId,
         buyerEmail: params.buyerEmail,
         rfqId: params.rfqId,
-        orderId: params.orderId,
         error: emailError instanceof Error ? emailError.message : String(emailError),
       });
     }
@@ -104,7 +100,6 @@ export async function notifyBuyerOfAward(
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.error("[NOTIFY_BUYER_AWARD_ERROR]", {
       rfqId: params.rfqId,
-      orderId: params.orderId,
       error: errorMessage,
     });
     return { attempted, sent, errors: errors + 1 };

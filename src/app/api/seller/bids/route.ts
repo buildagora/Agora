@@ -27,14 +27,27 @@ export async function GET(request: NextRequest) {
       return jsonError("FORBIDDEN", "Seller access required", 403);
     }
 
-    // Query bids from database
+    // Query bids from database with RFQ relation for summary fields
     const prisma = getPrisma();
     const dbBids = await prisma.bid.findMany({
       where: { sellerId: user.id },
+      include: {
+        rfq: {
+          select: {
+            id: true,
+            rfqNumber: true,
+            title: true,
+            category: true,
+            categoryId: true,
+            jobNameOrPo: true,
+            status: true,
+          },
+        },
+      },
       orderBy: { createdAt: "desc" },
     });
 
-    // Parse JSON fields and return
+    // Parse JSON fields and return with RFQ summary
     const bids = dbBids.map((bid: any) => ({
       id: bid.id,
       rfqId: bid.rfqId,
@@ -48,6 +61,16 @@ export async function GET(request: NextRequest) {
       leadTimeDays: bid.leadTimeDays,
       seenByBuyerAt: bid.seenByBuyerAt?.toISOString() || null,
       seenBySellerAt: bid.seenBySellerAt?.toISOString() || null,
+      // Include RFQ summary fields for dashboard display
+      rfq: bid.rfq ? {
+        id: bid.rfq.id,
+        rfqNumber: bid.rfq.rfqNumber,
+        title: bid.rfq.title,
+        category: bid.rfq.category,
+        categoryId: bid.rfq.categoryId,
+        jobNameOrPo: bid.rfq.jobNameOrPo,
+        status: bid.rfq.status,
+      } : null,
     }));
 
     return jsonOk(bids, 200);

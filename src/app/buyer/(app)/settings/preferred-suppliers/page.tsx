@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth/AuthProvider";
-import { CATEGORY_OPTIONS, categoryIdToLabel, labelToCategoryId } from "@/lib/categoryDisplay";
+import { CATEGORY_OPTIONS } from "@/lib/categoryDisplay";
+import { categoryIdToLabel, labelToCategoryId } from "@/lib/categoryIds";
 import { fetchJson } from "@/lib/clientFetch";
 
 // TODO: Move to shared types when DB model exists

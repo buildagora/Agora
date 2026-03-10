@@ -88,6 +88,7 @@ export async function POST(
             email: true,
             fullName: true,
             companyName: true,
+            phone: true,
           },
         },
       },

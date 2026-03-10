@@ -11,9 +11,9 @@ export default function ProfilePage() {
   const { user, status } = useAuth();
 
   const handleSignOut = async () => {
-    const loginPath = await signOut();
-    router.replace(loginPath);
-    router.refresh();
+    const redirectPath = await signOut();
+    router.replace(redirectPath);
+
   };
 
   // AuthGuard handles auth check, but we still need to check loading state
@@ -74,7 +74,7 @@ export default function ProfilePage() {
                   Member Since
                 </label>
                 <p className="text-lg text-black dark:text-zinc-50 mt-1">
-                  {new Date(user.createdAt).toLocaleDateString()}
+                  {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "—"}
                 </p>
               </div>
             </div>

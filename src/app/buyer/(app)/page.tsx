@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
 
 /**
- * Buyer Home - Redirects to Agent (ChatGPT-style interface)
+ * Buyer Home - Redirects to Dashboard
  */
 export default function BuyerPage() {
-  redirect("/buyer/agent");
+  redirect("/buyer/dashboard");
 }

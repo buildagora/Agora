@@ -9,7 +9,7 @@ import { jsonOk, jsonError, withErrorHandling } from "@/lib/apiResponse";
 import { requireCurrentUserFromRequest } from "@/lib/auth/server";
 import { getPrisma } from "@/lib/db.server";
 import { z } from "zod";
-import { labelToCategoryId, CATEGORY_IDS } from "@/lib/categoryDisplay";
+import { labelToCategoryId, categoryIdToLabel } from "@/lib/categoryIds";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -66,7 +66,7 @@ export async function PATCH(request: NextRequest) {
       // Convert labels to categoryIds
       for (const cat of incomingCategories) {
         // If already a valid categoryId, use it
-        if (CATEGORY_IDS.includes(cat as any)) {
+        if (cat in categoryIdToLabel) {
           normalizedCategoryIds.push(cat);
         } else {
           // Try to convert label to categoryId using object access
@@ -124,13 +124,59 @@ export async function PATCH(request: NextRequest) {
       }
     }
     
-    // Update user profile with normalized categoryIds and optional display name fields
+    // CRITICAL: Resolve supplier ID from SupplierMember (org-scoped)
+    const membership = await prisma.supplierMember.findFirst({
+      where: {
+        userId: user.id,
+        status: "ACTIVE",
+      },
+      select: {
+        supplierId: true,
+      },
+    });
+
+    if (!membership) {
+      return jsonError(
+        "FORBIDDEN",
+        "Your seller account is not attached to an active supplier organization. Please contact support.",
+        403
+      );
+    }
+
+    const supplierId = membership.supplierId;
+
+    // If updating categories, write to SupplierCategoryLink (org-scoped, canonical source)
+    if (validation.data.categoriesServed !== undefined) {
+      // Delete existing category links for this supplier
+      await prisma.supplierCategoryLink.deleteMany({
+        where: { supplierId },
+      });
+
+      // Create new category links (upsert via delete + create)
+      if (normalizedCategoryIds.length > 0) {
+        await prisma.supplierCategoryLink.createMany({
+          data: normalizedCategoryIds.map(categoryId => ({
+            supplierId,
+            categoryId,
+          })),
+          skipDuplicates: true, // Safety: skip if unique constraint violation
+        });
+      }
+
+      // Optional: Also update User.categoriesServed for backwards compatibility (legacy mirror)
+      // This is NOT used for feed, but helps with migration/backwards compatibility
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          categoriesServed: JSON.stringify(normalizedCategoryIds),
+        },
+      });
+    }
+
+    // Update user profile with optional display name fields and service area
     const updated = await prisma.user.update({
       where: { id: user.id },
       data: {
-        ...(validation.data.categoriesServed !== undefined && {
-          categoriesServed: JSON.stringify(normalizedCategoryIds),
-        }),
         ...(validation.data.serviceArea !== undefined && {
           serviceArea: validation.data.serviceArea,
         }),

@@ -4,6 +4,7 @@
 // All data loading happens in useEffect (client-side only).
 // If you add any server-side fetch calls in the future, use fetchWithTimeout from @/lib/timeout
 
+import { Suspense } from "react";
 import Link from "next/link";
 import { useEffect, useState, useRef, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -11,7 +12,7 @@ import { useAuth } from "@/lib/auth/AuthProvider";
 // Removed unused imports: generateThreadId, getUnreadCountForThread, getOrderByRequestId, getRequest, getDispatchRecords, detectAllExceptions
 // These were part of the old client-side storage system
 // Removed rfqToRequest import - unused
-import { smartSortRfqs, normalizeRfq, isClosingSoon } from "@/lib/rfqSort";
+import { smartSortRfqs, normalizeRfq, isClosingSoon, getSortPriority } from "@/lib/rfqSort";
 import { type RFQ } from "@/lib/rfqs";
 // Removed useNotifications import - unused
 import UnreadBidBadge from "@/components/UnreadBidBadge";
@@ -28,7 +29,7 @@ import Tabs, { TabsList, TabsTrigger } from "@/components/ui2/Tabs";
 
 type TabType = "OPEN" | "AWARDED" | "CLOSED";
 
-export default function BuyerRFQsPage() {
+function BuyerRFQsPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, status } = useAuth(); // NEW FOUNDATION: Server is source of truth
@@ -276,44 +277,64 @@ export default function BuyerRFQsPage() {
     return meta;
   }, [notifications]);
 
-  // Filter by active tab, then apply notification-prioritized sort, then smart sort as tie-breaker
+  // Filter by active tab, then apply notification-prioritized sort
+  // CRITICAL: RFQs with unread activity MUST come first, before any other sorting
   const filteredRFQs = useMemo(() => {
     const tabFiltered = rfqs.filter((rfq) => rfq.status === activeTab);
+    const now = new Date();
 
-    // First, sort by notification priority (unread bids first, then latest activity)
-    const notificationSorted = [...tabFiltered].sort((a, b) => {
+    // Sort with notification priority FIRST, then fall back to smartSortRfqs logic
+    return [...tabFiltered].sort((a, b) => {
       const metaA = notifMetaByRfqId[a.id] || { unreadBidCount: 0, latestNotifAt: null };
       const metaB = notifMetaByRfqId[b.id] || { unreadBidCount: 0, latestNotifAt: null };
 
-      // Priority 1: RFQs with unread bids (descending by count)
-      if (metaA.unreadBidCount > 0 || metaB.unreadBidCount > 0) {
+      // PRIORITY 1: RFQs with unread bids ALWAYS come first
+      const hasUnreadA = metaA.unreadBidCount > 0;
+      const hasUnreadB = metaB.unreadBidCount > 0;
+
+      if (hasUnreadA && !hasUnreadB) {
+        return -1; // A has unread bids, B doesn't - A comes first
+      }
+      if (!hasUnreadA && hasUnreadB) {
+        return 1; // B has unread bids, A doesn't - B comes first
+      }
+      // If both have unread bids, sort by count (descending)
+      if (hasUnreadA && hasUnreadB) {
         if (metaA.unreadBidCount !== metaB.unreadBidCount) {
           return metaB.unreadBidCount - metaA.unreadBidCount; // More unread bids first
         }
       }
 
-      // Priority 2: RFQs with latest notification activity (descending by date)
-      if (metaA.latestNotifAt || metaB.latestNotifAt) {
-        if (metaA.latestNotifAt && metaB.latestNotifAt) {
-          const timeA = metaA.latestNotifAt.getTime();
-          const timeB = metaB.latestNotifAt.getTime();
-          if (timeA !== timeB) {
-            return timeB - timeA; // Most recent activity first
+      // PRIORITY 2: If neither has unread bids, fall back to smartSortRfqs logic
+      // This preserves existing behavior (closing soon, then recency)
+      const normalizedA = normalizeRfq(a);
+      const normalizedB = normalizeRfq(b);
+      
+      const priorityA = getSortPriority(normalizedA, now);
+      const priorityB = getSortPriority(normalizedB, now);
+      
+      // Sort by priority group
+      if (priorityA !== priorityB) {
+        return priorityA - priorityB;
+      }
+      
+      // Within same priority group, sort by dates
+      if (priorityA === 1) {
+        // Closing soon: sort by dueAt ASC, then createdAt DESC
+        if (normalizedA.dueAt && normalizedB.dueAt) {
+          const dueA = new Date(normalizedA.dueAt).getTime();
+          const dueB = new Date(normalizedB.dueAt).getTime();
+          if (dueA !== dueB) {
+            return dueA - dueB;
           }
-        } else if (metaA.latestNotifAt && !metaB.latestNotifAt) {
-          return -1; // A has activity, B doesn't - A comes first
-        } else if (!metaA.latestNotifAt && metaB.latestNotifAt) {
-          return 1; // B has activity, A doesn't - B comes first
         }
       }
-
-      // Priority 3: Fall back to smartSortRfqs ordering (tie-breaker)
-      // We'll apply smartSortRfqs after this sort, so return 0 here
-      return 0;
+      
+      // For all groups, secondary sort by createdAt DESC (newest first)
+      const createdA = new Date(normalizedA.createdAt).getTime();
+      const createdB = new Date(normalizedB.createdAt).getTime();
+      return createdB - createdA; // Newest first
     });
-
-    // Apply smartSortRfqs as final tie-breaker (preserves existing behavior within ties)
-    return smartSortRfqs(notificationSorted);
   }, [rfqs, activeTab, notifMetaByRfqId]);
 
   const handleDeleteClick = (e: React.MouseEvent, rfqId: string) => {
@@ -599,5 +620,13 @@ export default function BuyerRFQsPage() {
       />
       <ToastContainer toasts={toasts} onRemove={removeToast} />
     </>
+  );
+}
+
+export default function BuyerRFQsPage() {
+  return (
+    <Suspense fallback={null}>
+      <BuyerRFQsPageInner />
+    </Suspense>
   );
 }

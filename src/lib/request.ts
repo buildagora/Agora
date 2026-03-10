@@ -291,11 +291,11 @@ export async function listRequestsForBuyer(
     // Apply filters
     if (filters?.status) {
       const statuses = Array.isArray(filters.status) ? filters.status : [filters.status];
-      requests = requests.filter((r) => statuses.includes(r.status));
+      requests = requests.filter((r: RFQRequest) => statuses.includes(r.status));
     }
 
     // Sort by updatedAt descending (most recent first)
-    requests.sort((a, b) => {
+    requests.sort((a: RFQRequest, b: RFQRequest) => {
       return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
     });
 

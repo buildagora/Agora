@@ -17,3 +17,4 @@ export default function BuyerAppLayout({
   return <BuyerLayoutClient>{children}</BuyerLayoutClient>;
 }
 
+

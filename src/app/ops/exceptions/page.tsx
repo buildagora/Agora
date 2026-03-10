@@ -1,47 +1,14 @@
 "use client";
 
+// DO NOT IMPORT server-only modules here
+// This component only fetches data from API routes
+
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth/AuthProvider";
-// Removed storage imports - using API calls instead
-import { getDispatchRecords } from "@/lib/requestDispatch";
-import { getOrderByRequestId } from "@/lib/order";
-import { detectAllExceptions, type Exception } from "@/lib/exceptionDetection";
-import { rfqToRequest } from "@/lib/request";
+import { type Exception } from "@/lib/exceptionDetection";
 import Header from "@/components/Header";
-
-/**
- * Get all requests from all buyers
- */
-async function getAllRequests(): Promise<Array<{ request: any; buyerId: string }>> {
-  // Load RFQs from API (server queries database)
-  try {
-    const res = await fetch("/api/buyer/rfqs", {
-      credentials: "include",
-    });
-    if (!res.ok) {
-      return [];
-    }
-    const data = await res.json();
-    const rfqs = Array.isArray(data) ? data : (data.data || []);
-    
-    // Convert RFQs to Request format
-    const allRequests: Array<{ request: any; buyerId: string }> = [];
-    for (const rfq of rfqs) {
-      try {
-        const request = rfqToRequest(rfq);
-        allRequests.push({ request, buyerId: rfq.buyerId || "" });
-      } catch {
-        // Skip if conversion fails
-      }
-    }
-    return allRequests;
-  } catch (error) {
-    console.error("Error loading requests:", error);
-    return [];
-  }
-}
 
 /**
  * Calculate age in minutes/hours
@@ -99,53 +66,31 @@ export default function OpsExceptionsPage() {
         return; // AuthGuard will handle redirect
       }
 
-      // Load all exceptions
-      const allExceptions: Exception[] = [];
-      const now = new Date().toISOString();
-
-      // Get all requests from API
-      const allRequests = await getAllRequests();
-    
-    for (const { request, buyerId } of allRequests) {
+      // Load exceptions from API route (server-side)
       try {
-        // Get dispatch records for this request
-        const dispatchRecords = getDispatchRecords(request.id);
-        
-        // Get order if exists
-        const order = getOrderByRequestId(request.id, buyerId);
-        
-        // Detect exceptions
-        const detectedExceptions = detectAllExceptions({
-          request,
-          dispatchRecords,
-          order,
-          now,
+        const res = await fetch("/api/ops/exceptions", {
+          credentials: "include",
         });
         
-        // Only include active (non-resolved) exceptions
-        const activeExceptions = detectedExceptions.filter((ex) => !ex.isResolved);
-        allExceptions.push(...activeExceptions);
-      } catch (error) {
-        // Silently fail for this request
-        if (process.env.NODE_ENV === "development") {
-          console.error("Error detecting exceptions for request:", request.id, error);
+        if (!res.ok) {
+          console.error("Failed to load exceptions:", res.status);
+          setExceptions([]);
+          setLoading(false);
+          return;
         }
+
+        const data = await res.json();
+        if (data.ok && Array.isArray(data.exceptions)) {
+          setExceptions(data.exceptions);
+        } else {
+          setExceptions([]);
+        }
+      } catch (error) {
+        console.error("Error loading exceptions:", error);
+        setExceptions([]);
+      } finally {
+        setLoading(false);
       }
-    }
-
-    // Sort by severity (critical > warning > info) and then by age (oldest first)
-    allExceptions.sort((a, b) => {
-      const severityOrder = { critical: 3, warning: 2, info: 1 };
-      const severityDiff = (severityOrder[b.severity] || 0) - (severityOrder[a.severity] || 0);
-      if (severityDiff !== 0) return severityDiff;
-      
-      const ageA = new Date(a.createdAt).getTime();
-      const ageB = new Date(b.createdAt).getTime();
-      return ageA - ageB; // Oldest first
-    });
-
-      setExceptions(allExceptions);
-      setLoading(false);
     };
 
     loadExceptions();

@@ -6,6 +6,7 @@
 import { RFQRequest } from "./request";
 import { Quote } from "./quote";
 import { logEvent } from "./eventLog";
+import { readUserJson, writeUserJson } from "@/lib/storage/userJson";
 
 /**
  * Order status lifecycle
