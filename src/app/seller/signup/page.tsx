@@ -4,7 +4,7 @@ import { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { MATERIAL_CATEGORIES } from "@/lib/categoryDisplay";
-import { labelToCategoryId } from "@/lib/categoryIds";
+import { labelToCategoryId, type CategoryLabel } from "@/lib/categoryIds";
 import { validateEmailOrTestId, getEmailLabel, getEmailPlaceholder } from "@/lib/validators";
 import Button from "@/components/ui2/Button";
 import Card, { CardContent, CardHeader } from "@/components/ui2/Card";
@@ -94,7 +94,7 @@ function SellerSignupPageInner() {
     }
   };
 
-  const handleCategoryToggle = (categoryLabel: string) => {
+  const handleCategoryToggle = (categoryLabel: CategoryLabel) => {
     const categoryId = labelToCategoryId[categoryLabel];
     if (!categoryId) return;
 
@@ -314,13 +314,13 @@ function SellerSignupPageInner() {
                 </h3>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   {MATERIAL_CATEGORIES.map((category) => {
-                    const categoryId = labelToCategoryId[category.label];
+                    const categoryId = labelToCategoryId[category as CategoryLabel];
                     const isSelected = categoriesServed.includes(categoryId);
                     return (
                       <button
                         key={categoryId}
                         type="button"
-                        onClick={() => handleCategoryToggle(category.label)}
+                        onClick={() => handleCategoryToggle(category as CategoryLabel)}
                         disabled={loadingPreview}
                         className={`px-4 py-2 rounded-md border text-sm font-medium transition-colors ${
                           isSelected
@@ -328,7 +328,7 @@ function SellerSignupPageInner() {
                             : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
                         }`}
                       >
-                        {category.label}
+                        {category}
                       </button>
                     );
                   })}

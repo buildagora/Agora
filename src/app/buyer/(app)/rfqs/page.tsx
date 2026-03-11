@@ -560,7 +560,7 @@ function BuyerRFQsPageInner() {
                                 {unreadMessages} unread
                               </Badge>
                             )}
-                            {rfq.dueAt && isClosingSoon(rfq.dueAt, new Date()) && (
+                            {rfq.terms?.requestedDate && isClosingSoon(rfq.terms.requestedDate, new Date()) && (
                               <Badge variant="warning">
                                 Closing soon
                               </Badge>

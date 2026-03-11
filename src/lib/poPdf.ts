@@ -48,8 +48,8 @@ export function generatePurchaseOrderPdfBytes(po: PO): Uint8Array {
   const margin = 20;
   
   // Simple colors
-  const darkGray = [51, 65, 85]; // #334155 - dark gray for text
-  const lightGray = [226, 232, 240]; // #E2E8F0 - light gray for table lines
+  const darkGray: [number, number, number] = [51, 65, 85]; // #334155 - dark gray for text
+  const lightGray: [number, number, number] = [226, 232, 240]; // #E2E8F0 - light gray for table lines
   
   let yPos = margin;
 
@@ -60,7 +60,7 @@ export function generatePurchaseOrderPdfBytes(po: PO): Uint8Array {
   // Title: "AGORA PURCHASE ORDER"
   doc.setFontSize(24);
   doc.setFont("helvetica", "bold");
-  doc.setTextColor(...darkGray);
+  doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
   doc.text("AGORA PURCHASE ORDER", margin, yPos);
   
   yPos += 16;
@@ -74,7 +74,7 @@ export function generatePurchaseOrderPdfBytes(po: PO): Uint8Array {
   
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
-  doc.setTextColor(...darkGray);
+  doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
   
   // PO Number (right-aligned)
   doc.text(`PO Number: ${po.poNumber}`, pageWidth - margin, yPos, { align: "right" });
@@ -102,7 +102,7 @@ export function generatePurchaseOrderPdfBytes(po: PO): Uint8Array {
   // BILL TO (left-aligned)
   doc.setFontSize(10);
   doc.setFont("helvetica", "bold");
-  doc.setTextColor(...darkGray);
+  doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
   let buyerY = yPos;
   doc.text("Bill To", buyerX, buyerY);
   buyerY += 7;
@@ -120,7 +120,7 @@ export function generatePurchaseOrderPdfBytes(po: PO): Uint8Array {
   // SUPPLIER (right-aligned)
   doc.setFontSize(10);
   doc.setFont("helvetica", "bold");
-  doc.setTextColor(...darkGray);
+  doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
   let supplierY = yPos;
   doc.text("Supplier", supplierX, supplierY);
   supplierY += 7;
@@ -137,7 +137,7 @@ export function generatePurchaseOrderPdfBytes(po: PO): Uint8Array {
   
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
-  doc.setTextColor(...darkGray);
+  doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
   
   const fulfillmentLabel = po.fulfillmentType === "PICKUP" ? "Pickup" : 
                            po.fulfillmentType === "DELIVERY" ? "Delivery" : 
@@ -229,7 +229,7 @@ export function generatePurchaseOrderPdfBytes(po: PO): Uint8Array {
   // This is the supplier's quoted price / awarded bid total
   doc.setFontSize(11);
   doc.setFont("helvetica", "bold");
-  doc.setTextColor(...darkGray);
+  doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
   doc.text("TOTAL DUE", totalsX, totalsY, { align: "right" });
   doc.setFontSize(12);
   doc.text(`$${total.toFixed(2)}`, pageWidth - margin, totalsY, { align: "right" });
@@ -242,7 +242,7 @@ export function generatePurchaseOrderPdfBytes(po: PO): Uint8Array {
   
   doc.setFontSize(9);
   doc.setFont("helvetica", "bold");
-  doc.setTextColor(...darkGray);
+  doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
   doc.text("Authorized By", margin, authY);
   
   doc.setFontSize(10);

@@ -111,12 +111,10 @@ export async function POST(
     const prisma = getPrisma();
 
     // Find or create conversation
-    let conversation = await prisma.supplierConversation.findUnique({
+    let conversation = await prisma.supplierConversation.findFirst({
       where: {
-        buyerId_supplierId: {
-          buyerId: dbUser.id,
-          supplierId: supplierId,
-        },
+        buyerId: dbUser.id,
+        supplierId: supplierId,
       },
       include: {
         messages: {

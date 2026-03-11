@@ -130,7 +130,7 @@ export default function PurchaseOrderActions({ rfqId, role, rfq: rfqProp }: Purc
             id: order.id,
             poNumber: order.orderNumber || `PO-${order.id.slice(0, 8).toUpperCase()}`,
             rfqId: order.rfqId,
-            rfqNumber: foundRFQ.rfqNumber || (foundRFQ as any).rfqNumber || undefined,
+            rfqNumber: "rfqNumber" in foundRFQ ? foundRFQ.rfqNumber : undefined,
             winningBidId: order.bidId || foundRFQ.awardedBidId,
             buyerName,
             buyerPhone,
