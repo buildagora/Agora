@@ -68,7 +68,7 @@ export async function GET(
       },
     });
 
-    if (!conversation) {
+    if (!conversation || conversation.hiddenForBuyerAt) {
       return NextResponse.json({
         ok: true,
         conversationId: null,
@@ -76,10 +76,11 @@ export async function GET(
       });
     }
 
-    // Load messages
+    // Load messages (only those not deleted for buyer)
     const messages = await prisma.supplierMessage.findMany({
       where: {
         conversationId: conversation.id,
+        deletedForBuyerAt: null,
       },
       orderBy: {
         createdAt: "asc",
@@ -189,10 +190,14 @@ export async function POST(
       },
     });
 
-    // Update conversation updatedAt
+    // Update conversation updatedAt and unhide for both sides (new activity)
     await prisma.supplierConversation.update({
       where: { id: conversation.id },
-      data: { updatedAt: new Date() },
+      data: {
+        updatedAt: new Date(),
+        hiddenForBuyerAt: null,
+        hiddenForSupplierAt: null,
+      },
     });
 
     // Send email notification and create in-app notification for ALL ACTIVE supplier members

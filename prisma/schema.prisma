@@ -257,22 +257,26 @@ model SupplierCategoryLink {
 }
 
 model SupplierConversation {
-  id        String   @id @default(cuid())
-  buyerId   String
-  buyer     User     @relation(fields: [buyerId], references: [id], onDelete: Cascade)
-  supplierId String
-  supplier  Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
-  rfqId     String?  // RFQ this conversation is about (null = general conversation)
-  rfq       RFQ?     @relation(fields: [rfqId], references: [id], onDelete: SetNull)
-  title     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  messages  SupplierMessage[]
+  id                 String   @id @default(cuid())
+  buyerId            String
+  buyer              User     @relation(fields: [buyerId], references: [id], onDelete: Cascade)
+  supplierId         String
+  supplier           Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  rfqId              String?  // RFQ this conversation is about (null = general conversation)
+  rfq                RFQ?     @relation(fields: [rfqId], references: [id], onDelete: SetNull)
+  title              String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  hiddenForBuyerAt   DateTime?
+  hiddenForSupplierAt DateTime?
+  messages           SupplierMessage[]
   
   @@unique([buyerId, supplierId, rfqId])
   @@index([buyerId, updatedAt])
   @@index([supplierId, updatedAt])
   @@index([rfqId])
+  @@index([buyerId, hiddenForBuyerAt, updatedAt])
+  @@index([supplierId, hiddenForSupplierAt, updatedAt])
 }
 
 model SupplierMessage {

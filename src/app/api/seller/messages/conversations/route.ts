@@ -56,9 +56,11 @@ export async function GET(request: NextRequest) {
     const supplierId = membership.supplierId;
 
     // Get all conversations for this supplier, including RFQ info
+    // Only show conversations not hidden by seller
     const conversations = await prisma.supplierConversation.findMany({
       where: {
         supplierId: supplierId,
+        hiddenForSupplierAt: null,
       },
       include: {
         buyer: {

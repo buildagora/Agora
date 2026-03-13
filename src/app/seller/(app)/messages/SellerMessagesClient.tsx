@@ -52,6 +52,7 @@ export default function SellerMessagesClient({
   const [messageText, setMessageText] = useState("");
   const [sending, setSending] = useState(false);
   const [deletingMessageId, setDeletingMessageId] = useState<string | null>(null);
+  const [deletingConversationId, setDeletingConversationId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
@@ -176,6 +177,49 @@ export default function SellerMessagesClient({
     }
   }
 
+  async function handleDeleteConversation(convId: string) {
+    if (deletingConversationId) return;
+    const confirmed = window.confirm("Delete this conversation?");
+    if (!confirmed) return;
+
+    setDeletingConversationId(convId);
+    try {
+      const res = await fetch(`/api/seller/messages/conversations/${convId}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        console.error("Failed to delete conversation", res.status, text);
+        return;
+      }
+
+      const conversationsRes = await fetch("/api/seller/messages/conversations");
+      if (conversationsRes.ok) {
+        const data = await conversationsRes.json();
+        const nextConversations = data.conversations || [];
+        setConversations(nextConversations);
+
+        if (selectedConversationId === convId) {
+          if (nextConversations.length > 0) {
+            const next = nextConversations[0];
+            setSelectedConversationId(next.id);
+            router.push(`/seller/messages?conversationId=${next.id}`);
+            await loadMessages(next.id);
+          } else {
+            setSelectedConversationId(null);
+            setMessages([]);
+            router.push("/seller/messages");
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Failed to delete conversation", err);
+    } finally {
+      setDeletingConversationId(null);
+    }
+  }
+
   function scrollToBottom() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }
@@ -237,6 +281,34 @@ export default function SellerMessagesClient({
                         <div className="text-sm font-medium text-black dark:text-zinc-50 truncate flex-1">
                           {conv.buyerName}
                         </div>
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleDeleteConversation(conv.id);
+                          }}
+                          disabled={deletingConversationId === conv.id}
+                          className="flex-shrink-0 p-1 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded transition-colors"
+                          title="Delete conversation"
+                        >
+                          {deletingConversationId === conv.id ? (
+                            <span className="text-xs text-zinc-400 dark:text-zinc-500">...</span>
+                          ) : (
+                            <svg
+                              className="w-4 h-4 text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                              />
+                            </svg>
+                          )}
+                        </button>
                         {conv.unreadCount && conv.unreadCount > 0 && (
                           <div className="flex-shrink-0 w-5 h-5 rounded-full bg-blue-500 text-white text-xs font-semibold flex items-center justify-center">
                             {conv.unreadCount > 9 ? "9+" : conv.unreadCount}

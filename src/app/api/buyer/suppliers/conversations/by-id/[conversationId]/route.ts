@@ -73,6 +73,11 @@ export async function GET(
       return jsonError("FORBIDDEN", "Access denied", 403);
     }
 
+    // Check if conversation is hidden for buyer
+    if (conversation.hiddenForBuyerAt) {
+      return jsonError("NOT_FOUND", "Conversation not found", 404);
+    }
+
     // Format messages
     const formattedMessages = conversation.messages.map((msg) => ({
       id: msg.id,
@@ -92,6 +97,73 @@ export async function GET(
       rfqTitle: conversation.rfq?.title || null,
       messages: formattedMessages,
     });
+  });
+}
+
+/**
+ * DELETE /api/buyer/suppliers/conversations/by-id/[conversationId]
+ * Soft delete (hide) a conversation for the buyer
+ */
+export async function DELETE(
+  request: NextRequest,
+  context: { params: Promise<{ conversationId: string }> }
+) {
+  return withErrorHandling(async () => {
+    // Auth check
+    const cookieName = getAuthCookieName();
+    const token = request.cookies.get(cookieName)?.value;
+
+    if (!token) {
+      return jsonError("UNAUTHORIZED", "Authentication required", 401);
+    }
+
+    const payload = await verifyAuthToken(token);
+    if (!payload) {
+      return jsonError("UNAUTHORIZED", "Authentication required", 401);
+    }
+
+    const { conversationId } = await context.params;
+
+    const prisma = getPrisma();
+
+    // Load user from database
+    const dbUser = await prisma.user.findUnique({
+      where: { id: payload.userId },
+      select: { id: true, role: true },
+    });
+
+    if (!dbUser || dbUser.role !== "BUYER") {
+      return jsonError("FORBIDDEN", "Buyer access required", 403);
+    }
+
+    // Load conversation and verify it belongs to this buyer
+    const conversation = await prisma.supplierConversation.findUnique({
+      where: { id: conversationId },
+      select: { buyerId: true, hiddenForBuyerAt: true },
+    });
+
+    if (!conversation) {
+      return jsonError("NOT_FOUND", "Conversation not found", 404);
+    }
+
+    if (conversation.buyerId !== dbUser.id) {
+      return jsonError("FORBIDDEN", "Access denied", 403);
+    }
+
+    // If already hidden, return success (idempotent)
+    if (conversation.hiddenForBuyerAt) {
+      return NextResponse.json({ ok: true });
+    }
+
+    // Soft delete (hide) for buyer
+    await prisma.supplierConversation.update({
+      where: { id: conversationId },
+      data: {
+        hiddenForBuyerAt: new Date(),
+      },
+    });
+
+    return NextResponse.json({ ok: true });
   });
 }
 

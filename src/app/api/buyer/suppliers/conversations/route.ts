@@ -39,9 +39,11 @@ export async function GET(request: NextRequest) {
 
     // Get all conversations for this buyer, ordered by most recent message
     // Include RFQ context when available
+    // Only show conversations not hidden by buyer
     const conversations = await prisma.supplierConversation.findMany({
       where: {
         buyerId: dbUser.id,
+        hiddenForBuyerAt: null,
       },
       include: {
         supplier: true,

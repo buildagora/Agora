@@ -72,6 +72,7 @@ export default function SupplierConversationClient({
   const [messageText, setMessageText] = useState("");
   const [sending, setSending] = useState(false);
   const [deletingMessageId, setDeletingMessageId] = useState<string | null>(null);
+  const [deletingConversationId, setDeletingConversationId] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -283,6 +284,50 @@ export default function SupplierConversationClient({
     }
   }
 
+  async function handleDeleteConversation(convId: string) {
+    if (deletingConversationId) return;
+    const confirmed = window.confirm("Delete this conversation?");
+    if (!confirmed) return;
+
+    setDeletingConversationId(convId);
+    try {
+      const res = await fetch(`/api/buyer/suppliers/conversations/by-id/${convId}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        console.error("Failed to delete conversation", res.status, text);
+        return;
+      }
+
+      const wasActive = convId === conversationId;
+      
+      // Reload conversations list
+      const conversationsRes = await fetch("/api/buyer/suppliers/conversations");
+      if (conversationsRes.ok) {
+        const data = await conversationsRes.json();
+        if (data.ok) {
+          const nextConversations = data.conversations || [];
+          setConversations(nextConversations);
+
+          if (wasActive) {
+            if (nextConversations.length > 0) {
+              const next = nextConversations[0];
+              router.push(`/buyer/suppliers/talk/${next.supplierId}?conversationId=${encodeURIComponent(next.id)}`);
+            } else {
+              router.push("/buyer/suppliers/talk");
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Failed to delete conversation", err);
+    } finally {
+      setDeletingConversationId(null);
+    }
+  }
+
   return (
     <div className="flex h-full overflow-hidden bg-zinc-50 dark:bg-zinc-950">
       {/* Sidebar (md+) */}
@@ -332,6 +377,34 @@ export default function SupplierConversationClient({
                         <div className="text-sm font-medium text-zinc-900 dark:text-zinc-50 truncate flex-1">
                           {conv.supplierName}
                         </div>
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleDeleteConversation(conv.id);
+                          }}
+                          disabled={deletingConversationId === conv.id}
+                          className="flex-shrink-0 p-1 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded transition-colors"
+                          title="Delete conversation"
+                        >
+                          {deletingConversationId === conv.id ? (
+                            <span className="text-xs text-zinc-400 dark:text-zinc-500">...</span>
+                          ) : (
+                            <svg
+                              className="w-4 h-4 text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                              />
+                            </svg>
+                          )}
+                        </button>
                         <div className="text-xs text-zinc-500 dark:text-zinc-400 flex-shrink-0">
                           {formatTime(conv.lastMessageAt)}
                         </div>
