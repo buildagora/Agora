@@ -140,11 +140,14 @@ export default function SuppliersPage() {
             <p className="text-xl text-zinc-300 dark:text-zinc-400 mb-8">
               Join Agora and connect with contractors who are actively sourcing materials. Stop wasting time on tire-kickers and start winning more qualified orders.
             </p>
-            <Link href="/auth/sign-up/seller">
-              <Button variant="primary" size="lg">
-                Join Agora, Reach More Contractors
+            <div className="flex flex-col items-center gap-3">
+              <Button variant="primary" size="lg" disabled>
+                Supplier Access Is Invite-Only During Beta
               </Button>
-            </Link>
+              <p className="text-sm text-zinc-400 dark:text-zinc-500">
+                Supplier accounts are currently created by invitation only.
+              </p>
+            </div>
           </div>
         </section>
       </main>

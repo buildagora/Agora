@@ -200,175 +200,38 @@ function SellerSignUpPageInner() {
           <Card>
             <CardHeader>
               <h1 className="text-2xl font-semibold text-black dark:text-zinc-50 text-center">
-                Create Seller Account
+                Supplier Access Is Invite-Only During Beta
               </h1>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-                <div>
-                  <h2 className="text-lg font-semibold text-black dark:text-zinc-50 mb-4">Account Information</h2>
-                  <div className="space-y-4">
-                    <Input
-                      label="Company Name *"
-                      type="text"
-                      value={formData.companyName}
-                      onChange={(e) => handleChange("companyName", e.target.value)}
-                      required
-                      error={errors.companyName}
-                    />
-                    <Input
-                      label="Full Name (Optional)"
-                      type="text"
-                      value={formData.fullName}
-                      onChange={(e) => handleChange("fullName", e.target.value)}
-                      error={errors.fullName}
-                    />
-                  </div>
+              <div className="flex flex-col gap-6 text-center">
+                <p className="text-zinc-600 dark:text-zinc-400">
+                  Supplier accounts are currently created by invitation only so we can verify supplier identity and attach each account to the correct company profile.
+                </p>
+
+                <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 p-5 text-left">
+                  <p className="text-sm font-medium text-black dark:text-zinc-50 mb-2">
+                    How supplier onboarding works during beta
+                  </p>
+                  <ul className="text-sm text-zinc-600 dark:text-zinc-400 space-y-2 list-disc pl-5">
+                    <li>Buyers can still create accounts publicly.</li>
+                    <li>Suppliers join Agora through an invite or claim link.</li>
+                    <li>Our team can also onboard suppliers manually.</li>
+                  </ul>
                 </div>
 
-                <div>
-                  <h2 className="text-lg font-semibold text-black dark:text-zinc-50 mb-4">Contact Details</h2>
-                  <div className="space-y-4">
-                    <Input
-                      label={`${getEmailLabel()} *`}
-                      type={process.env.NODE_ENV === "production" ? "email" : "text"}
-                      value={formData.email}
-                      onChange={(e) => handleChange("email", e.target.value)}
-                      placeholder={getEmailPlaceholder()}
-                      required
-                      disabled={!!searchParams.get("email")}
-                      error={errors.email}
-                    />
-                    <Input
-                      label="Phone *"
-                      type="tel"
-                      value={formData.phone}
-                      onChange={(e) => handleChange("phone", e.target.value)}
-                      required
-                      error={errors.phone}
-                    />
-                    <Input
-                      label="Business Address (Optional)"
-                      type="text"
-                      value={formData.businessAddress}
-                      onChange={(e) => handleChange("businessAddress", e.target.value)}
-                      placeholder="Street address, city, state, ZIP"
-                    />
-                  </div>
+                <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                  <Link href="/auth/sign-in">
+                    <Button variant="primary" size="lg">
+                      Sign In
+                    </Button>
+                  </Link>
+                  <Link href="/suppliers">
+                    <Button variant="secondary" size="lg">
+                      Back to Supplier Page
+                    </Button>
+                  </Link>
                 </div>
-
-                <div>
-                  <h2 className="text-lg font-semibold text-black dark:text-zinc-50 mb-4">Categories You Serve *</h2>
-                  <div className="border border-zinc-300 dark:border-zinc-700 rounded-lg p-4 max-h-64 overflow-y-auto bg-white dark:bg-zinc-900">
-                    <div className="flex flex-col gap-2">
-                      {MATERIAL_CATEGORIES.map((category) => (
-                        <label
-                          key={category}
-                          className="flex items-center gap-2 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800 p-2 rounded"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={categoriesServed.includes(category)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setCategoriesServed((prev) => [...prev, category]);
-                              } else {
-                                setCategoriesServed((prev) =>
-                                  prev.filter((c) => c !== category)
-                                );
-                              }
-                              // Clear error when user selects a category
-                              if (errors.categoriesServed) {
-                                setErrors((prev) => {
-                                  const newErrors = { ...prev };
-                                  delete newErrors.categoriesServed;
-                                  return newErrors;
-                                });
-                              }
-                            }}
-                            className="w-4 h-4 text-black border-zinc-300 dark:border-zinc-700 rounded focus:ring-black dark:focus:ring-zinc-50"
-                          />
-                          <span className="text-sm text-black dark:text-zinc-50">{category}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                  {errors.categoriesServed && (
-                    <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                      {errors.categoriesServed}
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <h2 className="text-lg font-semibold text-black dark:text-zinc-50 mb-4">Security</h2>
-                  <Input
-                    label="Password *"
-                    type="password"
-                    value={formData.password}
-                    onChange={(e) => handleChange("password", e.target.value)}
-                    required
-                    disabled={!!searchParams.get("password")}
-                    error={errors.password}
-                  />
-                </div>
-
-                {errors.submit && (
-                  <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded">
-                    <p className="text-sm text-red-600 dark:text-red-400">
-                      {errors.submit}
-                    </p>
-                  </div>
-                )}
-
-                <div className="space-y-2">
-                  <label className="flex items-start gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={formData.agreedToTerms}
-                      onChange={(e) => handleChange("agreedToTerms", e.target.checked)}
-                      className="mt-1 w-4 h-4 rounded border-zinc-300 dark:border-zinc-700 text-slate-600 focus:ring-2 focus:ring-slate-600 dark:focus:ring-slate-400"
-                      required
-                    />
-                    <span className="text-sm text-zinc-700 dark:text-zinc-300">
-                      I agree to the{" "}
-                      <Link
-                        href="/legal/terms"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 underline"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        Agora End User Service Agreement
-                      </Link>
-                      {" "}and acknowledge that the platform is currently in beta.
-                    </span>
-                  </label>
-                  {errors.agreedToTerms && (
-                    <p className="text-sm text-red-600 dark:text-red-400">
-                      {errors.agreedToTerms}
-                    </p>
-                  )}
-                </div>
-
-                <Button
-                  type="submit"
-                  variant="primary"
-                  size="lg"
-                  disabled={isSubmitting || !formData.agreedToTerms}
-                  className="w-full"
-                >
-                  {isSubmitting ? "Creating Account..." : "Create Seller Account"}
-                </Button>
-              </form>
-
-              <div className="mt-6 text-center">
-                <Link
-                  href="/auth/sign-in"
-                  className="text-sm text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors"
-                >
-                  Already have an account? Sign In
-                </Link>
               </div>
             </CardContent>
           </Card>
