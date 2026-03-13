@@ -66,8 +66,8 @@ function SellerSignUpPageInner() {
     }
     if (!formData.password) {
       newErrors.password = "Password is required";
-    } else if (formData.password.length < 6) {
-      newErrors.password = "Password must be at least 6 characters";
+    } else if (formData.password.length < 8) {
+      newErrors.password = "Password must be at least 8 characters";
     }
     if (categoriesServed.length === 0) {
       newErrors.categoriesServed = "Please select at least one category";
