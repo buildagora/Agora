@@ -48,15 +48,31 @@ export async function GET(request: NextRequest) {
         rfq: {
           select: { id: true, rfqNumber: true, title: true },
         },
-        messages: {
-          orderBy: { createdAt: "desc" },
-          take: 1,
-        },
       },
       orderBy: {
         updatedAt: "desc",
       },
     });
+
+    // Get latest visible message for each conversation (not deleted for buyer)
+    const conversationIds = conversations.map((c) => c.id);
+    const allVisibleMessages = await prisma.supplierMessage.findMany({
+      where: {
+        conversationId: { in: conversationIds },
+        deletedForBuyerAt: null,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    // Build map of conversationId -> latest visible message (first one we see per conversation)
+    const latestMessageMap = new Map<string, typeof allVisibleMessages[0]>();
+    for (const msg of allVisibleMessages) {
+      if (!latestMessageMap.has(msg.conversationId)) {
+        latestMessageMap.set(msg.conversationId, msg);
+      }
+    }
 
     // Get unread counts for all conversations
     const unreadCountsResult = await prisma.$queryRaw<Array<{ conversationId: string; unreadCount: bigint }>>`
@@ -77,7 +93,7 @@ export async function GET(request: NextRequest) {
     }
 
     const formattedConversations = conversations.map((conv) => {
-      const lastMessage = conv.messages[0];
+      const lastMessage = latestMessageMap.get(conv.id);
       const unreadCount = unreadCountMap.get(conv.id) || 0;
       return {
         id: conv.id,

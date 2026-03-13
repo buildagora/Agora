@@ -59,6 +59,9 @@ export async function GET(
       },
       include: {
         messages: {
+          where: {
+            deletedForBuyerAt: null,
+          },
           orderBy: { createdAt: "asc" },
         },
       },
@@ -118,6 +121,9 @@ export async function POST(
       },
       include: {
         messages: {
+          where: {
+            deletedForBuyerAt: null,
+          },
           orderBy: { createdAt: "asc" },
         },
       },

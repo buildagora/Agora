@@ -57,6 +57,9 @@ export async function GET(
           select: { id: true, rfqNumber: true, title: true },
         },
         messages: {
+          where: {
+            deletedForBuyerAt: null,
+          },
           orderBy: { createdAt: "asc" },
         },
       },

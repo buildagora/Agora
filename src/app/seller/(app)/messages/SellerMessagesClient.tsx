@@ -51,6 +51,7 @@ export default function SellerMessagesClient({
   );
   const [messageText, setMessageText] = useState("");
   const [sending, setSending] = useState(false);
+  const [deletingMessageId, setDeletingMessageId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
@@ -143,6 +144,35 @@ export default function SellerMessagesClient({
       console.error("Error sending message:", error);
     } finally {
       setSending(false);
+    }
+  }
+
+  async function handleDeleteMessage(messageId: string) {
+    if (!selectedConversationId || deletingMessageId) return;
+
+    setDeletingMessageId(messageId);
+    try {
+      const response = await fetch(
+        `/api/seller/messages/conversations/${selectedConversationId}/messages/${messageId}`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      if (response.ok) {
+        // Reload messages
+        await loadMessages(selectedConversationId);
+        // Reload conversations list
+        const conversationsRes = await fetch("/api/seller/messages/conversations");
+        if (conversationsRes.ok) {
+          const data = await conversationsRes.json();
+          setConversations(data.conversations || []);
+        }
+      }
+    } catch (error) {
+      console.error("Error deleting message:", error);
+    } finally {
+      setDeletingMessageId(null);
     }
   }
 
@@ -340,10 +370,10 @@ export default function SellerMessagesClient({
                   return (
                     <div
                       key={message.id}
-                      className={`flex ${isSupplier ? "justify-end" : "justify-start"}`}
+                      className={`flex ${isSupplier ? "justify-end" : "justify-start"} group`}
                     >
                       <div
-                        className={`max-w-[75%] rounded-lg p-4 shadow-sm ${
+                        className={`max-w-[75%] rounded-lg p-4 shadow-sm relative ${
                           isSupplier
                             ? "bg-slate-600 dark:bg-slate-500 text-white dark:text-black"
                             : "bg-white dark:bg-zinc-800 text-black dark:text-zinc-50 border border-zinc-200 dark:border-zinc-700"
@@ -357,15 +387,31 @@ export default function SellerMessagesClient({
                         <p className="whitespace-pre-wrap text-sm leading-relaxed">
                           {message.body}
                         </p>
-                        <p
-                          className={`text-xs mt-2 ${
-                            isSupplier
-                              ? "text-slate-200 dark:text-zinc-700"
-                              : "text-zinc-500 dark:text-zinc-400"
-                          }`}
-                        >
-                          {formatTime(message.createdAt)}
-                        </p>
+                        <div className="flex items-center justify-between mt-2">
+                          <p
+                            className={`text-xs ${
+                              isSupplier
+                                ? "text-slate-200 dark:text-zinc-700"
+                                : "text-zinc-500 dark:text-zinc-400"
+                            }`}
+                          >
+                            {formatTime(message.createdAt)}
+                          </p>
+                          {!isAgora && (
+                            <button
+                              onClick={() => handleDeleteMessage(message.id)}
+                              disabled={deletingMessageId === message.id}
+                              className={`ml-2 text-xs transition-colors ${
+                                isSupplier
+                                  ? "text-slate-300 dark:text-zinc-600 hover:text-slate-100 dark:hover:text-zinc-400"
+                                  : "text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300"
+                              }`}
+                              title="Delete message"
+                            >
+                              {deletingMessageId === message.id ? "..." : "Delete"}
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   );
