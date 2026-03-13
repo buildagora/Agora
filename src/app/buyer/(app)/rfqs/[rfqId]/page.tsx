@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState, useRef } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/auth/AuthProvider";
 // Removed pushLegacyNotification import - notifications will be created server-side via API
 // Removed PO import - PO creation now handled via API
@@ -57,6 +57,7 @@ interface Bid {
 export default function RFQDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user } = useAuth();
   const id = params.rfqId as string;
   const [rfq, setRfq] = useState<RFQ | null>(null);
@@ -83,6 +84,34 @@ export default function RFQDetailPage() {
   const [exceptions, setExceptions] = useState<Exception[]>([]);
   const [activeTab, setActiveTab] = useState("overview");
   const { showToast } = useToast();
+  const successToastShown = useRef(false);
+
+  // Show premium success notification when RFQ is created
+  useEffect(() => {
+    const created = searchParams.get("created");
+    const rfqNumber = searchParams.get("rfqNumber");
+
+    if (created === "true" && rfqNumber && !successToastShown.current) {
+      successToastShown.current = true;
+
+      // Show premium success notification with procurement-focused copy
+      showToast({
+        type: "success",
+        title: "Request submitted",
+        message: `RFQ ${rfqNumber} has been sent to matching suppliers.`,
+        subtitle: "You can track bids, messages, and updates from this page.",
+        duration: 8000, // Longer duration for important success message
+      });
+
+      // Clean up query params after showing toast (preserve other params if any)
+      const newSearchParams = new URLSearchParams(searchParams.toString());
+      newSearchParams.delete("created");
+      newSearchParams.delete("rfqNumber");
+      const newSearch = newSearchParams.toString();
+      const newPath = newSearch ? `/buyer/rfqs/${id}?${newSearch}` : `/buyer/rfqs/${id}`;
+      router.replace(newPath, { scroll: false });
+    }
+  }, [searchParams, showToast, router]);
 
   // Helper to get all activity events (from event log + system messages)
   const getActivityEvents = () => {

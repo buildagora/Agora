@@ -5,12 +5,12 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Card, { CardContent } from "@/components/ui2/Card";
 import Button from "@/components/ui2/Button";
-import { CATEGORY_OPTIONS } from "@/lib/categoryDisplay";
+import { BUYER_CATEGORY_OPTIONS } from "@/lib/categoryDisplay";
 import { categoryIdToLabel } from "@/lib/categoryIds";
 
 const CATEGORIES = [
   { id: "all", label: "All Categories" },
-  ...CATEGORY_OPTIONS,
+  ...BUYER_CATEGORY_OPTIONS,
 ];
 
 interface Conversation {

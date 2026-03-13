@@ -73,12 +73,71 @@ export async function GET(request: NextRequest) {
     // Build bidById map for quick lookup
     const bidById = new Map(bids.map((bid) => [bid.id, bid]));
 
+    // Resolve supplier organization names for all seller users
+    // Step 1: Get unique seller user IDs from bids
+    const sellerUserIds = [...new Set(bids.map((bid) => bid.sellerId).filter(Boolean))];
+    
+    // Step 2: Fetch SupplierMember records for these seller users
+    const supplierMembers = sellerUserIds.length > 0
+      ? await prisma.supplierMember.findMany({
+          where: {
+            userId: { in: sellerUserIds },
+            status: "ACTIVE", // Only active members
+          },
+          select: {
+            userId: true,
+            supplierId: true,
+          },
+        })
+      : [];
+
+    // Step 3: Get unique supplier IDs and fetch Supplier records
+    const supplierIds = [...new Set(supplierMembers.map((m) => m.supplierId))];
+    const suppliers = supplierIds.length > 0
+      ? await prisma.supplier.findMany({
+          where: { id: { in: supplierIds } },
+          select: {
+            id: true,
+            name: true,
+          },
+        })
+      : [];
+
+    // Step 4: Build lookup maps
+    // Map: userId -> supplierId
+    const supplierIdByUserId = new Map(
+      supplierMembers.map((m) => [m.userId, m.supplierId])
+    );
+    // Map: supplierId -> Supplier.name
+    const supplierNameById = new Map(
+      suppliers.map((s) => [s.id, s.name])
+    );
+
+    // Helper function to resolve seller name with priority: Supplier.name -> user.companyName -> user.fullName -> user.email -> "Seller"
+    const resolveSellerName = (sellerUserId: string | null, seller: { fullName: string | null; companyName: string | null; email: string } | null): string => {
+      if (!sellerUserId || !seller) {
+        return "Seller";
+      }
+
+      // Try to get supplier organization name first
+      const supplierId = supplierIdByUserId.get(sellerUserId);
+      if (supplierId) {
+        const supplierName = supplierNameById.get(supplierId);
+        if (supplierName) {
+          return supplierName;
+        }
+      }
+
+      // Fall back to user-level values
+      return seller.companyName || seller.fullName || seller.email || "Seller";
+    };
+
     // Parse JSON fields and return with buyer/seller info
     const orders = dbOrders.map(order => {
       const bid = order.bidId ? bidById.get(order.bidId) : null;
       const buyerName = order.buyer?.fullName || order.buyer?.companyName || order.buyer?.email || "Buyer";
       const buyerPhone = order.buyer?.phone || null;
-      const sellerName = bid?.seller?.fullName || bid?.seller?.companyName || bid?.seller?.email || "Seller";
+      const sellerName = resolveSellerName(bid?.sellerId || null, bid?.seller || null);
       const orderNumber = `PO-${order.id.slice(0, 8).toUpperCase()}`;
 
       return {

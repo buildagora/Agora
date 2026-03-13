@@ -9,7 +9,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { enforceRoleClient } from "@/lib/auth/requireRoleClient";
-import { CATEGORY_OPTIONS } from "@/lib/categoryDisplay";
+import { BUYER_CATEGORY_OPTIONS } from "@/lib/categoryDisplay";
 import { categoryIdToLabel, type CategoryId } from "@/lib/categoryIds";
 // RFQ creation via direct API call - no wrapper
 import { 
@@ -36,17 +36,14 @@ interface LineItem {
 type FulfillmentType = "PICKUP" | "DELIVERY";
 
 const UNIT_OPTIONS = [
-  "EA",
-  "LF",
-  "SF",
-  "SY",
-  "CY",
-  "LB",
-  "TON",
-  "GAL",
-  "BAG",
-  "BOX",
-  "ROLL",
+  { code: "SQ", label: "Square" },
+  { code: "BDL", label: "Bundle" },
+  { code: "PC", label: "Piece" },
+  { code: "EA", label: "Each" },
+  { code: "ROLL", label: "Roll" },
+  { code: "BOX", label: "Box" },
+  { code: "CTN", label: "Carton" },
+  { code: "BAG", label: "Bag" },
 ] as const;
 
 // Inner component that uses useSearchParams (must be wrapped in Suspense)
@@ -85,7 +82,7 @@ function CreateRFQPageInner() {
   const [notes, setNotes] = useState("");
   const [substitutionsAllowed, setSubstitutionsAllowed] = useState(false);
   const [lineItems, setLineItems] = useState<Array<Omit<RequestItem, "id">>>([
-    { description: "", unit: "ea", quantity: 0, category: "unknown" },
+    { description: "", unit: "EA", quantity: 0, category: "unknown" },
   ]);
   
   // Legacy fields (for backward compatibility with existing RFQ flow)
@@ -131,11 +128,11 @@ function CreateRFQPageInner() {
       // Try to resolve as categoryId first, then as label
       const normalized = categoryParam.toLowerCase().trim();
       // Check if it's already a categoryId
-      if (CATEGORY_OPTIONS.some(opt => opt.id === normalized)) {
+      if (BUYER_CATEGORY_OPTIONS.some(opt => opt.id === normalized)) {
         setCategoryId(normalized as CategoryId);
       } else {
         // Try to find by label
-        const option = CATEGORY_OPTIONS.find(opt => opt.label.toLowerCase() === normalized);
+        const option = BUYER_CATEGORY_OPTIONS.find(opt => opt.label.toLowerCase() === normalized);
         if (option) {
           setCategoryId(option.id);
         }
@@ -374,7 +371,7 @@ function CreateRFQPageInner() {
   };
 
   const addLineItem = () => {
-    setLineItems([...lineItems, { description: "", unit: "ea", quantity: 0, category: "unknown" }]);
+    setLineItems([...lineItems, { description: "", unit: "EA", quantity: 0, category: "unknown" }]);
     setTouched((prev) => ({
       ...prev,
       lineItems: [...prev.lineItems, false],
@@ -703,12 +700,6 @@ function CreateRFQPageInner() {
       return;
     }
 
-    // Show success toast
-    showToast({
-      type: "success",
-      message: `RFQ posted successfully! RFQ Number: ${rfqData.rfqNumber}`,
-    });
-
     // Navigate to RFQ detail page using returned id (DB primary key)
     // CRITICAL: Use rfqData.id (canonical) or fallback to rfqData.rfqId for backward compatibility
     const rfqId = rfqData.id || rfqData.rfqId;
@@ -720,7 +711,10 @@ function CreateRFQPageInner() {
       showToast({ type: "error", message: "RFQ created but unable to navigate to detail page" });
       return;
     }
-    router.push(`/buyer/rfqs/${rfqId}`);
+
+    // Pass success state via query params so the detail page can show premium notification
+    // This ensures the notification survives navigation and is visible on the destination page
+    router.push(`/buyer/rfqs/${rfqId}?created=true&rfqNumber=${encodeURIComponent(rfqData.rfqNumber)}`);
   };
 
   // Determine current step based on form completion (0-indexed: 0=Details, 1=Line Items, 2=Terms, 3=Review)
@@ -839,7 +833,7 @@ function CreateRFQPageInner() {
                   value={jobName}
                   onChange={(e) => setJobName(e.target.value)}
                   className="w-full px-4 py-2.5 border border-zinc-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-900 text-black dark:text-zinc-50 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-zinc-50"
-                  placeholder="e.g., Concrete and Rebar for Building Project"
+                  placeholder="e.g., 123 Main St Roof Replacement"
                 />
               </div>
 
@@ -869,7 +863,7 @@ function CreateRFQPageInner() {
                   required
                 >
                   <option value="">Select a category</option>
-                  {CATEGORY_OPTIONS.map((opt) => (
+                  {BUYER_CATEGORY_OPTIONS.map((opt) => (
                     <option key={opt.id} value={opt.id}>
                       {opt.label}
                     </option>
@@ -895,7 +889,7 @@ function CreateRFQPageInner() {
                   onChange={(e) => setNotes(e.target.value)}
                   rows={4}
                   className="w-full px-4 py-2.5 border border-zinc-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-900 text-black dark:text-zinc-50 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-zinc-50"
-                  placeholder="Additional details about this request..."
+                  placeholder="Project details, delivery timing, preferred brands, or special instructions..."
                 />
               </div>
 
@@ -971,7 +965,7 @@ function CreateRFQPageInner() {
                                     ? "border-red-500 focus:ring-red-500"
                                     : "border-zinc-200 dark:border-zinc-800 focus:ring-black dark:focus:ring-zinc-50"
                                 }`}
-                                placeholder="e.g., Portland Cement Type I"
+                                placeholder="e.g., Architectural Asphalt Shingles"
                               />
                             </div>
                             <div className="flex gap-3 items-end">
@@ -998,8 +992,8 @@ function CreateRFQPageInner() {
                                   }`}
                                 >
                                   {UNIT_OPTIONS.map((unit) => (
-                                    <option key={unit} value={unit}>
-                                      {unit}
+                                    <option key={unit.code} value={unit.code}>
+                                      {unit.code} — {unit.label}
                                     </option>
                                   ))}
                                 </select>

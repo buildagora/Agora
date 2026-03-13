@@ -43,6 +43,22 @@ export const CATEGORY_OPTIONS: CategoryOption[] = CATEGORY_IDS.map((id) => ({
 }));
 
 /**
+ * Buyer-facing category IDs that are currently live/supported
+ * Only these categories should appear in buyer UI dropdowns
+ */
+export const BUYER_LIVE_CATEGORY_IDS: CategoryId[] = ["roofing", "lumber_siding"] as const;
+
+/**
+ * Buyer-facing category options for UI dropdowns
+ * Restricted to only live categories: Roofing and Lumber/Siding
+ * Use this in buyer-facing dropdowns instead of CATEGORY_OPTIONS
+ */
+export const BUYER_CATEGORY_OPTIONS: CategoryOption[] = BUYER_LIVE_CATEGORY_IDS.map((id) => ({
+  id,
+  label: categoryIdToLabel[id],
+}));
+
+/**
  * Material category IDs array (string IDs only)
  * Useful when only IDs are needed, not full objects
  */

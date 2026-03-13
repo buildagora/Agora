@@ -70,8 +70,32 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: "desc" },
     });
 
-    // Step 4: Parse JSON fields and return with buyer/seller info
-    const sellerName = user.fullName || user.companyName || user.email || "Seller";
+    // Step 4: Resolve seller organization name via SupplierMember -> Supplier
+    // Find the current seller user's supplier organization
+    const supplierMember = await prisma.supplierMember.findFirst({
+      where: {
+        userId: user.id,
+        status: "ACTIVE", // Only active members
+      },
+      select: {
+        supplierId: true,
+      },
+    });
+
+    // Fetch supplier organization if member record exists
+    let supplierName: string | null = null;
+    if (supplierMember) {
+      const supplier = await prisma.supplier.findUnique({
+        where: { id: supplierMember.supplierId },
+        select: { name: true },
+      });
+      supplierName = supplier?.name || null;
+    }
+
+    // Resolve seller name with priority: Supplier.name -> user.companyName -> user.fullName -> user.email -> "Seller"
+    const sellerName = supplierName || user.companyName || user.fullName || user.email || "Seller";
+
+    // Step 5: Parse JSON fields and return with buyer/seller info
     const orders = dbOrders.map((order) => {
       const buyerName = order.buyer?.fullName || order.buyer?.companyName || order.buyer?.email || "Buyer";
       const buyerPhone = order.buyer?.phone || null;
