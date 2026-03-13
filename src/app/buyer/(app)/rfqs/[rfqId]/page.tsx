@@ -1895,18 +1895,31 @@ export default function RFQDetailPage() {
             {/* Activity Tab */}
             <TabsContent value="activity">
               <div className="mt-6">
-                <Card>
-                  <CardHeader>
-                    <h2 className="text-xl font-semibold text-black dark:text-zinc-50">Activity Timeline</h2>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      {getActivityEvents().length > 0 ? (
-                        getActivityEvents().map((event) => (
-                          <div key={event.id} className="flex items-start gap-3">
-                            <div className="flex-shrink-0 w-2 h-2 rounded-full bg-zinc-400 dark:bg-zinc-600 mt-1.5" />
+                {/* Section Header */}
+                <div className="mb-8">
+                  <h2 className="text-xl font-semibold text-black dark:text-zinc-50 mb-1">Activity</h2>
+                  <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                    A timeline of request, bid, and order updates.
+                  </p>
+                </div>
+
+                {/* Timeline */}
+                {getActivityEvents().length > 0 ? (
+                  <div className="relative pl-8">
+                    {/* Vertical Timeline Line */}
+                    <div className="absolute left-3 top-0 bottom-0 w-px bg-zinc-200 dark:bg-zinc-800" />
+
+                    {/* Events */}
+                    <div className="space-y-6">
+                      {getActivityEvents().map((event) => (
+                        <div key={event.id} className="relative">
+                          {/* Circular Marker */}
+                          <div className="absolute left-[-26px] top-1 w-2 h-2 rounded-full bg-zinc-400 dark:bg-zinc-500 border-2 border-white dark:border-zinc-900" />
+
+                          {/* Event Content */}
+                          <div className="flex items-start gap-3">
                             <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2 flex-wrap">
                                 <p className="text-sm font-medium text-black dark:text-zinc-50">{event.label}</p>
                                 {event.badge && (
                                   <Badge
@@ -1919,25 +1932,28 @@ export default function RFQDetailPage() {
                                         ? "error"
                                         : "default"
                                     }
+                                    className="text-[11px] px-1.5 py-0.5"
                                   >
                                     {event.badge}
                                   </Badge>
                                 )}
                               </div>
-                              <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-1">
+                              <p className="text-xs text-zinc-500 dark:text-zinc-500 mt-1.5">
                                 {new Date(event.timestamp).toLocaleString()}
                               </p>
                             </div>
                           </div>
-                        ))
-                      ) : (
-                        <p className="text-sm text-zinc-500 dark:text-zinc-500 text-center py-8">
-                          No activity events yet.
-                        </p>
-                      )}
+                        </div>
+                      ))}
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                ) : (
+                  <div className="rounded-lg bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 py-12 px-6">
+                    <p className="text-sm text-zinc-500 dark:text-zinc-500 text-center">
+                      No activity events yet.
+                    </p>
+                  </div>
+                )}
               </div>
             </TabsContent>
 
