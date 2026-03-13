@@ -17,19 +17,62 @@ export async function middleware(req: NextRequest) {
   // Cannot import server-only modules in middleware, so hardcode the name
   // DO NOT check dev_login_token or any other cookies - only agora.auth is valid
   const authCookie = req.cookies.get("agora.auth");
-  const isAuthenticated = Boolean(authCookie?.value);
   
-  // CRITICAL: Verify JWT to get activeRole for role-based routing enforcement
+  // CRITICAL: Authentication state must be determined by JWT verification, not cookie presence
+  // Initialize as unauthenticated - only set to true if JWT verification succeeds
   let activeRole: "BUYER" | "SELLER" | null = null;
+  let isAuthenticated = false;
+  
   if (authCookie?.value) {
     try {
       const payload = await verifyAuthToken(authCookie.value);
-      if (payload) {
+      if (payload && (payload.activeRole === "BUYER" || payload.activeRole === "SELLER")) {
+        // JWT verification succeeded and activeRole is valid
         activeRole = payload.activeRole;
+        isAuthenticated = true;
+        
+        if (process.env.NODE_ENV === "development") {
+          console.log("[MIDDLEWARE_AUTH]", {
+            cookiePresent: true,
+            jwtValid: true,
+            activeRole,
+            userId: payload.userId,
+          });
+        }
+      } else {
+        // JWT verification returned null or invalid activeRole
+        activeRole = null;
+        isAuthenticated = false;
+        
+        if (process.env.NODE_ENV === "development") {
+          console.log("[MIDDLEWARE_AUTH]", {
+            cookiePresent: true,
+            jwtValid: false,
+            reason: "Invalid payload or activeRole",
+          });
+        }
       }
     } catch {
-      // JWT verification failed - treat as unauthenticated
+      // JWT verification failed (threw exception)
       activeRole = null;
+      isAuthenticated = false;
+      
+      if (process.env.NODE_ENV === "development") {
+        console.log("[MIDDLEWARE_AUTH]", {
+          cookiePresent: true,
+          jwtValid: false,
+          reason: "JWT verification exception",
+        });
+      }
+    }
+  } else {
+    // No cookie present
+    if (process.env.NODE_ENV === "development") {
+      console.log("[MIDDLEWARE_AUTH]", {
+        cookiePresent: false,
+        jwtValid: false,
+        activeRole: null,
+      });
     }
   }
 

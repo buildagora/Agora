@@ -52,6 +52,16 @@ const SUPPLIERS: SupplierSeed[] = [
     phone: "256-851-8990",
     email: "kmcneese@gulfeaglesupply.com",
   },
+  {
+    category: "ROOFING",
+    name: "Agora Supply",
+    street: "100 Builder Way",
+    city: "Huntsville",
+    state: "AL",
+    zip: "35801",
+    phone: "256-555-0101",
+    email: "buildagora@gmail.com",
+  },
 ];
 
 async function main() {

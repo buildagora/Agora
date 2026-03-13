@@ -21,6 +21,8 @@ model User {
   serviceArea            String?                 // Service area (zip codes, city, radius) for SELLER users
   agreedToTermsAt        DateTime?               // Timestamp when user agreed to End User Service Agreement
   agreedToTermsVersion   String?                 // Version of the agreement (e.g., "v1-beta")
+  emailVerified           Boolean                 @default(false) // Email verification status
+  emailVerifiedAt        DateTime?                // Timestamp when email was verified
   createdAt              DateTime                @default(now())
   updatedAt              DateTime                @updatedAt
   rfqs                   RFQ[]
@@ -35,6 +37,7 @@ model User {
   reviewedClaims         SupplierClaimRequest[] @relation("ReviewedClaims")
   sentInvites            SupplierInvite[] @relation("InvitedBy")
   acceptedInvites        SupplierInvite[] @relation("AcceptedBy")
+  emailVerificationTokens EmailVerificationToken[]
 }
 
 model RFQ {
@@ -360,5 +363,18 @@ model SupplierContact {
   createdAt   DateTime            @default(now())
   
   @@index([supplierId])
+}
+
+model EmailVerificationToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  
+  @@index([userId])
+  @@index([tokenHash])
+  @@index([expiresAt])
 }
 

@@ -723,18 +723,31 @@ function CreateRFQPageInner() {
     router.push(`/buyer/rfqs/${rfqId}`);
   };
 
-  // Determine current step based on form completion
+  // Determine current step based on form completion (0-indexed: 0=Details, 1=Line Items, 2=Terms, 3=Review)
+  // Steps only show as complete when their required fields are actually filled
   useEffect(() => {
-    if (categoryId && jobName && lineItems.length > 0) {
-      if (requestedDate && (fulfillmentType === "PICKUP" || (fulfillmentType === "DELIVERY" && location))) {
-        setCurrentStep(3);
-      } else {
-        setCurrentStep(2);
-      }
+    // Step 0 (Details): requires jobName and categoryId
+    const detailsComplete = jobName.trim().length > 0 && categoryId.length > 0;
+    
+    // Step 1 (Line Items): requires at least one valid line item
+    const lineItemsComplete = validateLineItems();
+    
+    // Step 2 (Terms): requires requestedDate and valid location (if DELIVERY)
+    const hasRequestedDate = validateRequestedDate();
+    const locationValidation = validateLocation();
+    const termsComplete = hasRequestedDate && locationValidation.valid;
+    
+    // Determine current active step
+    if (!detailsComplete) {
+      setCurrentStep(0); // Details step - not complete yet
+    } else if (!lineItemsComplete) {
+      setCurrentStep(1); // Line Items step - Details complete, working on Line Items
+    } else if (!termsComplete) {
+      setCurrentStep(2); // Terms step - Details and Line Items complete, working on Terms
     } else {
-      setCurrentStep(1);
+      setCurrentStep(3); // Review step - all steps complete
     }
-  }, [categoryId, jobName, lineItems.length, requestedDate, fulfillmentType, location]);
+  }, [jobName, categoryId, lineItems, requestedDate, fulfillmentType, location]);
 
   const handleReviewClick = () => {
     if (isFormValid()) {
@@ -802,19 +815,17 @@ function CreateRFQPageInner() {
           )}
 
           {/* Two Column Layout */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Left Column - Main Form */}
-            <div className="lg:col-span-2 space-y-6">
+            <div className="lg:col-span-2 space-y-12">
 
-              <form onSubmit={handleSubmit} className="space-y-6">
-                {/* RFQ Details Card */}
-                <Card>
-                  <CardHeader>
-                    <h2 className="text-xl font-semibold text-black dark:text-zinc-50">
-                      RFQ Details
-                    </h2>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-12">
+                {/* RFQ Details Section */}
+                <div className="space-y-6">
+                  <h2 className="text-xl font-semibold text-black dark:text-zinc-50">
+                    RFQ Details
+                  </h2>
+                  <div className="space-y-6">
               <div>
                 <label
                   htmlFor="title"
@@ -827,7 +838,7 @@ function CreateRFQPageInner() {
                   id="jobName"
                   value={jobName}
                   onChange={(e) => setJobName(e.target.value)}
-                  className="w-full px-4 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-black dark:text-zinc-50 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-zinc-50"
+                  className="w-full px-4 py-2.5 border border-zinc-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-900 text-black dark:text-zinc-50 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-zinc-50"
                   placeholder="e.g., Concrete and Rebar for Building Project"
                 />
               </div>
@@ -850,10 +861,10 @@ function CreateRFQPageInner() {
                     }
                   }}
                   onBlur={() => setTouched((prev) => ({ ...prev, category: true }))}
-                  className={`w-full px-4 py-2 border rounded-lg bg-white dark:bg-zinc-900 text-black dark:text-zinc-50 focus:outline-none focus:ring-2 ${
+                  className={`w-full px-4 py-2.5 border rounded-lg bg-white dark:bg-zinc-900 text-black dark:text-zinc-50 focus:outline-none focus:ring-2 ${
                     shouldShowCategoryError()
                       ? "border-red-500 focus:ring-red-500"
-                      : "border-zinc-300 dark:border-zinc-700 focus:ring-black dark:focus:ring-zinc-50"
+                      : "border-zinc-200 dark:border-zinc-800 focus:ring-black dark:focus:ring-zinc-50"
                   }`}
                   required
                 >
@@ -883,7 +894,7 @@ function CreateRFQPageInner() {
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   rows={4}
-                  className="w-full px-4 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-black dark:text-zinc-50 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-zinc-50"
+                  className="w-full px-4 py-2.5 border border-zinc-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-900 text-black dark:text-zinc-50 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-zinc-50"
                   placeholder="Additional details about this request..."
                 />
               </div>
@@ -896,44 +907,48 @@ function CreateRFQPageInner() {
                   onChange={(e) => setSubstitutionsAllowed(e.target.checked)}
                   className="w-4 h-4 border border-zinc-300 dark:border-zinc-700 rounded bg-white dark:bg-zinc-900 text-black dark:text-zinc-50 focus:ring-2 focus:ring-black dark:focus:ring-zinc-50"
                 />
-                <label
-                  htmlFor="substitutionsAllowed"
-                  className="text-sm font-medium text-black dark:text-zinc-50"
-                >
+                  <label
+                    htmlFor="substitutionsAllowed"
+                    className="text-sm font-medium text-black dark:text-zinc-50"
+                  >
                     Allow substitutions for all items
                   </label>
                   </div>
-                  </CardContent>
-                </Card>
+                </div>
+                </div>
 
-                {/* Line Items Card */}
-                <Card data-line-items-section>
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <h2 className="text-xl font-semibold text-black dark:text-zinc-50">
-                        Line Items
-                      </h2>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={addLineItem}
-                      >
-                        Add Line Item
-                      </Button>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                      Add each material you want priced.
-                    </p>
+                {/* Line Items Section */}
+                <div data-line-items-section className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-xl font-semibold text-black dark:text-zinc-50">
+                      Line Items
+                    </h2>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={addLineItem}
+                    >
+                      Add Line Item
+                    </Button>
+                  </div>
+                  <p className="text-sm text-zinc-600 dark:text-zinc-400 -mt-4">
+                    Add each material you want priced.
+                  </p>
 
+                  <div className="space-y-4">
                     {lineItems.map((item, index) => {
                       const error = getLineItemError(index);
                       const hasError = !!error;
                       return (
-                        <Card key={index} className={hasError ? "border-red-300 dark:border-red-700" : ""}>
-                          <CardContent className="p-4 space-y-3">
+                        <div 
+                          key={index} 
+                          className={`p-5 rounded-lg border ${
+                            hasError 
+                              ? "border-red-300 dark:border-red-700 bg-red-50/50 dark:bg-red-900/10" 
+                              : "border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900"
+                          } space-y-4`}
+                        >
                             <div>
                               <label className="block text-sm font-medium text-black dark:text-zinc-50 mb-2">
                                 Description *
@@ -951,10 +966,10 @@ function CreateRFQPageInner() {
                                     return { ...prev, lineItems: newLineItems };
                                   });
                                 }}
-                                className={`w-full px-4 py-2 border rounded-lg bg-white dark:bg-zinc-900 text-black dark:text-zinc-50 focus:outline-none focus:ring-2 ${
+                                className={`w-full px-4 py-2.5 border rounded-lg bg-white dark:bg-zinc-900 text-black dark:text-zinc-50 focus:outline-none focus:ring-2 ${
                                   hasError
                                     ? "border-red-500 focus:ring-red-500"
-                                    : "border-zinc-300 dark:border-zinc-700 focus:ring-black dark:focus:ring-zinc-50"
+                                    : "border-zinc-200 dark:border-zinc-800 focus:ring-black dark:focus:ring-zinc-50"
                                 }`}
                                 placeholder="e.g., Portland Cement Type I"
                               />
@@ -976,10 +991,10 @@ function CreateRFQPageInner() {
                                       return { ...prev, lineItems: newLineItems };
                                     });
                                   }}
-                                  className={`w-full px-4 py-2 border rounded-lg bg-white dark:bg-zinc-900 text-black dark:text-zinc-50 focus:outline-none focus:ring-2 ${
+                                  className={`w-full px-4 py-2.5 border rounded-lg bg-white dark:bg-zinc-900 text-black dark:text-zinc-50 focus:outline-none focus:ring-2 ${
                                     hasError
                                       ? "border-red-500 focus:ring-red-500"
-                                      : "border-zinc-300 dark:border-zinc-700 focus:ring-black dark:focus:ring-zinc-50"
+                                      : "border-zinc-200 dark:border-zinc-800 focus:ring-black dark:focus:ring-zinc-50"
                                   }`}
                                 >
                                   {UNIT_OPTIONS.map((unit) => (
@@ -1011,10 +1026,10 @@ function CreateRFQPageInner() {
                                     });
                                   }}
                                   min="0"
-                                  className={`w-full px-4 py-2 border rounded-lg bg-white dark:bg-zinc-900 text-black dark:text-zinc-50 focus:outline-none focus:ring-2 ${
+                                  className={`w-full px-4 py-2.5 border rounded-lg bg-white dark:bg-zinc-900 text-black dark:text-zinc-50 focus:outline-none focus:ring-2 ${
                                     hasError
                                       ? "border-red-500 focus:ring-red-500"
-                                      : "border-zinc-300 dark:border-zinc-700 focus:ring-black dark:focus:ring-zinc-50"
+                                      : "border-zinc-200 dark:border-zinc-800 focus:ring-black dark:focus:ring-zinc-50"
                                   }`}
                                   placeholder="0"
                                 />
@@ -1030,32 +1045,28 @@ function CreateRFQPageInner() {
                                 </button>
                               )}
                             </div>
-                            {error && (
-                              <p className="text-sm text-red-600 dark:text-red-400">
-                                {error}
-                              </p>
-                            )}
-                          </CardContent>
-                        </Card>
+                          {error && (
+                            <p className="text-sm text-red-600 dark:text-red-400">
+                              {error}
+                            </p>
+                          )}
+                        </div>
                       );
                     })}
-                    {getLineItemsError() && (
-                      <p className="text-sm text-red-600 dark:text-red-400">
-                        {getLineItemsError()}
-                      </p>
-                    )}
-                  </CardContent>
-                </Card>
+                  </div>
+                  {getLineItemsError() && (
+                    <p className="text-sm text-red-600 dark:text-red-400">
+                      {getLineItemsError()}
+                    </p>
+                  )}
+                </div>
 
-                {/* Required Terms Card */}
-                <Card>
-                  <CardHeader>
-                    <h2 className="text-xl font-semibold text-black dark:text-zinc-50">
-                      Required Terms
-                    </h2>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Required Terms Section */}
+                <div className="space-y-6">
+                  <h2 className="text-xl font-semibold text-black dark:text-zinc-50">
+                    Required Terms
+                  </h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
                       <div>
                         <label
@@ -1064,7 +1075,7 @@ function CreateRFQPageInner() {
                         >
                           Fulfillment Type *
                         </label>
-                        <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-2">
+                        <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-3">
                           Choose pickup or delivery
                         </p>
                         <select
@@ -1073,7 +1084,7 @@ function CreateRFQPageInner() {
                           onChange={(e) =>
                             setFulfillmentType(e.target.value as FulfillmentType)
                           }
-                          className="w-full px-4 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-black dark:text-zinc-50 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-zinc-50"
+                          className="w-full px-4 py-2.5 border border-zinc-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-900 text-black dark:text-zinc-50 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-zinc-50"
                         >
                           <option value="PICKUP">PICKUP</option>
                           <option value="DELIVERY">DELIVERY</option>
@@ -1087,7 +1098,7 @@ function CreateRFQPageInner() {
                         >
                           {fulfillmentType === "PICKUP" ? "Pickup Date" : "Requested Delivery Date"} *
                         </label>
-                        <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-2">
+                        <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-3">
                           When you need the materials
                         </p>
                         <input
@@ -1096,10 +1107,10 @@ function CreateRFQPageInner() {
                           value={requestedDate}
                           onChange={(e) => setRequestedDate(e.target.value)}
                           onBlur={() => setTouched((prev) => ({ ...prev, requestedDate: true }))}
-                          className={`w-full px-4 py-2 border rounded-lg bg-white dark:bg-zinc-900 text-black dark:text-zinc-50 focus:outline-none focus:ring-2 ${
+                          className={`w-full px-4 py-2.5 border rounded-lg bg-white dark:bg-zinc-900 text-black dark:text-zinc-50 focus:outline-none focus:ring-2 ${
                             getRequestedDateError()
                               ? "border-red-500 focus:ring-red-500"
-                              : "border-zinc-300 dark:border-zinc-700 focus:ring-black dark:focus:ring-zinc-50"
+                              : "border-zinc-200 dark:border-zinc-800 focus:ring-black dark:focus:ring-zinc-50"
                           }`}
                         />
                         {getRequestedDateError() && (
@@ -1118,7 +1129,7 @@ function CreateRFQPageInner() {
                             >
                               Delivery Preference
                             </label>
-                            <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-2">
+                            <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-3">
                               Preferred delivery time
                             </p>
                             <select
@@ -1127,7 +1138,7 @@ function CreateRFQPageInner() {
                               onChange={(e) =>
                                 setDeliveryPreference(e.target.value as "MORNING" | "ANYTIME")
                               }
-                              className="w-full px-4 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-black dark:text-zinc-50 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-zinc-50"
+                              className="w-full px-4 py-2.5 border border-zinc-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-900 text-black dark:text-zinc-50 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-zinc-50"
                             >
                               <option value="MORNING">MORNING</option>
                               <option value="ANYTIME">ANYTIME</option>
@@ -1141,7 +1152,7 @@ function CreateRFQPageInner() {
                             >
                               Special Delivery Instructions
                             </label>
-                            <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-2">
+                            <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-3">
                               Optional delivery notes
                             </p>
                             <textarea
@@ -1149,7 +1160,7 @@ function CreateRFQPageInner() {
                               value={deliveryInstructions}
                               onChange={(e) => setDeliveryInstructions(e.target.value)}
                               rows={3}
-                              className="w-full px-4 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-black dark:text-zinc-50 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-zinc-50"
+                              className="w-full px-4 py-2.5 border border-zinc-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-900 text-black dark:text-zinc-50 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-zinc-50"
                               placeholder="e.g., Use side entrance, call before delivery..."
                             />
                           </div>
@@ -1161,7 +1172,7 @@ function CreateRFQPageInner() {
                             >
                               Delivery Address *
                             </label>
-                            <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-2">
+                            <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-3">
                               Full address with street number, city, state, and ZIP
                             </p>
                             <input
@@ -1170,10 +1181,10 @@ function CreateRFQPageInner() {
                               value={location}
                               onChange={(e) => setLocation(e.target.value)}
                               onBlur={() => setTouched((prev) => ({ ...prev, location: true }))}
-                              className={`w-full px-4 py-2 border rounded-lg bg-white dark:bg-zinc-900 text-black dark:text-zinc-50 focus:outline-none focus:ring-2 ${
+                              className={`w-full px-4 py-2.5 border rounded-lg bg-white dark:bg-zinc-900 text-black dark:text-zinc-50 focus:outline-none focus:ring-2 ${
                                 getLocationError()
                                   ? "border-red-500 focus:ring-red-500"
-                                  : "border-zinc-300 dark:border-zinc-700 focus:ring-black dark:focus:ring-zinc-50"
+                                  : "border-zinc-200 dark:border-zinc-800 focus:ring-black dark:focus:ring-zinc-50"
                               }`}
                               placeholder="204 Beirne Ave NW, Huntsville, AL 35801"
                             />
@@ -1186,18 +1197,14 @@ function CreateRFQPageInner() {
                         </>
                       )}
                     </div>
-                  </CardContent>
-                </Card>
+                </div>
 
                 {/* Send To Section */}
-                <Card>
-                  <CardHeader>
-                    <h2 className="text-xl font-semibold text-black dark:text-zinc-50">
-                      Send To
-                    </h2>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-3">
+                <div className="space-y-6">
+                  <h2 className="text-xl font-semibold text-black dark:text-zinc-50">
+                    Send To
+                  </h2>
+                  <div className="space-y-4">
                       <label className="flex items-center gap-3 cursor-pointer">
                         <input
                           type="radio"
@@ -1241,7 +1248,7 @@ function CreateRFQPageInner() {
                     </div>
 
                     {sendMode === "preferred" && (
-                      <div className="mt-4 pt-4 border-t border-zinc-200 dark:border-zinc-800">
+                      <div className="mt-6 pt-6 border-t border-zinc-200 dark:border-zinc-800">
                         {isLoadingPreferredSuppliers ? (
                           <p className="text-sm text-zinc-600 dark:text-zinc-400">
                             Loading preferred suppliers...
@@ -1261,7 +1268,7 @@ function CreateRFQPageInner() {
                             <label className="block text-sm font-medium text-black dark:text-zinc-50 mb-2">
                               Select suppliers ({selectedPreferredSupplierIds.length} selected)
                             </label>
-                            <div className="border border-zinc-300 dark:border-zinc-700 rounded-lg p-4 max-h-64 overflow-y-auto bg-white dark:bg-zinc-900">
+                            <div className="border border-zinc-200 dark:border-zinc-800 rounded-lg p-4 max-h-64 overflow-y-auto bg-white dark:bg-zinc-900">
                               <div className="flex flex-col gap-2">
                                 {preferredOptions.map((supplier) => {
                                   const displayName = supplier.companyName || supplier.fullName || supplier.email || supplier.id;
@@ -1299,8 +1306,7 @@ function CreateRFQPageInner() {
                         )}
                       </div>
                     )}
-                  </CardContent>
-                </Card>
+                </div>
               </form>
             </div>
 
@@ -1319,7 +1325,7 @@ function CreateRFQPageInner() {
           </div>
 
           {/* Bottom Action Bar */}
-          <div className="flex gap-4 pt-4 border-t border-zinc-200 dark:border-zinc-800">
+          <div className="flex gap-4 pt-8 mt-8 border-t border-zinc-200 dark:border-zinc-800">
             <Link href="/buyer/dashboard">
               <Button variant="outline" size="md">
                 Cancel

@@ -26,14 +26,12 @@ export default function SummaryCard({
 }: SummaryCardProps) {
   return (
     <div className={`sticky top-6 ${className}`}>
-      <Card>
-        <CardHeader>
-          <h3 className="text-lg font-semibold text-black dark:text-zinc-50">
+      <div className="border border-zinc-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-900">
+        <div className="p-6">
+          <h3 className="text-lg font-semibold text-black dark:text-zinc-50 mb-6">
             Summary
           </h3>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-3">
+          <div className="space-y-4">
             <div className="flex justify-between text-sm">
               <span className="text-zinc-600 dark:text-zinc-400">Line Items</span>
               <span className="font-medium text-black dark:text-zinc-50">
@@ -62,7 +60,7 @@ export default function SummaryCard({
             )}
           </div>
           
-          <div className="pt-4 border-t border-zinc-200 dark:border-zinc-800 space-y-2">
+          <div className="pt-6 mt-6 space-y-3">
             <Button
               variant="primary"
               size="lg"
@@ -84,8 +82,8 @@ export default function SummaryCard({
               </Button>
             )}
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

@@ -61,6 +61,13 @@ export default function RFQDetailPage() {
   const id = params.rfqId as string;
   const [rfq, setRfq] = useState<RFQ | null>(null);
   const [bids, setBids] = useState<Bid[]>([]);
+  const [conversations, setConversations] = useState<Array<{
+    id: string;
+    supplierId: string;
+    supplierName: string;
+    lastMessagePreview: string | null;
+    lastMessageAt: string;
+  }>>([]);
   const [loading, setLoading] = useState(true);
   const [confirmingBidId, setConfirmingBidId] = useState<string | null>(null);
   const [dispatchedSuppliers, setDispatchedSuppliers] = useState<Array<{ 
@@ -224,6 +231,28 @@ export default function RFQDetailPage() {
       setRfq(null);
       setLoading(false);
       return;
+    }
+
+    // Load RFQ-scoped conversations
+    try {
+      const conversationsRes = await fetch(`/api/buyer/rfqs/${id}/conversations`, {
+        cache: "no-store",
+        credentials: "include",
+      });
+      
+      if (conversationsRes.ok) {
+        const conversationsData = await conversationsRes.json();
+        // Handle both direct array and { ok: true, conversations: [...] } formats
+        const conversations = conversationsData.ok 
+          ? (conversationsData.conversations || [])
+          : (Array.isArray(conversationsData) ? conversationsData : []);
+        setConversations(Array.isArray(conversations) ? conversations : []);
+      } else {
+        setConversations([]);
+      }
+    } catch (error) {
+      console.error("Error loading conversations:", error);
+      setConversations([]);
     }
 
     // Load bids from database API
@@ -785,9 +814,9 @@ export default function RFQDetailPage() {
             {/* Overview Tab */}
             <TabsContent value="overview">
               {/* Two-Column Layout */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-6">
             {/* Left Column: RFQ Details + Bids */}
-            <div className="lg:col-span-2 space-y-6">
+            <div className="lg:col-span-2 space-y-8">
               {/* RFQ Details Card */}
               <Card>
                 <CardHeader>
@@ -807,10 +836,10 @@ export default function RFQDetailPage() {
                     {rfq.rfqNumber}
                   </p>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="px-6 py-6 space-y-8">
                   {rfq.notes && (
                     <div>
-                      <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-1">
+                      <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-2">
                         Notes
                       </p>
                       <p className="text-black dark:text-zinc-50 whitespace-pre-wrap">
@@ -821,12 +850,12 @@ export default function RFQDetailPage() {
 
                   {/* Required Terms */}
                   <div>
-                    <h3 className="text-sm font-semibold text-black dark:text-zinc-50 mb-3">
+                    <h3 className="text-sm font-semibold text-black dark:text-zinc-50 mb-4">
                       Required Terms
                     </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-1">
+                  <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-2">
                     Category
                   </p>
                   <p className="text-black dark:text-zinc-50">
@@ -834,7 +863,7 @@ export default function RFQDetailPage() {
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-1">
+                  <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-2">
                     Fulfillment Type
                   </p>
                   <p className="text-black dark:text-zinc-50">
@@ -842,7 +871,7 @@ export default function RFQDetailPage() {
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-1">
+                  <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-2">
                     {rfq.terms.fulfillmentType === "PICKUP" ? "Pickup Date" : "Requested Delivery Date"}
                   </p>
                   <p className="text-black dark:text-zinc-50">
@@ -852,7 +881,7 @@ export default function RFQDetailPage() {
                 {rfq.terms.fulfillmentType === "DELIVERY" && (
                   <>
                     <div>
-                      <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-1">
+                      <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-2">
                         Delivery Preference
                       </p>
                       <p className="text-black dark:text-zinc-50">
@@ -861,7 +890,7 @@ export default function RFQDetailPage() {
                     </div>
                     {rfq.terms.deliveryInstructions && (
                       <div className="md:col-span-2">
-                        <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-1">
+                        <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-2">
                           Special Delivery Instructions
                         </p>
                         <p className="text-black dark:text-zinc-50 whitespace-pre-wrap">
@@ -871,7 +900,7 @@ export default function RFQDetailPage() {
                     )}
                     {rfq.terms.location && (
                       <div className="md:col-span-2">
-                        <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-1">
+                        <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-2">
                           Delivery Address
                         </p>
                         <p className="text-black dark:text-zinc-50">
@@ -886,20 +915,20 @@ export default function RFQDetailPage() {
 
                   {/* Line Items */}
                   <div>
-                    <h3 className="text-sm font-semibold text-black dark:text-zinc-50 mb-3">
+                    <h3 className="text-sm font-semibold text-black dark:text-zinc-50 mb-4">
                       Line Items
                     </h3>
               <div className="border border-zinc-200 dark:border-zinc-800 rounded-lg overflow-hidden">
                 <table className="w-full">
                   <thead className="bg-zinc-50 dark:bg-zinc-900">
                     <tr>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-black dark:text-zinc-50">
+                      <th className="px-6 py-4 text-left text-sm font-medium text-black dark:text-zinc-50">
                         Description
                       </th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-black dark:text-zinc-50">
+                      <th className="px-6 py-4 text-left text-sm font-medium text-black dark:text-zinc-50">
                         Quantity
                       </th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-black dark:text-zinc-50">
+                      <th className="px-6 py-4 text-left text-sm font-medium text-black dark:text-zinc-50">
                         Unit
                       </th>
                     </tr>
@@ -907,13 +936,13 @@ export default function RFQDetailPage() {
                   <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
                     {rfq.lineItems.map((item, index) => (
                       <tr key={index}>
-                        <td className="px-4 py-3 text-black dark:text-zinc-50">
+                        <td className="px-6 py-4 text-black dark:text-zinc-50">
                           {item.description}
                         </td>
-                        <td className="px-4 py-3 text-black dark:text-zinc-50">
+                        <td className="px-6 py-4 text-black dark:text-zinc-50">
                           {item.quantity}
                         </td>
-                        <td className="px-4 py-3 text-black dark:text-zinc-50">
+                        <td className="px-6 py-4 text-black dark:text-zinc-50">
                           {item.unit}
                         </td>
                       </tr>
@@ -1020,7 +1049,7 @@ export default function RFQDetailPage() {
                 {/* Recommendations Section */}
               {bids.length === 0 ? (
                 <Card>
-                  <CardContent className="p-6 text-center">
+                  <CardContent className="px-6 py-8 text-center">
                     <p className="text-zinc-600 dark:text-zinc-400">
                       Awaiting quotes
                     </p>
@@ -1028,13 +1057,13 @@ export default function RFQDetailPage() {
                 </Card>
               ) : recommendation && recommendation.recommended ? (
                 <div>
-                  <h2 className="text-xl font-semibold text-black dark:text-zinc-50 mb-4">
+                  <h2 className="text-xl font-semibold text-black dark:text-zinc-50 mb-6">
                     Recommendations
                   </h2>
                 <div className="flex flex-col gap-4">
                   {/* Recommended Card */}
                   {recommendation.recommended && (
-                    <div className="border-2 border-green-200 dark:border-green-800 rounded-lg p-6 bg-green-50 dark:bg-green-900/20">
+                    <div className="border-2 border-green-200 dark:border-green-800 rounded-lg p-8 bg-green-50 dark:bg-green-900/20">
                       <div className="flex items-start justify-between mb-3">
                         <div>
                             <div className="flex items-center gap-2 mb-1">
@@ -1270,7 +1299,7 @@ export default function RFQDetailPage() {
 
               {/* Bids Section */}
               <div>
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center justify-between mb-6">
                   <h2 className="text-xl font-semibold text-black dark:text-zinc-50">
                     All Bids ({bids.length})
                   </h2>
@@ -1569,17 +1598,17 @@ export default function RFQDetailPage() {
                       Status & Actions
                     </h3>
                   </CardHeader>
-                  <CardContent className="space-y-4">
+                  <CardContent className="px-6 py-6 space-y-6">
                     {/* Current Status */}
                     <div>
-                      <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-2">
+                      <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-3">
                         Current Status
                       </p>
                       <Badge variant={statusVariant} className="text-base px-3 py-1">
                         {currentStatus}
                       </Badge>
                       {rfq.status === "AWARDED" && getAwardedBid() && (
-                        <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-2">
+                        <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-3">
                           Awarded to {getAwardedBid()?.sellerName}
                           {rfq.awardedAt && (
                             <span className="block text-xs mt-1">
@@ -1591,22 +1620,22 @@ export default function RFQDetailPage() {
                     </div>
 
                     {/* Fulfillment Info */}
-                    <div className="pt-4 border-t border-zinc-200 dark:border-zinc-800">
-                      <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-2">
+                    <div className="pt-6 border-t border-zinc-200 dark:border-zinc-800">
+                      <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-2">
                         Fulfillment Type
                       </p>
-                      <p className="text-black dark:text-zinc-50 font-medium">
+                      <p className="text-black dark:text-zinc-50 font-medium mb-3">
                         {rfq.terms.fulfillmentType}
                       </p>
-                      <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">
+                      <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-2">
                         {rfq.terms.fulfillmentType === "PICKUP" ? "Pickup Date" : "Requested Delivery Date"}
                       </p>
                       <p className="text-black dark:text-zinc-50">
                         {formatDateShort(rfq.terms.requestedDate)}
                       </p>
                       {rfq.terms.fulfillmentType === "DELIVERY" && rfq.terms.location && (
-                        <div className="mt-3">
-                          <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-1">
+                        <div className="mt-4">
+                          <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-2">
                             Delivery Address
                           </p>
                           <p className="text-sm text-black dark:text-zinc-50">
@@ -1617,7 +1646,7 @@ export default function RFQDetailPage() {
                     </div>
 
                     {/* Key Actions */}
-                    <div className="pt-4 border-t border-zinc-200 dark:border-zinc-800 space-y-2">
+                    <div className="pt-6 border-t border-zinc-200 dark:border-zinc-800 space-y-3">
                       {/* Award Action - Show if OPEN and has bids */}
                       {rfq.status === "OPEN" && (!order || order.status === "cancelled") && recommendation?.recommended && (
                         <Button
@@ -1798,28 +1827,23 @@ export default function RFQDetailPage() {
               <div className="mt-6">
                 <Card>
                   <CardContent className="p-6">
-                    {bids.length > 0 ? (
+                    {conversations.length > 0 ? (
                       <div className="space-y-2">
-                        {bids.map((bid) => {
-                          if (!bid.sellerId) return null;
-                          // Use sellerDisplayName (canonical field from API) - never shows email
-                          const sellerDisplayName = bid.sellerDisplayName || bid.sellerName || "Supplier";
-                          // Use supplierId (supplier org ID) for Talk to Suppliers link
-                          // If supplierId is not available, fall back to sellerId (will need lookup on server)
-                          const supplierId = (bid as any).supplierId || bid.sellerId;
+                        {conversations.map((conversation) => {
                           // Build link to canonical Talk to Suppliers thread with RFQ context
-                          // Pass rfqId so server can find/create the RFQ-scoped conversation
-                          const talkLink = `/buyer/suppliers/talk/${supplierId}${rfq?.id ? `?rfqId=${rfq.id}` : ""}`;
+                          const talkLink = `/buyer/suppliers/talk/${conversation.supplierId}${rfq?.id ? `?rfqId=${rfq.id}` : ""}`;
                           return (
                             <Link
-                              key={bid.id}
+                              key={conversation.id}
                               href={talkLink}
                               className="block p-4 border border-zinc-200 dark:border-zinc-800 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors"
                             >
                               <div className="flex items-center justify-between">
                                 <div>
-                                  <p className="font-medium text-black dark:text-zinc-50">{sellerDisplayName}</p>
-                                  <p className="text-sm text-zinc-600 dark:text-zinc-400">View conversation</p>
+                                  <p className="font-medium text-black dark:text-zinc-50">{conversation.supplierName}</p>
+                                  <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                                    {conversation.lastMessagePreview || "View conversation"}
+                                  </p>
                                 </div>
                                 <span className="text-sm text-zinc-500 dark:text-zinc-400">→</span>
                               </div>
@@ -1830,7 +1854,7 @@ export default function RFQDetailPage() {
                     ) : (
                       <div className="text-center py-12">
                         <p className="text-sm text-zinc-500 dark:text-zinc-500">
-                          No bids yet. Messages will be available once suppliers respond.
+                          No supplier conversations yet for this RFQ.
                         </p>
                       </div>
                     )}

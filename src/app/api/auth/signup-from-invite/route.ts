@@ -27,6 +27,8 @@ import { getPrisma } from "@/lib/db.server";
 import { jsonError, withErrorHandling } from "@/lib/apiResponse";
 import { createHash } from "crypto";
 import bcrypt from "bcryptjs";
+import { generateVerificationToken, getVerificationTokenExpiration } from "@/lib/auth/verification.server";
+import { sendVerificationEmail } from "@/lib/auth/verificationEmail.server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -159,10 +161,56 @@ export async function POST(request: NextRequest) {
       return { newUser, supplierName: invite.supplier.name };
     });
 
+    // EMAIL VERIFICATION: Create verification token and send email
+    // Note: Invite signups also require email verification
+    try {
+      const { rawToken, tokenHash } = generateVerificationToken();
+      const expiresAt = getVerificationTokenExpiration();
+
+      // Create verification token record
+      await prisma.emailVerificationToken.create({
+        data: {
+          userId: result.newUser.id,
+          tokenHash,
+          expiresAt,
+        },
+      });
+
+      // Send verification email
+      try {
+        await sendVerificationEmail({
+          to: normalizedEmail,
+          token: rawToken,
+          userEmail: normalizedEmail,
+        });
+
+        console.log("[INVITE_SIGNUP_VERIFICATION_EMAIL_SENT]", {
+          userId: result.newUser.id,
+          email: normalizedEmail,
+        });
+      } catch (emailError) {
+        // Email sending failed - log but don't fail signup
+        console.error("[INVITE_SIGNUP_VERIFICATION_EMAIL_FAILED]", {
+          userId: result.newUser.id,
+          email: normalizedEmail,
+          error: emailError instanceof Error ? emailError.message : String(emailError),
+        });
+      }
+    } catch (verificationError) {
+      // Token creation failed - log but don't fail signup
+      console.error("[INVITE_SIGNUP_VERIFICATION_TOKEN_FAILED]", {
+        userId: result.newUser.id,
+        email: normalizedEmail,
+        error: verificationError instanceof Error ? verificationError.message : String(verificationError),
+      });
+    }
+
     return NextResponse.json({
       ok: true,
       email: normalizedEmail,
       supplierName: result.supplierName,
+      requiresEmailVerification: true,
+      message: "Account created successfully. Please check your email to verify your account before signing in.",
     });
   });
 }

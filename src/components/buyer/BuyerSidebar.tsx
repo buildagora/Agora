@@ -95,19 +95,24 @@ export default function BuyerSidebar({ onNavigate }: BuyerSidebarProps) {
       <SidebarContent>
         <nav className="py-2">
           {/* Primary: Dashboard */}
-          <SidebarItem href="/buyer/dashboard" active={isActive("/buyer/dashboard")} onClick={onNavigate}>
+          <SidebarItem 
+            href="/buyer/dashboard" 
+            active={isActive("/buyer/dashboard")} 
+            onClick={onNavigate}
+            className="text-base text-zinc-700 hover:text-black cursor-pointer"
+          >
             Dashboard
           </SidebarItem>
 
           {/* Requests Section */}
-          <div className="mt-6">
-            <div className="px-4 py-2 text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-              Requests
+          <div>
+            <div className="text-xs font-semibold uppercase tracking-wider text-slate-700 mt-6 mb-2 pl-2">
+              REQUESTS
             </div>
             <SidebarItem 
               href="/buyer/rfqs" 
               active={isActive("/buyer/rfqs")}
-              className="pl-4"
+              className="pl-4 text-base text-zinc-700 hover:text-black cursor-pointer"
               onClick={onNavigate}
             >
               <div className="flex items-center justify-between w-full">
@@ -122,17 +127,25 @@ export default function BuyerSidebar({ onNavigate }: BuyerSidebarProps) {
                 )}
               </div>
             </SidebarItem>
+            <SidebarItem 
+              href="/buyer/rfqs/new" 
+              active={isActive("/buyer/rfqs/new")}
+              className="pl-4 text-base text-zinc-700 hover:text-black cursor-pointer"
+              onClick={onNavigate}
+            >
+              New Request
+            </SidebarItem>
           </div>
 
           {/* Suppliers Section */}
-          <div className="mt-6">
-            <div className="px-4 py-2 text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-              Suppliers
+          <div>
+            <div className="text-xs font-semibold uppercase tracking-wider text-slate-700 mt-6 mb-2 pl-2">
+              SUPPLIERS
             </div>
             <SidebarItem 
               href="/buyer/suppliers/preferred" 
               active={isActive("/buyer/suppliers/preferred")}
-              className="pl-4"
+              className="pl-4 text-base text-zinc-700 hover:text-black cursor-pointer"
               onClick={onNavigate}
             >
               Preferred
@@ -140,7 +153,7 @@ export default function BuyerSidebar({ onNavigate }: BuyerSidebarProps) {
             <SidebarItem 
               href="/buyer/suppliers/talk" 
               active={isActive("/buyer/suppliers/talk")}
-              className="pl-4"
+              className="pl-4 text-base text-zinc-700 hover:text-black cursor-pointer"
               onClick={onNavigate}
             >
               <div className="flex items-center justify-between w-full">
@@ -157,11 +170,15 @@ export default function BuyerSidebar({ onNavigate }: BuyerSidebarProps) {
             </SidebarItem>
           </div>
 
-          {/* Settings (optional) */}
-          <div className="mt-6">
+          {/* Account Section */}
+          <div>
+            <div className="text-xs font-semibold uppercase tracking-wider text-slate-700 mt-6 mb-2 pl-2">
+              ACCOUNT
+            </div>
             <SidebarItem 
               href="/buyer/settings" 
               active={isActive("/buyer/settings")}
+              className="pl-4 text-base text-zinc-700 hover:text-black cursor-pointer"
               onClick={onNavigate}
             >
               Settings

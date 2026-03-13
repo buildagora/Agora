@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth as useAuthHook } from "@/lib/auth/AuthProvider";
@@ -24,6 +24,10 @@ export default function SignInClient() {
   // Client-only mounted flag to prevent hydration mismatch
   const [, setMounted] = useState(false);
   const [passwordError, setPasswordError] = useState("");
+  
+  // CRITICAL: Request attempt counter to prevent stale async responses from overwriting current UI
+  // Only the latest login attempt can update error/loading state
+  const requestAttemptRef = useRef(0);
 
   // Set mounted flag after client-side hydration
   useEffect(() => {
@@ -40,11 +44,23 @@ export default function SignInClient() {
   }, [searchParams]);
 
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
+  // Helper to clear all error states
+  const clearAllErrors = () => {
     setError("");
     setPasswordError("");
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // CRITICAL: Clear all errors before starting new attempt
+    clearAllErrors();
+    
+    // Increment request attempt counter - this ensures only the latest request can update UI
+    const currentAttempt = ++requestAttemptRef.current;
+    
+    // Set loading state
+    setIsSubmitting(true);
 
     // CRITICAL: Enforce single active role per session
     // If already authenticated, logout first to prevent role crossover
@@ -76,14 +92,20 @@ export default function SignInClient() {
     }
 
     if (!formData.email.trim()) {
-      setError("Please enter an email address");
-      setIsSubmitting(false);
+      // Only update if this is still the current attempt
+      if (currentAttempt === requestAttemptRef.current) {
+        setError("Please enter an email address");
+        setIsSubmitting(false);
+      }
       return;
     }
 
     if (!formData.password.trim()) {
-      setPasswordError("Password is required");
-      setIsSubmitting(false);
+      // Only update if this is still the current attempt
+      if (currentAttempt === requestAttemptRef.current) {
+        setPasswordError("Password is required");
+        setIsSubmitting(false);
+      }
       return;
     }
 
@@ -109,8 +131,16 @@ export default function SignInClient() {
       hasJson: !!loginResult.json,
     });
 
+    // CRITICAL: Guard against stale responses - only update UI if this is still the current attempt
+    const isCurrentAttempt = currentAttempt === requestAttemptRef.current;
+    
     // Handle errors - show REAL server error
     if (!loginResult.ok) {
+      // Only update UI if this is still the latest request
+      if (!isCurrentAttempt) {
+        return; // Stale response, ignore it
+      }
+      
       let errorMessage: string;
       
       // Check if response is HTML (server error page)
@@ -138,12 +168,25 @@ export default function SignInClient() {
 
     // Validate response structure - MUST have ok: true and user
     if (!loginResult.json || loginResult.json.ok !== true || !loginResult.json.user) {
+      // Only update UI if this is still the latest request
+      if (!isCurrentAttempt) {
+        return; // Stale response, ignore it
+      }
+      
       console.error("[LOGIN_ERROR] Invalid response structure", loginResult.json);
       setError("Invalid response from server. Please try again.");
       setIsSubmitting(false);
       return;
     }
 
+    // CRITICAL: Guard against stale responses - only proceed if this is still the current attempt
+    if (!isCurrentAttempt) {
+      return; // Stale response, ignore it - a newer request is in progress
+    }
+    
+    // CRITICAL: Clear all errors immediately on success - don't leave old errors visible
+    clearAllErrors();
+    
     // Server is source of truth - use the user returned by /api/auth/login
     const userData = loginResult.json.user;
     
@@ -152,9 +195,12 @@ export default function SignInClient() {
     const normalizedUser = normalizeAuthUser(userData);
     
     if (!normalizedUser) {
-      console.error("[LOGIN_ERROR] User data missing required fields or invalid format", userData);
-      setError("Invalid user data from server. Please try again.");
-      setIsSubmitting(false);
+      // Double-check we're still current before showing error
+      if (currentAttempt === requestAttemptRef.current) {
+        console.error("[LOGIN_ERROR] User data missing required fields or invalid format", userData);
+        setError("Invalid user data from server. Please try again.");
+        setIsSubmitting(false);
+      }
       return;
     }
     
@@ -258,7 +304,8 @@ export default function SignInClient() {
                   value={formData.email}
                   onChange={(e) => {
                     setFormData((prev) => ({ ...prev, email: e.target.value }));
-                    setError("");
+                    // CRITICAL: Clear all errors when user edits email - old errors are no longer relevant
+                    clearAllErrors();
                   }}
                   placeholder="Enter your email"
                   required
@@ -275,8 +322,8 @@ export default function SignInClient() {
                   value={formData.password}
                   onChange={(e) => {
                     setFormData((prev) => ({ ...prev, password: e.target.value }));
-                    setPasswordError("");
-                    setError("");
+                    // CRITICAL: Clear all errors when user edits password - old errors are no longer relevant
+                    clearAllErrors();
                   }}
                   placeholder="Enter your password"
                   required

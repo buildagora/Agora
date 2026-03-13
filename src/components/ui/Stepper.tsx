@@ -68,9 +68,9 @@ export default function Stepper({ steps, currentStep }: StepperProps) {
             {/* Connector Line */}
             {index < steps.length - 1 && (
               <div
-                className={`flex-1 h-0.5 mx-2 transition-colors ${
+                className={`flex-1 h-px mx-2 transition-colors ${
                   isCompleted
-                    ? "bg-black dark:bg-zinc-50"
+                    ? "bg-zinc-300 dark:bg-zinc-600"
                     : "bg-zinc-200 dark:bg-zinc-800"
                 }`}
               />

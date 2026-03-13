@@ -27,11 +27,22 @@ export async function GET(request: NextRequest) {
       return jsonError("FORBIDDEN", "Buyer access required", 403);
     }
 
+    // Query Prisma directly for user data (database is source of truth)
+    const prisma = getPrisma();
+    const dbUser = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: { companyName: true, fullName: true, phone: true },
+    });
+
+    if (!dbUser) {
+      return jsonError("NOT_FOUND", "User not found", 404);
+    }
+
     // Return current user profile data
     return jsonOk({
-      companyName: user.companyName || null,
-      fullName: user.fullName || null,
-      phone: user.phone || null,
+      companyName: dbUser.companyName || null,
+      fullName: dbUser.fullName || null,
+      phone: dbUser.phone || null,
     }, 200);
   });
 }
@@ -61,11 +72,11 @@ export async function PATCH(request: NextRequest) {
 
     const { companyName, fullName, phone } = body;
 
-    // Build update data object (only include fields that are provided)
+    // Build update data object (trim strings, treat blank strings as null)
     const updateData: {
-      companyName?: string;
-      fullName?: string;
-      phone?: string;
+      companyName?: string | null;
+      fullName?: string | null;
+      phone?: string | null;
     } = {};
 
     if (companyName !== undefined) {
@@ -84,8 +95,6 @@ export async function PATCH(request: NextRequest) {
       where: { id: user.id },
       data: updateData,
       select: {
-        id: true,
-        email: true,
         companyName: true,
         fullName: true,
         phone: true,

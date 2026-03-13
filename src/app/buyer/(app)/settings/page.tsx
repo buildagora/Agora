@@ -17,7 +17,6 @@ export default function BuyerSettingsPage() {
   const [companyName, setCompanyName] = useState("");
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
-  const [deliveryAddress, setDeliveryAddress] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -40,10 +39,12 @@ export default function BuyerSettingsPage() {
         credentials: "include",
       });
       if (response.ok) {
-        const data = await response.json();
-        if (data.companyName) setCompanyName(data.companyName);
-        if (data.fullName) setFullName(data.fullName);
-        if (data.phone) setPhone(data.phone);
+        const result = await response.json();
+        // jsonOk() returns { ok: true, data: ... }, so read from result.data
+        const data = result.data || result;
+        setCompanyName(data.companyName || "");
+        setFullName(data.fullName || "");
+        setPhone(data.phone || "");
       }
     } catch (error) {
       console.error("Failed to load user data:", error);
@@ -169,18 +170,6 @@ export default function BuyerSettingsPage() {
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="Enter phone number"
                 />
-                <div>
-                  <label className="block text-sm font-medium text-black dark:text-zinc-50 mb-2">
-                    Default delivery address
-                  </label>
-                  <textarea
-                    className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-md bg-white dark:bg-zinc-900 text-black dark:text-zinc-50 placeholder-zinc-500 dark:placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-slate-500 dark:focus:ring-slate-400"
-                    rows={3}
-                    value={deliveryAddress}
-                    onChange={(e) => setDeliveryAddress(e.target.value)}
-                    placeholder="Enter default delivery address"
-                  />
-                </div>
                 {saveError && (
                   <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded">
                     <p className="text-sm text-red-600 dark:text-red-400">
