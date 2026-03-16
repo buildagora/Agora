@@ -222,6 +222,53 @@ export default function SellerRFQDetailPage() {
     });
   };
 
+  // Format numeric string with commas for display only
+  const formatNumberWithCommas = (value: string): string => {
+    if (!value || value.trim() === "") {
+      return "";
+    }
+    // Strip existing commas
+    const cleaned = value.replace(/,/g, "");
+    
+    // Handle edge cases: empty, just decimal point
+    if (cleaned === "" || cleaned === ".") {
+      return cleaned;
+    }
+    
+    // Split into integer and decimal parts
+    const parts = cleaned.split(".");
+    const integerPart = parts[0] || "";
+    const decimalPart = parts.length > 1 ? "." + parts[1] : "";
+    
+    // Format integer part with commas (only if >= 1000)
+    let formattedInteger = integerPart;
+    if (integerPart && integerPart.length > 0) {
+      try {
+        const num = parseInt(integerPart, 10);
+        if (!isNaN(num) && num >= 1000) {
+          formattedInteger = num.toLocaleString("en-US");
+        }
+      } catch {
+        // Fallback: keep original if formatting fails
+      }
+    }
+    
+    return formattedInteger + decimalPart;
+  };
+
+  // Strip commas from numeric string for storage/calculation
+  const stripCommas = (value: string): string => {
+    return value.replace(/,/g, "");
+  };
+
+  // Format number as currency with commas and 2 decimal places
+  const formatCurrency = (value: number): string => {
+    return value.toLocaleString("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  };
+
   const scrollToBidForm = () => {
     setShowBidForm(true);
     setTimeout(() => {
@@ -696,6 +743,18 @@ export default function SellerRFQDetailPage() {
             <RFQClarifications rfqId={id} />
           </div>
 
+          {/* Buyer Notes */}
+          {rfq.notes?.trim() && (
+            <div className="mb-6 p-4 border border-zinc-200 dark:border-zinc-800 rounded-lg bg-zinc-50 dark:bg-zinc-900">
+              <p className="text-xs font-medium text-zinc-500 dark:text-zinc-500 mb-2">
+                Buyer Notes
+              </p>
+              <p className="text-sm text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap break-words">
+                {rfq.notes}
+              </p>
+            </div>
+          )}
+
           {/* Line Items */}
           <div className="flex flex-col gap-6 mb-8">
             <div>
@@ -909,10 +968,10 @@ export default function SellerRFQDetailPage() {
                                 {item.unit}
                               </td>
                               <td className="px-4 py-3 text-black dark:text-zinc-50">
-                                ${unitPrice.toFixed(2)}
+                                ${formatCurrency(unitPrice)}
                               </td>
                               <td className="px-4 py-3 text-right text-black dark:text-zinc-50 font-medium">
-                                ${lineTotal.toFixed(2)}
+                                ${formatCurrency(lineTotal)}
                               </td>
                             </tr>
                           );
@@ -943,36 +1002,39 @@ export default function SellerRFQDetailPage() {
                       <span>Line Items Total:</span>
                       <span>
                         $
-                        {(existingBid.lineItems || [])
-                          .reduce((sum, item) => {
+                        {formatCurrency(
+                          (existingBid.lineItems || []).reduce((sum, item) => {
                             const qty = parseFloat(item.quantity) || 0;
                             const price = parseFloat(item.unitPrice) || 0;
                             return sum + qty * price;
                           }, 0)
-                          .toFixed(2)}
+                        )}
                       </span>
                     </div>
                     {existingBid.deliveryCharge !== undefined && existingBid.deliveryCharge > 0 && (
                       <div className="flex justify-between text-sm text-zinc-600 dark:text-zinc-400">
                         <span>Delivery Charge:</span>
-                        <span>${existingBid.deliveryCharge.toFixed(2)}</span>
+                        <span>${formatCurrency(existingBid.deliveryCharge)}</span>
                       </div>
                     )}
                     <div className="pt-2 border-t border-zinc-200 dark:border-zinc-800">
                       <div className="flex justify-between font-semibold text-lg text-black dark:text-zinc-50">
                         <span>Total:</span>
                         <span>
-                          ${existingBid.total !== undefined
-                            ? existingBid.total.toFixed(2)
-                            : (() => {
-                                const lineItemsTotal = (existingBid.lineItems || []).reduce((sum, item) => {
-                                  const qty = parseFloat(item.quantity) || 0;
-                                  const price = parseFloat(item.unitPrice) || 0;
-                                  return sum + qty * price;
-                                }, 0);
-                                const delivery = existingBid.deliveryCharge || 0;
-                                return (lineItemsTotal + delivery).toFixed(2);
-                              })()}
+                          $
+                          {formatCurrency(
+                            existingBid.total !== undefined
+                              ? existingBid.total
+                              : (() => {
+                                  const lineItemsTotal = (existingBid.lineItems || []).reduce((sum, item) => {
+                                    const qty = parseFloat(item.quantity) || 0;
+                                    const price = parseFloat(item.unitPrice) || 0;
+                                    return sum + qty * price;
+                                  }, 0);
+                                  const delivery = existingBid.deliveryCharge || 0;
+                                  return lineItemsTotal + delivery;
+                                })()
+                          )}
                         </span>
                       </div>
                     </div>
@@ -1046,14 +1108,16 @@ export default function SellerRFQDetailPage() {
                             </label>
                             <input
                               type="text"
-                              value={item.unitPrice}
-                              onChange={(e) =>
+                              value={formatNumberWithCommas(item.unitPrice)}
+                              onChange={(e) => {
+                                // Strip commas before saving to state
+                                const rawValue = stripCommas(e.target.value);
                                 updateBidLineItem(
                                   index,
                                   "unitPrice",
-                                  e.target.value
-                                )
-                              }
+                                  rawValue
+                                );
+                              }}
                               className={`w-full px-4 py-2 border rounded-lg bg-white dark:bg-zinc-900 text-black dark:text-zinc-50 focus:outline-none focus:ring-2 ${
                                 bidErrors.lineItems[index]
                                   ? "border-red-500 focus:ring-red-500"
@@ -1130,25 +1194,40 @@ export default function SellerRFQDetailPage() {
                       <span>Line Items Total:</span>
                       <span>
                         $
-                        {bidLineItems
-                          .reduce((sum, item) => {
+                        {formatCurrency(
+                          bidLineItems.reduce((sum, item) => {
                             const qty = parseFloat(item.quantity) || 0;
                             const price = parseFloat(item.unitPrice) || 0;
                             return sum + qty * price;
                           }, 0)
-                          .toFixed(2)}
+                        )}
                       </span>
                     </div>
                     {rfq.terms.fulfillmentType === "DELIVERY" && deliveryCharge.trim() && (
                       <div className="flex justify-between text-sm text-zinc-600 dark:text-zinc-400">
                         <span>Delivery Charge:</span>
-                        <span>${(parseFloat(deliveryCharge) || 0).toFixed(2)}</span>
+                        <span>${formatCurrency(parseFloat(deliveryCharge) || 0)}</span>
                       </div>
                     )}
                     <div className="pt-2 border-t border-zinc-200 dark:border-zinc-800">
                       <div className="flex justify-between font-semibold text-black dark:text-zinc-50">
                         <span>Total:</span>
-                        <span>${calculateTotal().toFixed(2)}</span>
+                        <span>
+                          $
+                          {formatCurrency(
+                            (() => {
+                              const lineItemsTotal = bidLineItems.reduce((sum, item) => {
+                                const qty = parseFloat(item.quantity) || 0;
+                                const price = parseFloat(item.unitPrice) || 0;
+                                return sum + qty * price;
+                              }, 0);
+                              const delivery = rfq.terms.fulfillmentType === "DELIVERY" && deliveryCharge.trim()
+                                ? parseFloat(deliveryCharge) || 0
+                                : 0;
+                              return lineItemsTotal + delivery;
+                            })()
+                          )}
+                        </span>
                       </div>
                     </div>
                   </div>

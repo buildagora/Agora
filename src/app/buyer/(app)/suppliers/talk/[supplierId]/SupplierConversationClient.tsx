@@ -254,6 +254,14 @@ export default function SupplierConversationClient({
         setMessageText("");
         forceScrollNextRef.current = true;
         await reloadConversationAndSidebar();
+      } else {
+        // Log failure details for debugging
+        const errorText = await response.text().catch(() => "Unable to read response body");
+        console.error("Failed to send message:", {
+          status: response.status,
+          statusText: response.statusText,
+          body: errorText,
+        });
       }
     } catch (error) {
       console.error("Error sending message:", error);
@@ -352,13 +360,26 @@ export default function SupplierConversationClient({
               const unread = conv.unreadCount && conv.unreadCount > 0 ? conv.unreadCount : 0;
               const isRFQConversation = conv.rfqId && conv.rfqNumber;
 
+              const handleRowClick = () => {
+                router.push(`/buyer/suppliers/talk/${conv.supplierId}?conversationId=${encodeURIComponent(conv.id)}`);
+              };
+
+              const handleRowKeyDown = (e: React.KeyboardEvent) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  handleRowClick();
+                }
+              };
+
               return (
-                <button
+                <div
                   key={conv.id}
-                  type="button"
-                  onClick={() => router.push(`/buyer/suppliers/talk/${conv.supplierId}?conversationId=${encodeURIComponent(conv.id)}`)}
+                  role="button"
+                  tabIndex={0}
+                  onClick={handleRowClick}
+                  onKeyDown={handleRowKeyDown}
                   className={[
-                    "w-full text-left rounded-xl px-3 py-3 mb-1 transition-colors",
+                    "w-full text-left rounded-xl px-3 py-3 mb-1 transition-colors cursor-pointer",
                     active
                       ? "bg-zinc-100 dark:bg-zinc-800"
                       : "hover:bg-zinc-50 dark:hover:bg-zinc-950",
@@ -438,7 +459,7 @@ export default function SupplierConversationClient({
                       </div>
                     </div>
                   </div>
-                </button>
+                </div>
               );
             })
           )}

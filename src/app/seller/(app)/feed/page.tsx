@@ -16,6 +16,7 @@ import { useAuth } from "@/lib/auth/AuthProvider";
 // Extended RFQ type with computed dueAt for sorting
 type RFQWithDueAt = RFQ & {
   dueAt?: string; // Computed from terms.requestedDate for sorting/closing soon checks
+  bidCount?: number; // Marketplace activity signal (defaults to 0)
 };
 
 /**
@@ -35,6 +36,7 @@ function normalizedRfqToRfq(normalized: NormalizedRFQ): RFQWithDueAt {
     visibility: (normalized as any).visibility,
     targetSupplierIds: (normalized as any).targetSupplierIds,
     lineItems: (normalized as any).lineItems || [],
+    bidCount: (normalized as any).bidCount || 0,
     terms: (normalized as any).terms || {
       fulfillmentType: "DELIVERY" as const,
       requestedDate: normalized.dueAt || normalized.createdAt,
@@ -350,6 +352,27 @@ function SellerFeedPageInner() {
                             {rfq.terms.fulfillmentType === "PICKUP" ? "Pickup" : "Delivery"}: {formatDateShort(rfq.terms.requestedDate)}
                           </span>
                         </div>
+                        {/* Marketplace Activity Signal */}
+                        <div className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+                          {(() => {
+                            const bidCount = rfq.bidCount || 0;
+                            if (bidCount === 0) {
+                              return <span>⚡ Be the first to bid</span>;
+                            } else if (bidCount === 1) {
+                              return <span>🔥 1 bid</span>;
+                            } else {
+                              return <span>🔥 {bidCount} bids</span>;
+                            }
+                          })()}
+                        </div>
+                        {rfq.notes?.trim() && (
+                          <div className="mt-2 pt-2 border-t border-zinc-200 dark:border-zinc-800">
+                            <p className="text-xs font-medium text-zinc-500 dark:text-zinc-500 mb-1">Notes:</p>
+                            <p className="text-sm text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap break-words">
+                              {rfq.notes}
+                            </p>
+                          </div>
+                        )}
                       </Link>
                       <div className="ml-4">
                         <Button 

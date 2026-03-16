@@ -251,6 +251,24 @@ export async function GET(request: NextRequest) {
       visibleRfqs = visibleRfqs.filter(rfq => !bidRfqIdSet.has(rfq.id));
     }
     
+    // Compute bid counts for remaining visible RFQs (marketplace activity signals)
+    const bidCountsMap = new Map<string, number>();
+    if (visibleRfqs.length > 0) {
+      const remainingRfqIds = visibleRfqs.map(r => r.id);
+      const allBids = await prisma.bid.findMany({
+        where: {
+          rfqId: { in: remainingRfqIds },
+        },
+        select: { rfqId: true },
+      });
+      
+      // Group/count bids by rfqId
+      for (const bid of allBids) {
+        const currentCount = bidCountsMap.get(bid.rfqId) || 0;
+        bidCountsMap.set(bid.rfqId, currentCount + 1);
+      }
+    }
+    
     // CRITICAL: Log seller feed query (always, not just dev)
     const broadcastCount = visibleRfqs.filter(r => (r.visibility || "broadcast") === "broadcast").length;
     const directCount = visibleRfqs.filter(r => r.visibility === "direct").length;
@@ -275,11 +293,13 @@ export async function GET(request: NextRequest) {
       status: rfq.status,
       createdAt: rfq.createdAt.toISOString(),
       title: rfq.title,
+      notes: rfq.notes || "",
       category: rfq.category,
       jobNameOrPo: rfq.jobNameOrPo || null,
       buyerId: rfq.buyerId,
       visibility: rfq.visibility || "broadcast",
       targetSupplierIds: rfq.targetSupplierIds ? JSON.parse(rfq.targetSupplierIds) : null,
+      bidCount: bidCountsMap.get(rfq.id) || 0,
     }));
 
     // CRITICAL: Log feed count for diagnostics
