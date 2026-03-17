@@ -50,6 +50,21 @@ function formatDate(dateString: string): string {
   });
 }
 
+function formatShortDate(dateString: string): string {
+  const date = new Date(dateString);
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+function formatSendMode(sendMode: string): string {
+  if (sendMode === "DIRECT") return "Direct";
+  if (sendMode === "NETWORK") return "Network";
+  return sendMode;
+}
+
 function statusBadge(status: string) {
   const colors: Record<string, string> = {
     OPEN: "bg-blue-100 text-blue-800",
@@ -68,22 +83,34 @@ function statusBadge(status: string) {
   );
 }
 
+function getRecipientStatusLabel(status: string): string {
+  const labels: Record<string, string> = {
+    SENT: "Sent",
+    VIEWED: "Viewed",
+    REPLIED: "Replied",
+    DECLINED: "Declined",
+    OUT_OF_STOCK: "Out of Stock",
+    NO_RESPONSE: "No Response",
+  };
+  return labels[status] || status;
+}
+
 function recipientStatusBadge(status: string) {
   const colors: Record<string, string> = {
-    REPLIED: "bg-green-100 text-green-800",
-    SENT: "bg-yellow-100 text-yellow-800",
-    VIEWED: "bg-blue-100 text-blue-800",
-    DECLINED: "bg-red-100 text-red-800",
-    OUT_OF_STOCK: "bg-orange-100 text-orange-800",
-    NO_RESPONSE: "bg-gray-100 text-gray-800",
+    REPLIED: "bg-green-50 text-green-700 border border-green-200",
+    SENT: "bg-yellow-50 text-yellow-700 border border-yellow-200",
+    VIEWED: "bg-blue-50 text-blue-700 border border-blue-200",
+    DECLINED: "bg-red-50 text-red-700 border border-red-200",
+    OUT_OF_STOCK: "bg-orange-50 text-orange-700 border border-orange-200",
+    NO_RESPONSE: "bg-gray-50 text-gray-700 border border-gray-200",
   };
   return (
     <span
       className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-        colors[status] || "bg-gray-100 text-gray-800"
+        colors[status] || "bg-gray-50 text-gray-700 border border-gray-200"
       }`}
     >
-      {status}
+      {getRecipientStatusLabel(status)}
     </span>
   );
 }
@@ -95,44 +122,66 @@ export default function MaterialRequestDetailClient({
   const totalRecipients =
     recipients.replied.length + recipients.pending.length + recipients.closedOut.length;
 
+  const categoryLabel =
+    categoryIdToLabel[request.categoryId as keyof typeof categoryIdToLabel] || request.categoryId;
+
   return (
     <div className="flex flex-1 px-6 py-8">
       <div className="w-full max-w-6xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-start justify-between pb-3">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Material Request</h1>
-            <p className="text-sm text-gray-500 mt-1">Created {formatDate(request.createdAt)}</p>
+            <h1 className="text-2xl font-bold text-gray-900">
+              Material Request • {categoryLabel}
+            </h1>
+            <p className="text-sm text-gray-500 mt-2">
+              Created {formatShortDate(request.createdAt)}
+            </p>
           </div>
           <div className="flex items-center gap-3">
             {statusBadge(request.status)}
             <Link href="/buyer/suppliers/talk">
-              <button className="text-sm text-gray-600 hover:text-gray-900">← Back</button>
+              <button className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
+                ← Back
+              </button>
             </Link>
           </div>
         </div>
 
         {/* Request Summary Card */}
         <Card>
-          <CardHeader>
-            <h2 className="text-lg font-semibold text-gray-900">Request Summary</h2>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+          <CardContent className="pt-6">
+            {/* Metadata Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6 pb-6 border-b border-gray-200">
               <div>
-                <label className="text-sm font-medium text-gray-700">Category</label>
-                <p className="text-sm text-gray-900 mt-1">
-                  {categoryIdToLabel[request.categoryId as keyof typeof categoryIdToLabel] || request.categoryId}
-                </p>
+                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
+                  Category
+                </div>
+                <div className="text-sm font-semibold text-gray-900">{categoryLabel}</div>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-700">Send Mode</label>
-                <p className="text-sm text-gray-900 mt-1">{request.sendMode}</p>
+                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
+                  Send Mode
+                </div>
+                <div className="text-sm font-semibold text-gray-900">
+                  {formatSendMode(request.sendMode)}
+                </div>
+              </div>
+              <div>
+                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
+                  Suppliers Contacted
+                </div>
+                <div className="text-sm font-semibold text-gray-900">{totalRecipients}</div>
               </div>
             </div>
-            <div>
-              <label className="text-sm font-medium text-gray-700">Request Text</label>
-              <p className="text-sm text-gray-900 mt-1 whitespace-pre-wrap">{request.requestText}</p>
+
+            {/* Request Text - Prominent */}
+            <div className="flex justify-center py-6">
+              <div className="max-w-2xl w-full bg-gray-50 rounded-lg px-6 py-6 border border-gray-200">
+                <p className="text-lg font-medium leading-relaxed text-gray-900 text-center whitespace-pre-wrap">
+                  {request.requestText}
+                </p>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -140,59 +189,65 @@ export default function MaterialRequestDetailClient({
         {/* Summary Stats */}
         <div className="grid grid-cols-4 gap-4">
           <Card>
-            <CardContent className="pt-6">
-              <div className="text-2xl font-bold text-gray-900">{totalRecipients}</div>
-              <div className="text-sm text-gray-500 mt-1">Total Suppliers</div>
+            <CardContent className="min-h-[120px] flex flex-col items-center justify-center text-center py-6">
+              <div className="text-3xl font-bold text-gray-900">{totalRecipients}</div>
+              <div className="text-sm font-medium text-gray-700 mt-2">Total Suppliers</div>
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="pt-6">
-              <div className="text-2xl font-bold text-green-600">{recipients.replied.length}</div>
-              <div className="text-sm text-gray-500 mt-1">Replied</div>
+            <CardContent className="min-h-[120px] flex flex-col items-center justify-center text-center py-6">
+              <div className="text-3xl font-bold text-green-600">{recipients.replied.length}</div>
+              <div className="text-sm font-medium text-gray-700 mt-2">Supplier Responses</div>
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="pt-6">
-              <div className="text-2xl font-bold text-yellow-600">{recipients.pending.length}</div>
-              <div className="text-sm text-gray-500 mt-1">Pending</div>
+            <CardContent className="min-h-[120px] flex flex-col items-center justify-center text-center py-6">
+              <div className="text-3xl font-bold text-yellow-600">{recipients.pending.length}</div>
+              <div className="text-sm font-medium text-gray-700 mt-2">Pending Response</div>
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="pt-6">
-              <div className="text-2xl font-bold text-gray-600">{recipients.closedOut.length}</div>
-              <div className="text-sm text-gray-500 mt-1">No Response / Closed</div>
+            <CardContent className="min-h-[120px] flex flex-col items-center justify-center text-center py-6">
+              <div className="text-3xl font-bold text-gray-600">{recipients.closedOut.length}</div>
+              <div className="text-sm font-medium text-gray-700 mt-2">Closed Out</div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Replied Section */}
+        {/* Supplier Responses Section */}
         {recipients.replied.length > 0 && (
           <Card>
             <CardHeader>
-              <h2 className="text-lg font-semibold text-green-700">Replied ({recipients.replied.length})</h2>
+              <h2 className="text-lg font-semibold text-gray-900">
+                Supplier Responses ({recipients.replied.length})
+              </h2>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {recipients.replied.map((recipient) => (
                   <Link
                     key={recipient.conversationId}
                     href={`/buyer/suppliers/talk/${recipient.supplierId}?conversationId=${recipient.conversationId}`}
-                    className="block p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                    className="block p-4 border border-gray-200 rounded-lg hover:border-gray-300 hover:bg-gray-50 transition-all"
                   >
                     <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-medium text-gray-900">{recipient.supplierName}</h3>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2.5 mb-1.5">
+                          <h3 className="font-semibold text-gray-900 truncate">
+                            {recipient.supplierName}
+                          </h3>
                           {recipientStatusBadge(recipient.status)}
                         </div>
-                        {recipient.lastMessagePreview && (
-                          <p className="text-sm text-gray-600 mt-1">{recipient.lastMessagePreview}</p>
-                        )}
-                        <p className="text-xs text-gray-500 mt-1">
-                          Replied {formatDate(recipient.respondedAt || recipient.conversationUpdatedAt)}
+                        <p className="text-xs text-gray-500 mb-1.5">
+                          Last activity {formatDate(recipient.respondedAt || recipient.conversationUpdatedAt)}
                         </p>
+                        {recipient.lastMessagePreview && (
+                          <p className="text-sm text-gray-600 mt-2 line-clamp-2">
+                            {recipient.lastMessagePreview}
+                          </p>
+                        )}
                       </div>
-                      <div className="text-gray-400">→</div>
+                      <div className="text-gray-300 ml-4 flex-shrink-0">→</div>
                     </div>
                   </Link>
                 ))}
@@ -201,34 +256,40 @@ export default function MaterialRequestDetailClient({
           </Card>
         )}
 
-        {/* Pending Section */}
+        {/* Pending Response Section */}
         {recipients.pending.length > 0 && (
           <Card>
             <CardHeader>
-              <h2 className="text-lg font-semibold text-yellow-700">Pending ({recipients.pending.length})</h2>
+              <h2 className="text-lg font-semibold text-gray-900">
+                Pending Response ({recipients.pending.length})
+              </h2>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {recipients.pending.map((recipient) => (
                   <Link
                     key={recipient.conversationId}
                     href={`/buyer/suppliers/talk/${recipient.supplierId}?conversationId=${recipient.conversationId}`}
-                    className="block p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                    className="block p-4 border border-gray-200 rounded-lg hover:border-gray-300 hover:bg-gray-50 transition-all"
                   >
                     <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-medium text-gray-900">{recipient.supplierName}</h3>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2.5 mb-1.5">
+                          <h3 className="font-semibold text-gray-900 truncate">
+                            {recipient.supplierName}
+                          </h3>
                           {recipientStatusBadge(recipient.status)}
                         </div>
-                        {recipient.lastMessagePreview && (
-                          <p className="text-sm text-gray-600 mt-1">{recipient.lastMessagePreview}</p>
-                        )}
-                        <p className="text-xs text-gray-500 mt-1">
+                        <p className="text-xs text-gray-500">
                           Sent {formatDate(recipient.sentAt)}
                         </p>
+                        {recipient.lastMessagePreview && (
+                          <p className="text-sm text-gray-600 mt-2 line-clamp-2">
+                            {recipient.lastMessagePreview}
+                          </p>
+                        )}
                       </div>
-                      <div className="text-gray-400">→</div>
+                      <div className="text-gray-300 ml-4 flex-shrink-0">→</div>
                     </div>
                   </Link>
                 ))}
@@ -241,30 +302,41 @@ export default function MaterialRequestDetailClient({
         {recipients.closedOut.length > 0 && (
           <Card>
             <CardHeader>
-              <h2 className="text-lg font-semibold text-gray-700">No Response / Closed Out ({recipients.closedOut.length})</h2>
+              <h2 className="text-lg font-semibold text-gray-900">
+                Closed Out ({recipients.closedOut.length})
+              </h2>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {recipients.closedOut.map((recipient) => (
                   <Link
                     key={recipient.conversationId}
                     href={`/buyer/suppliers/talk/${recipient.supplierId}?conversationId=${recipient.conversationId}`}
-                    className="block p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                    className="block p-4 border border-gray-200 rounded-lg hover:border-gray-300 hover:bg-gray-50 transition-all"
                   >
                     <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-medium text-gray-900">{recipient.supplierName}</h3>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2.5 mb-1.5">
+                          <h3 className="font-semibold text-gray-900 truncate">
+                            {recipient.supplierName}
+                          </h3>
                           {recipientStatusBadge(recipient.status)}
                         </div>
-                        {recipient.lastMessagePreview && (
-                          <p className="text-sm text-gray-600 mt-1">{recipient.lastMessagePreview}</p>
-                        )}
-                        <p className="text-xs text-gray-500 mt-1">
-                          Sent {formatDate(recipient.sentAt)}
+                        <p className="text-xs text-gray-500">
+                          Last activity{" "}
+                          {formatDate(
+                            recipient.respondedAt ||
+                              recipient.conversationUpdatedAt ||
+                              recipient.sentAt
+                          )}
                         </p>
+                        {recipient.lastMessagePreview && (
+                          <p className="text-sm text-gray-600 mt-2 line-clamp-2">
+                            {recipient.lastMessagePreview}
+                          </p>
+                        )}
                       </div>
-                      <div className="text-gray-400">→</div>
+                      <div className="text-gray-300 ml-4 flex-shrink-0">→</div>
                     </div>
                   </Link>
                 ))}
@@ -276,8 +348,10 @@ export default function MaterialRequestDetailClient({
         {/* Empty State */}
         {totalRecipients === 0 && (
           <Card>
-            <CardContent className="py-12 text-center">
-              <p className="text-gray-500">No recipients found for this request.</p>
+            <CardContent className="py-16 text-center">
+              <p className="text-gray-500 text-base">
+                No suppliers were attached to this request.
+              </p>
             </CardContent>
           </Card>
         )}
@@ -285,4 +359,3 @@ export default function MaterialRequestDetailClient({
     </div>
   );
 }
-

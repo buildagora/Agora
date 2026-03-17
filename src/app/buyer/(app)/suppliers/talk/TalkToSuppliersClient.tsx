@@ -239,11 +239,9 @@ export default function TalkToSuppliersClient({
       {/* Left: Conversations List */}
       <div className={`w-full md:w-64 border-r border-zinc-200 dark:border-zinc-800 overflow-y-auto bg-white dark:bg-zinc-900 flex-shrink-0 ${showDiscovery ? "hidden md:block" : "block"}`}>
         <div className="p-4 border-b border-zinc-200 dark:border-zinc-800">
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-sm font-semibold text-black dark:text-zinc-50">
-              Messages
-            </h2>
-          </div>
+          <h2 className="text-sm font-semibold text-black dark:text-zinc-50 mb-3">
+            Messages
+          </h2>
           <Button
             onClick={() => setShowDiscovery(true)}
             className="w-full text-sm"
@@ -252,7 +250,7 @@ export default function TalkToSuppliersClient({
             New message
           </Button>
         </div>
-        <div className="p-2">
+        <div className="p-3 pt-4">
           {conversations.length === 0 ? (
             <div className="text-xs text-zinc-500 dark:text-zinc-400 p-4 text-center">
               No conversations yet
@@ -264,32 +262,32 @@ export default function TalkToSuppliersClient({
                 href={`/buyer/suppliers/talk/${conv.supplierId}`}
                 className="block"
               >
-                <Card className="mb-2 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors">
-                  <CardContent className="p-3">
-                    <div className="flex items-start gap-2">
-                      <div className="w-8 h-8 rounded-full bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center flex-shrink-0">
+                <Card className="mb-2.5 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors">
+                  <CardContent className="p-3.5">
+                    <div className="flex items-start gap-3">
+                      <div className="w-9 h-9 rounded-full bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center flex-shrink-0">
                         <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
                           {conv.supplierName.charAt(0).toUpperCase()}
                         </span>
                       </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <div className="text-sm font-medium text-black dark:text-zinc-50 truncate flex-1">
-                          {conv.supplierName}
-                        </div>
-                        {conv.unreadCount && conv.unreadCount > 0 && (
-                          <div className="flex-shrink-0 w-5 h-5 rounded-full bg-blue-500 text-white text-xs font-semibold flex items-center justify-center">
-                            {conv.unreadCount > 9 ? "9+" : conv.unreadCount}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <div className="text-sm font-semibold text-black dark:text-zinc-50 truncate flex-1">
+                            {conv.supplierName}
                           </div>
-                        )}
+                          {conv.unreadCount && conv.unreadCount > 0 && (
+                            <div className="flex-shrink-0 w-5 h-5 rounded-full bg-blue-500 text-white text-xs font-semibold flex items-center justify-center">
+                              {conv.unreadCount > 9 ? "9+" : conv.unreadCount}
+                            </div>
+                          )}
+                        </div>
+                        <div className="text-xs text-zinc-500 dark:text-zinc-400 truncate mb-1">
+                          {conv.lastMessagePreview}
+                        </div>
+                        <div className="text-xs text-zinc-400 dark:text-zinc-500">
+                          {formatTime(conv.lastMessageAt)}
+                        </div>
                       </div>
-                      <div className="text-xs text-zinc-500 dark:text-zinc-400 truncate mt-1">
-                        {conv.lastMessagePreview}
-                      </div>
-                      <div className="text-xs text-zinc-400 dark:text-zinc-500 mt-1">
-                        {formatTime(conv.lastMessageAt)}
-                      </div>
-                    </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -520,13 +518,13 @@ export default function TalkToSuppliersClient({
           </div>
         ) : (
           <div className="flex items-center justify-center h-full">
-            <div className="text-center">
-              <p className="text-zinc-600 dark:text-zinc-400 mb-4">
-                Select a conversation to view messages
+            <div className="text-center max-w-md px-6">
+              <h3 className="text-lg font-semibold text-black dark:text-zinc-50 mb-2">
+                Select a conversation
+              </h3>
+              <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                Choose an existing supplier conversation from the left, or start a new request.
               </p>
-              <Button onClick={() => setShowDiscovery(true)} variant="primary">
-                New message
-              </Button>
             </div>
           </div>
         )}
