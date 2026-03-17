@@ -60,14 +60,13 @@ export async function GET(
 
     const supplierId = membership.supplierId;
 
-    // Find or create RFQ-scoped conversation
-    let conversation = await prisma.supplierConversation.findUnique({
+    // Find or create RFQ-scoped conversation (must have materialRequestId: null to avoid material-request threads)
+    let conversation = await prisma.supplierConversation.findFirst({
       where: {
-        buyerId_supplierId_rfqId: {
-          buyerId: rfq.buyerId,
-          supplierId: supplierId,
-          rfqId: rfqId,
-        },
+        buyerId: rfq.buyerId,
+        supplierId: supplierId,
+        rfqId: rfqId,
+        materialRequestId: null, // RFQ conversations must not be material-request threads
       },
       include: {
         buyer: {
@@ -87,6 +86,7 @@ export async function GET(
           buyerId: rfq.buyerId,
           supplierId: supplierId,
           rfqId: rfqId,
+          materialRequestId: null, // RFQ conversations must not be material-request threads
         },
         include: {
           buyer: {
@@ -117,4 +117,5 @@ export async function GET(
     });
   });
 }
+
 

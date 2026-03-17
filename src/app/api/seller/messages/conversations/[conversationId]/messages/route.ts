@@ -72,7 +72,7 @@ export async function POST(
     // Verify conversation belongs to this supplier and load buyer info
     const conversation = await prisma.supplierConversation.findUnique({
       where: { id: conversationId },
-      select: { supplierId: true, buyerId: true },
+      select: { supplierId: true, buyerId: true, materialRequestId: true },
     });
 
     if (!conversation) {
@@ -102,6 +102,37 @@ export async function POST(
         hiddenForSupplierAt: null,
       },
     });
+
+    // If this is a material-request conversation, update recipient status to REPLIED
+    if (conversation.materialRequestId) {
+      try {
+        const now = new Date();
+        await prisma.materialRequestRecipient.updateMany({
+          where: {
+            materialRequestId: conversation.materialRequestId,
+            supplierId: supplier.id,
+          },
+          data: {
+            status: "REPLIED",
+            respondedAt: now,
+            statusUpdatedAt: now,
+          },
+        });
+        console.log("[MATERIAL_REQUEST_RECIPIENT_REPLIED]", {
+          materialRequestId: conversation.materialRequestId,
+          supplierId: supplier.id,
+          conversationId: conversationId,
+        });
+      } catch (updateError) {
+        // Log but don't fail - message was successfully created
+        console.error("[MATERIAL_REQUEST_RECIPIENT_UPDATE_FAILED]", {
+          materialRequestId: conversation.materialRequestId,
+          supplierId: supplier.id,
+          conversationId: conversationId,
+          error: updateError instanceof Error ? updateError.message : String(updateError),
+        });
+      }
+    }
 
     // Send email notification and create in-app notification for buyer
     try {

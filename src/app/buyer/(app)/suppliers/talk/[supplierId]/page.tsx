@@ -161,14 +161,13 @@ export default async function SupplierConversationPage({
       });
 
       if (rfq && rfq.buyerId === buyerId) {
-        // Find or create RFQ-scoped conversation
-        const rfqConv = await prisma.supplierConversation.findUnique({
+        // Find or create RFQ-scoped conversation (must have materialRequestId: null to avoid material-request threads)
+        const rfqConv = await prisma.supplierConversation.findFirst({
           where: {
-            buyerId_supplierId_rfqId: {
-              buyerId: buyerId,
-              supplierId: supplierId,
-              rfqId: rfqIdFromQuery,
-            },
+            buyerId: buyerId,
+            supplierId: supplierId,
+            rfqId: rfqIdFromQuery,
+            materialRequestId: null, // RFQ conversations must not be material-request threads
           },
         });
 
@@ -181,6 +180,7 @@ export default async function SupplierConversationPage({
               buyerId: buyerId,
               supplierId: supplierId,
               rfqId: rfqIdFromQuery,
+              materialRequestId: null, // RFQ conversations must not be material-request threads
             },
           });
           conversation = { id: newConv.id };
@@ -190,25 +190,27 @@ export default async function SupplierConversationPage({
 
     // If no RFQ-scoped conversation found/created, fall back to general conversation
     if (!conversation) {
-      // Find or create general conversation for this supplier (no RFQ scope)
+      // Find or create general conversation for this supplier (no RFQ scope, no material request scope)
       // Use findFirst because findUnique doesn't support null in compound unique constraints
       const generalConv = await prisma.supplierConversation.findFirst({
         where: {
           buyerId: buyerId,
           supplierId: supplierId,
           rfqId: null, // General conversation, not tied to a specific RFQ
+          materialRequestId: null, // General conversation, not tied to a specific material request
         },
       });
 
       if (generalConv) {
         conversation = { id: generalConv.id };
       } else {
-        // Create new general conversation (no RFQ scope)
+        // Create new general conversation (no RFQ scope, no material request scope)
         const newConv = await prisma.supplierConversation.create({
           data: {
             buyerId: buyerId,
             supplierId: supplierId,
             rfqId: null, // General conversation, not tied to a specific RFQ
+            materialRequestId: null, // General conversation, not tied to a specific material request
           },
         });
         conversation = { id: newConv.id };
