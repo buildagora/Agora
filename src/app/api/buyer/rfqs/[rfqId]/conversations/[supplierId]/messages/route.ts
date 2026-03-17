@@ -57,14 +57,13 @@ export async function GET(
       return jsonError("FORBIDDEN", "Access denied", 403);
     }
 
-    // Find RFQ-scoped conversation
-    const conversation = await prisma.supplierConversation.findUnique({
+    // Find RFQ-scoped conversation (must have materialRequestId: null to avoid material-request threads)
+    const conversation = await prisma.supplierConversation.findFirst({
       where: {
-        buyerId_supplierId_rfqId: {
-          buyerId: dbUser.id,
-          supplierId: supplierId,
-          rfqId: rfqId,
-        },
+        buyerId: dbUser.id,
+        supplierId: supplierId,
+        rfqId: rfqId,
+        materialRequestId: null, // RFQ conversations must not be material-request threads
       },
     });
 
@@ -159,14 +158,13 @@ export async function POST(
       return jsonError("FORBIDDEN", "Access denied", 403);
     }
 
-    // Find or create RFQ-scoped conversation
-    let conversation = await prisma.supplierConversation.findUnique({
+    // Find or create RFQ-scoped conversation (must have materialRequestId: null to avoid material-request threads)
+    let conversation = await prisma.supplierConversation.findFirst({
       where: {
-        buyerId_supplierId_rfqId: {
-          buyerId: dbUser.id,
-          supplierId: supplierId,
-          rfqId: rfqId,
-        },
+        buyerId: dbUser.id,
+        supplierId: supplierId,
+        rfqId: rfqId,
+        materialRequestId: null, // RFQ conversations must not be material-request threads
       },
     });
 
@@ -176,6 +174,7 @@ export async function POST(
           buyerId: dbUser.id,
           supplierId: supplierId,
           rfqId: rfqId,
+          materialRequestId: null, // RFQ conversations must not be material-request threads
         },
       });
     }
