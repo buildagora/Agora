@@ -38,6 +38,7 @@ model User {
   sentInvites            SupplierInvite[] @relation("InvitedBy")
   acceptedInvites        SupplierInvite[] @relation("AcceptedBy")
   emailVerificationTokens EmailVerificationToken[]
+  materialRequests       MaterialRequest[]
 }
 
 model RFQ {
@@ -239,6 +240,7 @@ model Supplier {
   invites           SupplierInvite[]
   contacts          SupplierContact[]
   claimRequests     SupplierClaimRequest[]
+  materialRequestRecipients MaterialRequestRecipient[]
   
   @@index([category])
   @@index([city, state])
@@ -264,17 +266,21 @@ model SupplierConversation {
   supplier           Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
   rfqId              String?  // RFQ this conversation is about (null = general conversation)
   rfq                RFQ?     @relation(fields: [rfqId], references: [id], onDelete: SetNull)
+  materialRequestId  String?  // Material request this conversation is about (null = general or RFQ conversation)
+  materialRequest    MaterialRequest? @relation(fields: [materialRequestId], references: [id], onDelete: SetNull)
   title              String?
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
   hiddenForBuyerAt   DateTime?
   hiddenForSupplierAt DateTime?
   messages           SupplierMessage[]
+  materialRequestRecipients MaterialRequestRecipient[]
   
-  @@unique([buyerId, supplierId, rfqId])
+  @@unique([buyerId, supplierId, rfqId, materialRequestId])
   @@index([buyerId, updatedAt])
   @@index([supplierId, updatedAt])
   @@index([rfqId])
+  @@index([materialRequestId])
   @@index([buyerId, hiddenForBuyerAt, updatedAt])
   @@index([supplierId, hiddenForSupplierAt, updatedAt])
 }
@@ -385,5 +391,49 @@ model EmailVerificationToken {
   @@index([userId])
   @@index([tokenHash])
   @@index([expiresAt])
+}
+
+model MaterialRequest {
+  id             String                     @id @default(cuid())
+  buyerId        String
+  buyer          User                       @relation(fields: [buyerId], references: [id], onDelete: Cascade)
+  categoryId     String
+  requestText    String
+  sendMode       String                     // NETWORK | DIRECT
+  supplierIdsJson String?                   // Optional JSON array for direct sends
+  status         String                     @default("OPEN") // OPEN | CLOSED | FULFILLED | CANCELLED
+  closedAt       DateTime?
+  fulfilledAt    DateTime?
+  createdAt      DateTime                   @default(now())
+  updatedAt      DateTime                   @updatedAt
+  recipients     MaterialRequestRecipient[]
+  conversations  SupplierConversation[]
+  
+  @@index([buyerId])
+  @@index([categoryId])
+  @@index([createdAt])
+  @@index([status])
+}
+
+model MaterialRequestRecipient {
+  id                String            @id @default(cuid())
+  materialRequestId String
+  materialRequest   MaterialRequest  @relation(fields: [materialRequestId], references: [id], onDelete: Cascade)
+  supplierId        String
+  supplier          Supplier          @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  conversationId    String
+  conversation      SupplierConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  status            String            @default("SENT") // SENT | VIEWED | REPLIED | DECLINED | OUT_OF_STOCK | NO_RESPONSE
+  sentAt            DateTime          @default(now())
+  viewedAt          DateTime?
+  respondedAt       DateTime?
+  statusUpdatedAt   DateTime          @default(now()) @updatedAt
+  createdAt         DateTime          @default(now())
+  
+  @@unique([materialRequestId, supplierId])
+  @@index([materialRequestId])
+  @@index([supplierId])
+  @@index([conversationId])
+  @@index([status])
 }
 
