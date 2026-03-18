@@ -68,12 +68,41 @@ export default async function SupplierConversationPage({
     redirect("/buyer/suppliers/talk");
   }
 
-  // Load all conversations for this buyer (for sidebar)
-  // Include RFQ context when available
+  // First, determine the active conversation to decide sidebar scope
+  // If conversationId is provided in query, use that (for deep-linking)
+  let selectedConversation: { id: string; materialRequestId: string | null } | null = null;
+  
+  if (conversationIdFromQuery) {
+    // Verify the conversation belongs to this buyer
+    const fullConv = await prisma.supplierConversation.findUnique({
+      where: { id: conversationIdFromQuery },
+      select: { id: true, buyerId: true, supplierId: true, materialRequestId: true },
+    });
+    
+    if (fullConv && fullConv.buyerId === buyerId) {
+      // Conversation belongs to this buyer - use it
+      // If supplierId in URL doesn't match, redirect to the correct supplier URL
+      if (fullConv.supplierId !== supplierId) {
+        redirect(`/buyer/suppliers/talk/${fullConv.supplierId}?conversationId=${encodeURIComponent(conversationIdFromQuery)}`);
+      }
+      selectedConversation = { id: fullConv.id, materialRequestId: fullConv.materialRequestId };
+    }
+  }
+
+  // Load conversations for sidebar based on selected conversation's materialRequestId
+  // If the selected conversation has a materialRequestId, scope sidebar to that request
+  // Otherwise, load all conversations (global inbox behavior)
+  const sidebarWhere = selectedConversation?.materialRequestId
+    ? {
+        buyerId: buyerId,
+        materialRequestId: selectedConversation.materialRequestId,
+      }
+    : {
+        buyerId: buyerId,
+      };
+
   const allConversations = await prisma.supplierConversation.findMany({
-    where: {
-      buyerId: buyerId,
-    },
+    where: sidebarWhere,
     include: {
       supplier: {
         select: { id: true, name: true },
@@ -110,7 +139,7 @@ export default async function SupplierConversationPage({
   }
 
   // Format conversations for sidebar with RFQ context
-  const conversations = allConversations.map((conv) => {
+  let conversations = allConversations.map((conv) => {
     const lastMessage = conv.messages[0];
     const unreadCount = unreadCountMap.get(conv.id) || 0;
     return {
@@ -131,25 +160,8 @@ export default async function SupplierConversationPage({
   });
 
   // Find or create conversation for this supplier
-  // If conversationId is provided in query, use that (for deep-linking)
-  let conversation: { id: string } | null = null;
-  
-  if (conversationIdFromQuery) {
-    // Verify the conversation belongs to this buyer
-    const fullConv = await prisma.supplierConversation.findUnique({
-      where: { id: conversationIdFromQuery },
-      select: { id: true, buyerId: true, supplierId: true },
-    });
-    
-    if (fullConv && fullConv.buyerId === buyerId) {
-      // Conversation belongs to this buyer - use it
-      // If supplierId in URL doesn't match, redirect to the correct supplier URL
-      if (fullConv.supplierId !== supplierId) {
-        redirect(`/buyer/suppliers/talk/${fullConv.supplierId}?conversationId=${encodeURIComponent(conversationIdFromQuery)}`);
-      }
-      conversation = { id: fullConv.id };
-    }
-  }
+  // If we already found it above (from conversationId query), use that
+  let conversation: { id: string } | null = selectedConversation ? { id: selectedConversation.id } : null;
   
   if (!conversation) {
     // If rfqId is provided in query, prioritize RFQ-scoped conversation
@@ -218,15 +230,90 @@ export default async function SupplierConversationPage({
     }
   }
 
-  // Load the full conversation to get RFQ context
+  // Load the full conversation to get RFQ and material request context
   const fullConversation = await prisma.supplierConversation.findUnique({
     where: { id: conversation.id },
-    include: {
+    select: {
+      id: true,
+      supplierId: true,
+      buyerId: true,
+      rfqId: true,
+      materialRequestId: true,
+      updatedAt: true,
       rfq: {
         select: { id: true, rfqNumber: true, title: true },
       },
     },
   });
+
+  // If we didn't have selectedConversation from query param, check if we need to reload sidebar
+  // This handles the edge case where we found/created a material-request conversation without a conversationId in query
+  // (though this should be rare - material-request conversations should typically come with conversationId)
+  const finalMaterialRequestId = fullConversation?.materialRequestId;
+  const initiallyLoadedAllConversations = !selectedConversation;
+  const needsSidebarReload = initiallyLoadedAllConversations && finalMaterialRequestId !== null;
+  
+  if (needsSidebarReload) {
+    // Reload sidebar to scope to this material request
+    const reloadedConversations = await prisma.supplierConversation.findMany({
+      where: {
+        buyerId: buyerId,
+        materialRequestId: finalMaterialRequestId,
+      },
+      include: {
+        supplier: {
+          select: { id: true, name: true },
+        },
+        rfq: {
+          select: { id: true, rfqNumber: true, title: true },
+        },
+        messages: {
+          orderBy: { createdAt: "desc" },
+          take: 1,
+        },
+      },
+      orderBy: {
+        updatedAt: "desc",
+      },
+    });
+
+    // Rebuild conversations list with unread counts
+    const reloadedUnreadCountsResult = await prisma.$queryRaw<Array<{ conversationId: string; unreadCount: bigint }>>`
+      SELECT (data::jsonb->>'conversationId') AS "conversationId", COUNT(*)::int AS "unreadCount"
+      FROM "Notification"
+      WHERE "userId" = ${buyerId}
+        AND type = 'MESSAGE_RECEIVED'
+        AND "readAt" IS NULL
+      GROUP BY (data::jsonb->>'conversationId')
+    `;
+
+    const reloadedUnreadCountMap = new Map<string, number>();
+    for (const row of reloadedUnreadCountsResult) {
+      if (row.conversationId) {
+        reloadedUnreadCountMap.set(row.conversationId, Number(row.unreadCount));
+      }
+    }
+
+    conversations = reloadedConversations.map((conv) => {
+      const lastMessage = conv.messages[0];
+      const unreadCount = reloadedUnreadCountMap.get(conv.id) || 0;
+      return {
+        id: conv.id,
+        supplierId: conv.supplierId,
+        supplierName: conv.supplier.name,
+        rfqId: conv.rfqId,
+        rfqNumber: conv.rfq?.rfqNumber || null,
+        rfqTitle: conv.rfq?.title || null,
+        lastMessagePreview: lastMessage
+          ? lastMessage.body.substring(0, 50) + (lastMessage.body.length > 50 ? "..." : "")
+          : "No messages yet",
+        lastMessageAt: lastMessage
+          ? lastMessage.createdAt.toISOString()
+          : conv.updatedAt.toISOString(),
+        unreadCount,
+      };
+    });
+  }
 
   // Load messages for this conversation
   const messages = await prisma.supplierMessage.findMany({
@@ -258,6 +345,7 @@ export default async function SupplierConversationPage({
       rfqId={fullConversation?.rfqId || null}
       rfqNumber={fullConversation?.rfq?.rfqNumber || null}
       rfqTitle={fullConversation?.rfq?.title || null}
+      materialRequestId={fullConversation?.materialRequestId || null}
     />
   );
 }

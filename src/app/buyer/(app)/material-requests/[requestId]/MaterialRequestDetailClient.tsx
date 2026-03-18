@@ -129,18 +129,22 @@ export default function MaterialRequestDetailClient({
     <div className="flex flex-1 px-6 py-8">
       <div className="w-full max-w-6xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex items-start justify-between pb-3">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">
+        <div className="flex items-start justify-between mb-6 pb-4 border-b border-gray-200">
+          <div className="flex-1">
+            <h1 className="text-2xl font-bold text-gray-900 mb-3">
               Material Request • {categoryLabel}
             </h1>
-            <p className="text-sm text-gray-500 mt-2">
-              Created {formatShortDate(request.createdAt)}
-            </p>
+            <div className="flex items-center gap-4 text-sm text-gray-600">
+              <span>Created {formatShortDate(request.createdAt)}</span>
+              <span>•</span>
+              <span>{formatSendMode(request.sendMode)}</span>
+              <span>•</span>
+              <span>{totalRecipients} supplier{totalRecipients !== 1 ? "s" : ""}</span>
+            </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 ml-6">
             {statusBadge(request.status)}
-            <Link href="/buyer/suppliers/talk">
+            <Link href="/buyer/requests">
               <button className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
                 ← Back
               </button>
@@ -148,37 +152,24 @@ export default function MaterialRequestDetailClient({
           </div>
         </div>
 
-        {/* Request Summary Card */}
+        {/* Request Details Card */}
         <Card>
-          <CardContent className="pt-6">
-            {/* Metadata Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6 pb-6 border-b border-gray-200">
+          <CardHeader>
+            <h2 className="text-base font-semibold text-gray-900">Request Details</h2>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
               <div>
-                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
+                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
                   Category
                 </div>
-                <div className="text-sm font-semibold text-gray-900">{categoryLabel}</div>
+                <div className="text-sm text-gray-900">{categoryLabel}</div>
               </div>
-              <div>
-                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
-                  Send Mode
+              <div className="pt-4 border-t border-gray-100">
+                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
+                  Request
                 </div>
-                <div className="text-sm font-semibold text-gray-900">
-                  {formatSendMode(request.sendMode)}
-                </div>
-              </div>
-              <div>
-                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
-                  Suppliers Contacted
-                </div>
-                <div className="text-sm font-semibold text-gray-900">{totalRecipients}</div>
-              </div>
-            </div>
-
-            {/* Request Text - Prominent */}
-            <div className="flex justify-center py-6">
-              <div className="max-w-2xl w-full bg-gray-50 rounded-lg px-6 py-6 border border-gray-200">
-                <p className="text-lg font-medium leading-relaxed text-gray-900 text-center whitespace-pre-wrap">
+                <p className="text-sm leading-relaxed text-gray-900 whitespace-pre-wrap">
                   {request.requestText}
                 </p>
               </div>
@@ -187,29 +178,29 @@ export default function MaterialRequestDetailClient({
         </Card>
 
         {/* Summary Stats */}
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-4 gap-3">
           <Card>
-            <CardContent className="min-h-[120px] flex flex-col items-center justify-center text-center py-6">
-              <div className="text-3xl font-bold text-gray-900">{totalRecipients}</div>
-              <div className="text-sm font-medium text-gray-700 mt-2">Total Suppliers</div>
+            <CardContent className="py-4">
+              <div className="text-2xl font-bold text-gray-900">{totalRecipients}</div>
+              <div className="text-xs font-medium text-gray-600 mt-1">Total Suppliers</div>
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="min-h-[120px] flex flex-col items-center justify-center text-center py-6">
-              <div className="text-3xl font-bold text-green-600">{recipients.replied.length}</div>
-              <div className="text-sm font-medium text-gray-700 mt-2">Supplier Responses</div>
+            <CardContent className="py-4">
+              <div className="text-2xl font-bold text-green-600">{recipients.replied.length}</div>
+              <div className="text-xs font-medium text-gray-600 mt-1">Supplier Responses</div>
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="min-h-[120px] flex flex-col items-center justify-center text-center py-6">
-              <div className="text-3xl font-bold text-yellow-600">{recipients.pending.length}</div>
-              <div className="text-sm font-medium text-gray-700 mt-2">Pending Response</div>
+            <CardContent className="py-4">
+              <div className="text-2xl font-bold text-yellow-600">{recipients.pending.length}</div>
+              <div className="text-xs font-medium text-gray-600 mt-1">Pending Response</div>
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="min-h-[120px] flex flex-col items-center justify-center text-center py-6">
-              <div className="text-3xl font-bold text-gray-600">{recipients.closedOut.length}</div>
-              <div className="text-sm font-medium text-gray-700 mt-2">Closed Out</div>
+            <CardContent className="py-4">
+              <div className="text-2xl font-bold text-gray-600">{recipients.closedOut.length}</div>
+              <div className="text-xs font-medium text-gray-600 mt-1">Closed Out</div>
             </CardContent>
           </Card>
         </div>
@@ -223,31 +214,31 @@ export default function MaterialRequestDetailClient({
               </h2>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {recipients.replied.map((recipient) => (
                   <Link
                     key={recipient.conversationId}
                     href={`/buyer/suppliers/talk/${recipient.supplierId}?conversationId=${recipient.conversationId}`}
-                    className="block p-4 border border-gray-200 rounded-lg hover:border-gray-300 hover:bg-gray-50 transition-all"
+                    className="block p-4 bg-gray-50 rounded-lg border border-gray-100 hover:border-gray-300 hover:bg-gray-100 transition-colors cursor-pointer"
                   >
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-start justify-between gap-4">
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2.5 mb-1.5">
-                          <h3 className="font-semibold text-gray-900 truncate">
+                        <div className="flex items-center gap-2.5 mb-2">
+                          <h3 className="text-sm font-semibold text-gray-900 truncate">
                             {recipient.supplierName}
                           </h3>
                           {recipientStatusBadge(recipient.status)}
                         </div>
-                        <p className="text-xs text-gray-500 mb-1.5">
+                        <p className="text-xs text-gray-500 mb-2">
                           Last activity {formatDate(recipient.respondedAt || recipient.conversationUpdatedAt)}
                         </p>
                         {recipient.lastMessagePreview && (
-                          <p className="text-sm text-gray-600 mt-2 line-clamp-2">
+                          <p className="text-sm text-gray-700 leading-relaxed line-clamp-2">
                             {recipient.lastMessagePreview}
                           </p>
                         )}
                       </div>
-                      <div className="text-gray-300 ml-4 flex-shrink-0">→</div>
+                      <div className="text-gray-300 flex-shrink-0">→</div>
                     </div>
                   </Link>
                 ))}
@@ -265,31 +256,31 @@ export default function MaterialRequestDetailClient({
               </h2>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {recipients.pending.map((recipient) => (
                   <Link
                     key={recipient.conversationId}
                     href={`/buyer/suppliers/talk/${recipient.supplierId}?conversationId=${recipient.conversationId}`}
-                    className="block p-4 border border-gray-200 rounded-lg hover:border-gray-300 hover:bg-gray-50 transition-all"
+                    className="block p-4 bg-gray-50 rounded-lg border border-gray-100 hover:border-gray-300 hover:bg-gray-100 transition-colors cursor-pointer"
                   >
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-start justify-between gap-4">
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2.5 mb-1.5">
-                          <h3 className="font-semibold text-gray-900 truncate">
+                        <div className="flex items-center gap-2.5 mb-2">
+                          <h3 className="text-sm font-semibold text-gray-900 truncate">
                             {recipient.supplierName}
                           </h3>
                           {recipientStatusBadge(recipient.status)}
                         </div>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-gray-500 mb-2">
                           Sent {formatDate(recipient.sentAt)}
                         </p>
                         {recipient.lastMessagePreview && (
-                          <p className="text-sm text-gray-600 mt-2 line-clamp-2">
+                          <p className="text-sm text-gray-700 leading-relaxed line-clamp-2">
                             {recipient.lastMessagePreview}
                           </p>
                         )}
                       </div>
-                      <div className="text-gray-300 ml-4 flex-shrink-0">→</div>
+                      <div className="text-gray-300 flex-shrink-0">→</div>
                     </div>
                   </Link>
                 ))}
@@ -307,22 +298,22 @@ export default function MaterialRequestDetailClient({
               </h2>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {recipients.closedOut.map((recipient) => (
                   <Link
                     key={recipient.conversationId}
                     href={`/buyer/suppliers/talk/${recipient.supplierId}?conversationId=${recipient.conversationId}`}
-                    className="block p-4 border border-gray-200 rounded-lg hover:border-gray-300 hover:bg-gray-50 transition-all"
+                    className="block p-4 bg-gray-50 rounded-lg border border-gray-100 hover:border-gray-300 hover:bg-gray-100 transition-colors cursor-pointer"
                   >
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-start justify-between gap-4">
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2.5 mb-1.5">
-                          <h3 className="font-semibold text-gray-900 truncate">
+                        <div className="flex items-center gap-2.5 mb-2">
+                          <h3 className="text-sm font-semibold text-gray-900 truncate">
                             {recipient.supplierName}
                           </h3>
                           {recipientStatusBadge(recipient.status)}
                         </div>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-gray-500 mb-2">
                           Last activity{" "}
                           {formatDate(
                             recipient.respondedAt ||
@@ -331,12 +322,12 @@ export default function MaterialRequestDetailClient({
                           )}
                         </p>
                         {recipient.lastMessagePreview && (
-                          <p className="text-sm text-gray-600 mt-2 line-clamp-2">
+                          <p className="text-sm text-gray-700 leading-relaxed line-clamp-2">
                             {recipient.lastMessagePreview}
                           </p>
                         )}
                       </div>
-                      <div className="text-gray-300 ml-4 flex-shrink-0">→</div>
+                      <div className="text-gray-300 flex-shrink-0">→</div>
                     </div>
                   </Link>
                 ))}

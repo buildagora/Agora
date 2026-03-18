@@ -41,6 +41,7 @@ interface SupplierConversationClientProps {
   rfqId?: string | null;
   rfqNumber?: string | null;
   rfqTitle?: string | null;
+  materialRequestId?: string | null;
 }
 
 function clampPreview(s: string, max = 80) {
@@ -63,6 +64,7 @@ export default function SupplierConversationClient({
   rfqId,
   rfqNumber,
   rfqTitle,
+  materialRequestId,
 }: SupplierConversationClientProps) {
   const router = useRouter();
 
@@ -201,25 +203,42 @@ export default function SupplierConversationClient({
         const data = await conversationRes.json();
         if (data.ok) {
           setMessages(data.messages || []);
-          // Update RFQ context if available
-          if (data.rfqId && data.rfqNumber) {
-            // Update the conversation in the list if needed
-            setConversations(prev => prev.map(conv => 
-              conv.id === conversationId 
-                ? { ...conv, rfqId: data.rfqId, rfqNumber: data.rfqNumber, rfqTitle: data.rfqTitle }
-                : conv
-            ));
-          }
+          // Update the current conversation's preview/timestamp/unread state in local conversations state
+          setConversations(prev => prev.map(conv => {
+            if (conv.id === conversationId) {
+              const updated: Conversation = {
+                ...conv,
+                lastMessagePreview: data.messages && data.messages.length > 0
+                  ? clampPreview(data.messages[data.messages.length - 1].body, 50)
+                  : conv.lastMessagePreview,
+                lastMessageAt: data.messages && data.messages.length > 0
+                  ? data.messages[data.messages.length - 1].createdAt
+                  : conv.lastMessageAt,
+              };
+              // Update RFQ context if available
+              if (data.rfqId && data.rfqNumber) {
+                updated.rfqId = data.rfqId;
+                updated.rfqNumber = data.rfqNumber;
+                updated.rfqTitle = data.rfqTitle;
+              }
+              return updated;
+            }
+            return conv;
+          }));
         }
       }
     }
 
-    // Reload conversations list for sidebar
-    const conversationsRes = await fetch("/api/buyer/suppliers/conversations");
-    if (conversationsRes.ok) {
-      const data = await conversationsRes.json();
-      if (data.ok) {
-        setConversations(data.conversations || []);
+    // In material-request mode, do NOT fetch the global conversations endpoint
+    // Keep the sidebar scoped to the same request
+    // In non-request mode, preserve existing global sidebar reload behavior
+    if (!materialRequestId) {
+      const conversationsRes = await fetch("/api/buyer/suppliers/conversations");
+      if (conversationsRes.ok) {
+        const data = await conversationsRes.json();
+        if (data.ok) {
+          setConversations(data.conversations || []);
+        }
       }
     }
   }
@@ -311,20 +330,36 @@ export default function SupplierConversationClient({
 
       const wasActive = convId === conversationId;
       
-      // Reload conversations list
-      const conversationsRes = await fetch("/api/buyer/suppliers/conversations");
-      if (conversationsRes.ok) {
-        const data = await conversationsRes.json();
-        if (data.ok) {
-          const nextConversations = data.conversations || [];
-          setConversations(nextConversations);
+      // In material-request mode, operate on the currently scoped conversations state
+      if (materialRequestId) {
+        const nextConversations = conversations.filter(conv => conv.id !== convId);
+        setConversations(nextConversations);
 
-          if (wasActive) {
-            if (nextConversations.length > 0) {
-              const next = nextConversations[0];
-              router.push(`/buyer/suppliers/talk/${next.supplierId}?conversationId=${encodeURIComponent(next.id)}`);
-            } else {
-              router.push("/buyer/suppliers/talk");
+        if (wasActive) {
+          if (nextConversations.length > 0) {
+            const next = nextConversations[0];
+            router.push(`/buyer/suppliers/talk/${next.supplierId}?conversationId=${encodeURIComponent(next.id)}`);
+          } else {
+            // No more conversations in this request, route back to material request detail
+            router.push(`/buyer/material-requests/${materialRequestId}`);
+          }
+        }
+      } else {
+        // In non-request mode, preserve the existing global fallback behavior
+        const conversationsRes = await fetch("/api/buyer/suppliers/conversations");
+        if (conversationsRes.ok) {
+          const data = await conversationsRes.json();
+          if (data.ok) {
+            const nextConversations = data.conversations || [];
+            setConversations(nextConversations);
+
+            if (wasActive) {
+              if (nextConversations.length > 0) {
+                const next = nextConversations[0];
+                router.push(`/buyer/suppliers/talk/${next.supplierId}?conversationId=${encodeURIComponent(next.id)}`);
+              } else {
+                router.push("/buyer/suppliers/talk");
+              }
             }
           }
         }
@@ -342,7 +377,9 @@ export default function SupplierConversationClient({
       <aside className="hidden md:flex w-[320px] border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex-col">
         <div className="px-4 py-3 border-b border-zinc-200 dark:border-zinc-800">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">Messages</h2>
+            <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+              {materialRequestId ? "Request Conversations" : "Messages"}
+            </h2>
             <span className="text-xs text-zinc-500 dark:text-zinc-400">
               {conversations.length}
             </span>
@@ -472,9 +509,15 @@ export default function SupplierConversationClient({
         <header className="border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 sm:px-6 py-4">
           <div className="flex items-center gap-3">
             <button
-              onClick={() => router.push("/buyer/suppliers/talk")}
+              onClick={() => {
+                if (materialRequestId) {
+                  router.push(`/buyer/material-requests/${materialRequestId}`);
+                } else {
+                  router.push("/buyer/suppliers/talk");
+                }
+              }}
               className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
-              aria-label="Back to messages"
+              aria-label={materialRequestId ? "Back to material request" : "Back to messages"}
             >
               <svg
                 className="w-5 h-5 text-zinc-700 dark:text-zinc-300"
