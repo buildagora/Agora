@@ -2,6 +2,26 @@ import { NextRequest, NextResponse } from "next/server";
 import { getPrisma } from "@/lib/db.server";
 import { jsonError, withErrorHandling } from "@/lib/apiResponse";
 import { requireCurrentUserFromRequest } from "@/lib/auth/server";
+import { categoryIdToLabel } from "@/lib/categoryIds";
+
+function deriveContextLabel(conv: {
+  materialRequest?: { requestText?: string; categoryId?: string } | null;
+  rfq?: { title?: string } | null;
+}): string {
+  const mr = conv.materialRequest;
+  const rfq = conv.rfq;
+  if (mr?.requestText?.trim()) {
+    const text = mr.requestText.trim();
+    return text.length > 60 ? `Request: ${text.substring(0, 60)}…` : `Request: ${text}`;
+  }
+  if (rfq?.title?.trim()) return `RFQ: ${rfq.title.trim()}`;
+  if (mr?.categoryId) {
+    const label =
+      categoryIdToLabel[mr.categoryId as keyof typeof categoryIdToLabel] || mr.categoryId;
+    return `${label} request`;
+  }
+  return "General conversation";
+}
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -55,8 +75,7 @@ export async function GET(request: NextRequest) {
 
     const supplierId = membership.supplierId;
 
-    // Get all conversations for this supplier, including RFQ info
-    // Only show conversations not hidden by seller
+    // Get all conversations for this supplier, including RFQ and material-request context
     const conversations = await prisma.supplierConversation.findMany({
       where: {
         supplierId: supplierId,
@@ -68,6 +87,9 @@ export async function GET(request: NextRequest) {
         },
         rfq: {
           select: { id: true, rfqNumber: true, title: true, status: true },
+        },
+        materialRequest: {
+          select: { id: true, requestText: true, categoryId: true },
         },
       },
       orderBy: {
@@ -113,12 +135,13 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Format conversations for response with RFQ context
+    // Format conversations for response with RFQ and material-request context
     const formattedConversations = conversations.map((conv) => {
       const lastMessage = latestMessageMap.get(conv.id);
       const buyerName = conv.buyer.companyName || conv.buyer.fullName || conv.buyer.email || "Buyer";
       const unreadCount = unreadCountMap.get(conv.id) || 0;
-      
+      const contextLabel = deriveContextLabel(conv);
+
       return {
         id: conv.id,
         buyerId: conv.buyerId,
@@ -128,6 +151,10 @@ export async function GET(request: NextRequest) {
         rfqNumber: conv.rfq?.rfqNumber || null,
         rfqTitle: conv.rfq?.title || null,
         rfqStatus: conv.rfq?.status || null,
+        materialRequestId: conv.materialRequestId ?? null,
+        materialRequestText: conv.materialRequest?.requestText ?? null,
+        categoryId: conv.materialRequest?.categoryId ?? null,
+        contextLabel,
         lastMessagePreview: lastMessage
           ? lastMessage.body.substring(0, 50) + (lastMessage.body.length > 50 ? "..." : "")
           : "No messages yet",

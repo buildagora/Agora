@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getPrisma } from "@/lib/db.server";
 import { jsonError, withErrorHandling } from "@/lib/apiResponse";
 import { requireCurrentUserFromRequest } from "@/lib/auth/server";
+import { categoryIdToLabel } from "@/lib/categoryIds";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -69,10 +70,21 @@ export async function POST(
 
     const supplier = { id: membership.supplierId };
 
-    // Verify conversation belongs to this supplier and load buyer info
+    // Verify conversation belongs to this supplier and load request context for buyer notification
     const conversation = await prisma.supplierConversation.findUnique({
       where: { id: conversationId },
-      select: { supplierId: true, buyerId: true, materialRequestId: true },
+      select: {
+        supplierId: true,
+        buyerId: true,
+        materialRequestId: true,
+        rfqId: true,
+        materialRequest: {
+          select: { id: true, requestText: true, categoryId: true },
+        },
+        rfq: {
+          select: { id: true, title: true, rfqNumber: true },
+        },
+      },
     });
 
     if (!conversation) {
@@ -175,24 +187,55 @@ export async function POST(
           });
         }
 
-        // Create in-app notification
+        // Create in-app notification with request context for buyer dashboard
         try {
-          // Verify buyer.id is valid
           if (!buyer.id) {
             throw new Error("buyer.id is null or undefined");
+          }
+
+          const mr = conversation.materialRequest;
+          const rfq = conversation.rfq;
+          const categoryId = mr?.categoryId ?? undefined;
+          const categoryLabel =
+            categoryId && categoryId in categoryIdToLabel
+              ? (categoryIdToLabel as Record<string, string>)[categoryId]
+              : undefined;
+
+          let contextLabel: string;
+          if (mr?.requestText?.trim()) {
+            const text = mr.requestText.trim();
+            contextLabel = text.length > 60 ? `Request: ${text.substring(0, 60)}…` : `Request: ${text}`;
+          } else if (rfq?.title?.trim()) {
+            contextLabel = `RFQ: ${rfq.title.trim()}`;
+          } else if (categoryLabel) {
+            contextLabel = `${categoryLabel} request`;
+          } else {
+            contextLabel = "Recent supplier response";
+          }
+
+          const notificationData: Record<string, unknown> = {
+            conversationId: conversationId,
+            supplierId: supplier.id,
+            supplierName: supplierName,
+            messagePreview: messagePreview,
+            urlPath: `/buyer/suppliers/talk/${supplier.id}?conversationId=${conversationId}`,
+            contextLabel,
+          };
+          if (conversation.materialRequestId) {
+            notificationData.materialRequestId = conversation.materialRequestId;
+            if (mr?.requestText != null) notificationData.materialRequestText = mr.requestText;
+            if (mr?.categoryId != null) notificationData.categoryId = mr.categoryId;
+          }
+          if (conversation.rfqId && rfq) {
+            notificationData.rfqId = conversation.rfqId;
+            if (rfq.title != null) notificationData.rfqTitle = rfq.title;
           }
 
           const notification = await prisma.notification.create({
             data: {
               userId: buyer.id,
               type: "MESSAGE_RECEIVED",
-              data: JSON.stringify({
-                conversationId: conversationId,
-                supplierId: supplier.id,
-                supplierName: supplierName,
-                messagePreview: messagePreview,
-                urlPath: `/buyer/suppliers/talk/${supplier.id}?conversationId=${conversationId}`,
-              }),
+              data: JSON.stringify(notificationData),
             },
           });
 

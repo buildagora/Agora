@@ -23,3 +23,5 @@ ALTER TABLE "SupplierConversation"
   FOREIGN KEY ("rfqId") REFERENCES "RFQ"("id") 
   ON DELETE SET NULL ON UPDATE CASCADE;
 
+
+

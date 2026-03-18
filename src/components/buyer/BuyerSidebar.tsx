@@ -133,7 +133,7 @@ export default function BuyerSidebar({ onNavigate }: BuyerSidebarProps) {
               className="pl-4 text-base text-zinc-700 hover:text-black cursor-pointer"
               onClick={onNavigate}
             >
-              Create Bid Request
+              New Request
             </SidebarItem>
           </div>
 
@@ -142,14 +142,6 @@ export default function BuyerSidebar({ onNavigate }: BuyerSidebarProps) {
             <div className="text-xs font-semibold uppercase tracking-wider text-slate-700 mt-6 mb-2 pl-2">
               SUPPLIERS
             </div>
-            <SidebarItem 
-              href="/buyer/suppliers" 
-              active={isActive("/buyer/suppliers")}
-              className="pl-4 text-base text-zinc-700 hover:text-black cursor-pointer"
-              onClick={onNavigate}
-            >
-              Find Materials
-            </SidebarItem>
             <SidebarItem 
               href="/buyer/suppliers/preferred" 
               active={isActive("/buyer/suppliers/preferred")}

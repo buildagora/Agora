@@ -2,8 +2,28 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { verifyAuthToken, getAuthCookieName } from "@/lib/jwt";
 import { getPrisma } from "@/lib/db.rsc";
+import { categoryIdToLabel } from "@/lib/categoryIds";
 import SellerMessagesClient from "./SellerMessagesClient";
 import AppShell from "@/components/ui2/AppShell";
+
+function deriveContextLabel(conv: {
+  materialRequest?: { requestText?: string; categoryId?: string } | null;
+  rfq?: { title?: string } | null;
+}): string {
+  const mr = conv.materialRequest;
+  const rfq = conv.rfq;
+  if (mr?.requestText?.trim()) {
+    const text = mr.requestText.trim();
+    return text.length > 60 ? `Request: ${text.substring(0, 60)}…` : `Request: ${text}`;
+  }
+  if (rfq?.title?.trim()) return `RFQ: ${rfq.title.trim()}`;
+  if (mr?.categoryId) {
+    const label =
+      categoryIdToLabel[mr.categoryId as keyof typeof categoryIdToLabel] || mr.categoryId;
+    return `${label} request`;
+  }
+  return "General conversation";
+}
 
 /**
  * Seller Messages Page - Server Component
@@ -85,7 +105,7 @@ export default async function SellerMessagesPage({
   const supplier = membership.supplier;
   const supplierId = supplier.id;
 
-  // Load all conversations for this supplier, including RFQ info
+  // Load all conversations for this supplier, including RFQ and material-request context
   const allConversations = await prisma.supplierConversation.findMany({
     where: {
       supplierId: supplierId,
@@ -96,6 +116,9 @@ export default async function SellerMessagesPage({
       },
       rfq: {
         select: { id: true, rfqNumber: true, title: true, status: true },
+      },
+      materialRequest: {
+        select: { id: true, requestText: true, categoryId: true },
       },
       messages: {
         orderBy: { createdAt: "desc" },
@@ -125,12 +148,13 @@ export default async function SellerMessagesPage({
     }
   }
 
-  // Format conversations for sidebar with RFQ context
+  // Format conversations for sidebar with RFQ and material-request context
   const conversations = allConversations.map((conv) => {
     const lastMessage = conv.messages[0];
     const buyerName = conv.buyer.companyName || conv.buyer.fullName || conv.buyer.email || "Buyer";
     const unreadCount = unreadCountMap.get(conv.id) || 0;
-    
+    const contextLabel = deriveContextLabel(conv);
+
     return {
       id: conv.id,
       buyerId: conv.buyerId,
@@ -140,6 +164,10 @@ export default async function SellerMessagesPage({
       rfqNumber: conv.rfq?.rfqNumber || null,
       rfqTitle: conv.rfq?.title || null,
       rfqStatus: conv.rfq?.status || null,
+      materialRequestId: conv.materialRequestId ?? null,
+      materialRequestText: conv.materialRequest?.requestText ?? null,
+      categoryId: conv.materialRequest?.categoryId ?? null,
+      contextLabel,
       lastMessagePreview: lastMessage
         ? lastMessage.body.substring(0, 50) + (lastMessage.body.length > 50 ? "..." : "")
         : "No messages yet",
@@ -180,9 +208,9 @@ export default async function SellerMessagesPage({
   }
 
   return (
-    <AppShell role="seller" active="messages">
-      <div className="flex flex-1 flex-col h-full overflow-hidden">
-        <div className="px-6 py-4 border-b border-zinc-200 dark:border-zinc-800">
+    <AppShell role="seller" active="messages" mainClassName="overflow-hidden min-h-0 flex flex-col">
+      <div className="flex flex-col flex-1 h-full min-h-0 overflow-hidden">
+        <div className="flex-shrink-0 px-6 py-4 border-b border-zinc-200 dark:border-zinc-800">
           <h1 className="text-3xl font-semibold text-black dark:text-zinc-50">
             Messages
           </h1>
@@ -190,7 +218,7 @@ export default async function SellerMessagesPage({
             Active conversations with buyers
           </p>
         </div>
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
           <SellerMessagesClient
             initialConversations={conversations}
             initialMessages={initialMessages}

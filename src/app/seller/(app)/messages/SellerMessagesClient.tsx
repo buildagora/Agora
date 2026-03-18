@@ -14,6 +14,10 @@ interface Conversation {
   rfqNumber?: string | null;
   rfqTitle?: string | null;
   rfqStatus?: string | null;
+  materialRequestId?: string | null;
+  materialRequestText?: string | null;
+  categoryId?: string | null;
+  contextLabel?: string | null;
   lastMessagePreview: string;
   lastMessageAt: string;
   unreadCount?: number;
@@ -242,9 +246,9 @@ export default function SellerMessagesClient({
   const selectedConversation = conversations.find((c) => c.id === selectedConversationId);
 
   return (
-    <div className="flex h-full overflow-hidden">
+    <div className="flex flex-1 min-h-0 overflow-hidden h-full">
       {/* Left: Conversations List */}
-      <div className="w-64 border-r border-zinc-200 dark:border-zinc-800 overflow-y-auto bg-white dark:bg-zinc-900 flex-shrink-0">
+      <div className="w-64 border-r border-zinc-200 dark:border-zinc-800 overflow-y-auto bg-white dark:bg-zinc-900 flex-shrink-0 min-h-0">
         <div className="p-4 border-b border-zinc-200 dark:border-zinc-800">
           <h2 className="text-sm font-semibold text-black dark:text-zinc-50">
             Conversations
@@ -315,14 +319,9 @@ export default function SellerMessagesClient({
                           </div>
                         )}
                       </div>
-                      {conv.rfqNumber && (
-                        <div className="text-xs font-medium text-zinc-700 dark:text-zinc-300 mt-1">
-                          {conv.rfqNumber}
-                          {conv.rfqTitle && (
-                            <span className="text-zinc-500 dark:text-zinc-500 ml-1">
-                              • {conv.rfqTitle.length > 30 ? conv.rfqTitle.substring(0, 30) + "..." : conv.rfqTitle}
-                            </span>
-                          )}
+                      {conv.contextLabel && (
+                        <div className="text-xs font-medium text-zinc-600 dark:text-zinc-400 mt-1 truncate">
+                          {conv.contextLabel}
                         </div>
                       )}
                       <div className="text-xs text-zinc-500 dark:text-zinc-400 truncate mt-1">
@@ -341,11 +340,11 @@ export default function SellerMessagesClient({
       </div>
 
       {/* Center: Conversation */}
-      <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+      <div className="flex-1 flex flex-col min-h-0 overflow-hidden min-w-0 h-full">
         {selectedConversation ? (
           <>
             {/* Header */}
-            <div className="border-b border-zinc-200 dark:border-zinc-800 px-6 py-4 bg-white dark:bg-zinc-900">
+            <div className="flex-shrink-0 border-b border-zinc-200 dark:border-zinc-800 px-6 py-4 bg-white dark:bg-zinc-900">
               <div className="flex items-center gap-4">
                 <button
                   onClick={() => {
@@ -368,7 +367,7 @@ export default function SellerMessagesClient({
                     />
                   </svg>
                 </button>
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <h1 className="text-xl font-semibold text-black dark:text-zinc-50">
                     {selectedConversation.buyerName}
                   </h1>
@@ -377,8 +376,13 @@ export default function SellerMessagesClient({
                       {selectedConversation.buyerEmail}
                     </p>
                   )}
+                  {selectedConversation.contextLabel && (
+                    <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
+                      {selectedConversation.contextLabel}
+                    </p>
+                  )}
                   {selectedConversation.rfqId && selectedConversation.rfqNumber && (
-                    <div className="mt-2 flex items-center gap-2">
+                    <div className="mt-2 flex items-center gap-2 flex-wrap">
                       <a
                         href={`/seller/rfqs/${selectedConversation.rfqId}`}
                         className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline"
@@ -399,7 +403,7 @@ export default function SellerMessagesClient({
             {/* Messages */}
             <div
               ref={messagesContainerRef}
-              className="flex-1 overflow-y-auto px-6 py-4 space-y-4 bg-zinc-50 dark:bg-zinc-950"
+              className="flex-1 min-h-0 overflow-y-auto px-6 py-4 bg-zinc-50 dark:bg-zinc-950"
             >
               {messages.length === 0 ? (
                 <div className="text-center py-12">
@@ -408,7 +412,8 @@ export default function SellerMessagesClient({
                   </p>
                 </div>
               ) : (
-                messages.map((message) => {
+                <div className="min-h-full flex flex-col justify-end space-y-4">
+                {messages.map((message) => {
                   const isSupplier = message.senderType === "SUPPLIER";
                   const isAgora = message.senderType === "AGORA";
 
@@ -488,12 +493,14 @@ export default function SellerMessagesClient({
                     </div>
                   );
                 })
+              }
+                  <div ref={messagesEndRef} className="h-1" />
+                </div>
               )}
-              <div ref={messagesEndRef} className="h-1" />
             </div>
 
             {/* Message Composer */}
-            <div className="border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
+            <div className="flex-shrink-0 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
               <form onSubmit={handleSendMessage} className="flex gap-2">
                 <input
                   type="text"
@@ -514,7 +521,7 @@ export default function SellerMessagesClient({
             </div>
           </>
         ) : (
-          <div className="flex-1 flex items-center justify-center">
+          <div className="flex-1 min-h-0 flex items-center justify-center">
             <div className="text-center">
               <p className="text-zinc-600 dark:text-zinc-400">
                 Select a conversation to view messages

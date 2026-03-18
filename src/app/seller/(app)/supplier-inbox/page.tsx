@@ -37,3 +37,5 @@ export default async function SupplierInboxPage({
   redirect(`/buyer/suppliers/talk/${supplierId}?conversationId=${conversationId}&from=email`);
 }
 
+
+

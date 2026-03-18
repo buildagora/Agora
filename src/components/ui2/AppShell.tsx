@@ -16,6 +16,8 @@ interface AppShellProps {
   active?: string;
   children: React.ReactNode;
   className?: string;
+  /** Optional class for the <main> element. Default preserves overflow-y-auto for normal page scrolling. */
+  mainClassName?: string;
 }
 
 export default function AppShell({
@@ -23,6 +25,7 @@ export default function AppShell({
   active = "dashboard",
   children,
   className = "",
+  mainClassName,
 }: AppShellProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -145,8 +148,7 @@ export default function AppShell({
     { href: "/buyer/find", label: "Supplier Discovery" },
     { href: "/buyer/settings/preferred-suppliers", label: "Preferred Suppliers" },
     { href: "/buyer/messages", label: "Messages" },
-    { href: "/buyer/suppliers", label: "Find Materials" },
-    // /buyer/orders and /buyer/settings are placeholder pages - hidden for now
+    // Find Materials is the dashboard; no separate nav item
   ];
 
   const sellerNavItems = [
@@ -176,7 +178,7 @@ export default function AppShell({
   if (!role) {
     return (
       <div className={`flex min-h-screen flex-col bg-zinc-50 dark:bg-black ${className}`}>
-        <main className="flex-1">
+        <main className={mainClassName ? `flex-1 min-w-0 ${mainClassName}` : "flex-1"}>
           {children}
         </main>
       </div>
@@ -314,7 +316,7 @@ export default function AppShell({
             </div>
           </div>
         </Topbar>
-        <main className="flex-1 overflow-y-auto min-w-0">
+        <main className={`flex-1 min-w-0 ${mainClassName ?? "overflow-y-auto"}`}>
           {children}
         </main>
       </div>
