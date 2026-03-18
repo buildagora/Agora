@@ -231,6 +231,11 @@ export default function FindMaterialsClient() {
                     />
                     <span className="text-sm text-black dark:text-zinc-50">
                       Send to entire network
+                      {!loading && !error && suppliers.length > 0 && (
+                        <span className="text-zinc-500 dark:text-zinc-400 ml-1">
+                          ({suppliers.length} supplier{suppliers.length !== 1 ? "s" : ""})
+                        </span>
+                      )}
                     </span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer">
@@ -337,17 +342,80 @@ export default function FindMaterialsClient() {
               </div>
             </>
           ) : selectedCategory && selectedCategory !== "" && selectedCategory !== "all" && sendMode === "NETWORK" ? (
-            /* Submit Button for NETWORK mode */
-            <div className="mb-6">
-              <Button
-                onClick={handleSubmitRequest}
-                disabled={submitting || !requestText.trim()}
-                variant="primary"
-                className="w-full max-w-md"
-              >
-                {submitting ? "Sending..." : "Send Request"}
-              </Button>
-            </div>
+            <>
+              {/* NETWORK Supplier List - Read-only */}
+              {loading ? (
+                <div className="mb-6">
+                  <div className="text-sm font-medium text-black dark:text-zinc-50 mb-3">
+                    This request will be sent to
+                  </div>
+                  <div className="text-center py-8 text-zinc-600 dark:text-zinc-400">
+                    Loading suppliers...
+                  </div>
+                </div>
+              ) : error ? (
+                <div className="mb-6">
+                  <div className="text-sm font-medium text-black dark:text-zinc-50 mb-3">
+                    This request will be sent to
+                  </div>
+                  <div className="text-center py-8 text-red-600 dark:text-red-400">
+                    Error: {error}
+                  </div>
+                </div>
+              ) : showNoSuppliers ? (
+                <div className="mb-6">
+                  <div className="text-sm font-medium text-black dark:text-zinc-50 mb-3">
+                    This request will be sent to
+                  </div>
+                  <div className="text-center py-8 text-zinc-600 dark:text-zinc-400">
+                    No suppliers found in this category
+                  </div>
+                </div>
+              ) : suppliers.length > 0 ? (
+                <div className="mb-6">
+                  <div className="text-sm font-medium text-black dark:text-zinc-50 mb-3">
+                    This request will be sent to {suppliers.length} supplier{suppliers.length !== 1 ? "s" : ""}
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {suppliers.map((supplier) => (
+                      <Card
+                        key={supplier.id}
+                        className="bg-zinc-50 dark:bg-zinc-900"
+                      >
+                        <CardContent className="p-4">
+                          <h3 className="text-sm font-semibold text-black dark:text-zinc-50">
+                            {supplier.name}
+                          </h3>
+                          {supplier.categories.length > 0 && (
+                            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+                              {supplier.categories
+                                .map(
+                                  (cat) =>
+                                    categoryIdToLabel[
+                                      cat as keyof typeof categoryIdToLabel
+                                    ] || cat
+                                )
+                                .join(", ")}
+                            </p>
+                          )}
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+              {/* Submit Button for NETWORK mode */}
+              <div className="mb-6">
+                <Button
+                  onClick={handleSubmitRequest}
+                  disabled={submitting || !requestText.trim()}
+                  variant="primary"
+                  className="w-full max-w-md"
+                >
+                  {submitting ? "Sending..." : "Send Request"}
+                </Button>
+              </div>
+            </>
           ) : showEmptyState ? (
             <div className="text-center py-12">
               <p className="text-zinc-600 dark:text-zinc-400 mb-2">
