@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth/AuthProvider";
+import { Analytics } from "@vercel/analytics/next";
 
 // Font loading with error handling - these are synchronous but Next.js handles them
 const geistSans = Geist({
@@ -38,6 +39,7 @@ export default function RootLayout({
         <AuthProvider>
           {children}
         </AuthProvider>
+        <Analytics />
       </body>
     </html>
   );

@@ -16,7 +16,7 @@ interface BuyerSidebarProps {
  * 
  * Structure:
  * - Dashboard → /buyer/dashboard
- * - Requests → /buyer/rfqs
+ * - Requests → /buyer/requests
  * - Suppliers (Preferred)
  * - Settings (optional)
  */
@@ -110,8 +110,8 @@ export default function BuyerSidebar({ onNavigate }: BuyerSidebarProps) {
               REQUESTS
             </div>
             <SidebarItem 
-              href="/buyer/rfqs" 
-              active={isActive("/buyer/rfqs")}
+              href="/buyer/requests" 
+              active={isActive("/buyer/requests")}
               className="pl-4 text-base text-zinc-700 hover:text-black cursor-pointer"
               onClick={onNavigate}
             >
@@ -133,7 +133,7 @@ export default function BuyerSidebar({ onNavigate }: BuyerSidebarProps) {
               className="pl-4 text-base text-zinc-700 hover:text-black cursor-pointer"
               onClick={onNavigate}
             >
-              Bid Request
+              Create Bid Request
             </SidebarItem>
           </div>
 
@@ -143,22 +143,12 @@ export default function BuyerSidebar({ onNavigate }: BuyerSidebarProps) {
               SUPPLIERS
             </div>
             <SidebarItem 
-              href="/buyer/suppliers/talk" 
-              active={isActive("/buyer/suppliers/talk")}
+              href="/buyer/suppliers" 
+              active={isActive("/buyer/suppliers")}
               className="pl-4 text-base text-zinc-700 hover:text-black cursor-pointer"
               onClick={onNavigate}
             >
-              <div className="flex items-center justify-between w-full">
-                <span>Find Materials</span>
-                {unreadCount === 1 && (
-                  <div className="ml-2 w-2 h-2 rounded-full bg-blue-500 dark:bg-blue-400" />
-                )}
-                {unreadCount > 1 && (
-                  <Badge variant="info" className="ml-2">
-                    {unreadCount > 99 ? "99+" : unreadCount}
-                  </Badge>
-                )}
-              </div>
+              Find Materials
             </SidebarItem>
             <SidebarItem 
               href="/buyer/suppliers/preferred" 

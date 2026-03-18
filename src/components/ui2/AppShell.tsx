@@ -145,7 +145,7 @@ export default function AppShell({
     { href: "/buyer/find", label: "Supplier Discovery" },
     { href: "/buyer/settings/preferred-suppliers", label: "Preferred Suppliers" },
     { href: "/buyer/messages", label: "Messages" },
-    { href: "/buyer/suppliers/talk", label: "Talk to Suppliers", showBadge: true },
+    { href: "/buyer/suppliers", label: "Find Materials" },
     // /buyer/orders and /buyer/settings are placeholder pages - hidden for now
   ];
 
@@ -192,7 +192,7 @@ export default function AppShell({
         <nav className="py-4">
           {navItems.map((item) => {
             // BUYER attention indicators
-            const isBuyerMessagesItem = role === "buyer" && (item.href.includes("/messages") || item.href.includes("/suppliers/talk"));
+            const isBuyerMessagesItem = role === "buyer" && item.href.includes("/messages");
             const showBuyerMessagesBadge = isBuyerMessagesItem && unreadCount > 0;
             
             const isBuyerRfqsItem = role === "buyer" && item.href === "/buyer/rfqs";

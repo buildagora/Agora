@@ -1,18 +1,11 @@
-"use client";
-
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import FindMaterialsClient from "./FindMaterialsClient";
 
 /**
- * Suppliers Index - Redirects to Preferred (default view)
+ * Suppliers Index - Find Materials entrypoint
+ * 
+ * Clean dedicated page for material request creation.
+ * No messages/inbox UI - just the request form.
  */
 export default function SuppliersPage() {
-  const router = useRouter();
-  
-  useEffect(() => {
-    router.replace("/buyer/suppliers/preferred");
-  }, [router]);
-
-  return null;
+  return <FindMaterialsClient />;
 }
-
