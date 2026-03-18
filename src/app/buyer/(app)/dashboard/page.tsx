@@ -45,12 +45,6 @@ function getActivityContextLabel(item: ActivityItem): string {
   return "Recent supplier response";
 }
 
-/** Static fallback when no notifications (not clickable) */
-const MOCK_RECENT_ACTIVITY: ActivityItem[] = [
-  { supplierName: "ABC Lumber Co.", messagePreview: "We have 2x4 lumber in stock. When do you need delivery?", timestamp: "2 hours ago", contextLabel: "Lumber / Siding request" },
-  { supplierName: "Roofing Supply Inc.", messagePreview: "Quote ready for your shingles request.", timestamp: "Yesterday", contextLabel: "Roofing request" },
-];
-
 function formatNotificationTime(iso: string): string {
   const d = new Date(iso);
   const now = new Date();
@@ -106,9 +100,9 @@ export default function BuyerDashboardPage() {
             materialRequestText: d.materialRequestText,
           };
         });
-        setRecentActivity(items.length > 0 ? items : MOCK_RECENT_ACTIVITY);
+        setRecentActivity(items);
       })
-      .catch(() => setRecentActivity(MOCK_RECENT_ACTIVITY))
+      .catch(() => setRecentActivity([]))
       .finally(() => setActivityLoading(false));
   }, [user, status]);
 
@@ -178,6 +172,15 @@ export default function BuyerDashboardPage() {
           {activityLoading ? (
             <div className="rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-6 text-sm text-zinc-500">
               Loading…
+            </div>
+          ) : recentActivity.length === 0 ? (
+            <div className="rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-8 text-center">
+              <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400">
+                No recent supplier activity yet
+              </p>
+              <p className="text-sm text-zinc-500 dark:text-zinc-500 mt-1">
+                Supplier replies and request updates will appear here
+              </p>
             </div>
           ) : (
             <ul className="flex flex-col gap-3 list-none p-0 m-0">
