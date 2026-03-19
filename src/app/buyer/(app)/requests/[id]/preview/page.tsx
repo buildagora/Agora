@@ -55,10 +55,10 @@ export default function RequestPreviewPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen flex-col bg-white dark:bg-black">
+      <div className="flex min-h-screen flex-col bg-white">
         <Header />
         <main className="flex flex-1 items-center justify-center">
-          <p className="text-zinc-600 dark:text-zinc-400">Loading...</p>
+          <p className="text-zinc-600">Loading...</p>
         </main>
       </div>
     );
@@ -66,12 +66,12 @@ export default function RequestPreviewPage() {
 
   if (!request) {
     return (
-      <div className="flex min-h-screen flex-col bg-white dark:bg-black">
+      <div className="flex min-h-screen flex-col bg-white">
         <Header />
         <main className="flex flex-1 px-6 py-8 max-w-4xl mx-auto w-full">
           <div className="w-full">
             <div className="mt-8 text-center">
-              <p className="text-zinc-600 dark:text-zinc-400">Request not found.</p>
+              <p className="text-zinc-600">Request not found.</p>
             </div>
           </div>
         </main>
@@ -80,7 +80,7 @@ export default function RequestPreviewPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-white dark:bg-black">
+    <div className="flex min-h-screen flex-col bg-white">
       <Header />
 
       {/* Main content - print-friendly layout */}
@@ -88,52 +88,52 @@ export default function RequestPreviewPage() {
         <div className="w-full">
           {/* Header */}
           <div className="mb-8">
-            <h1 className="text-3xl font-semibold text-black dark:text-zinc-50 mb-2">
+            <h1 className="text-3xl font-semibold text-black mb-2">
               {request.jobName || "Material Request"}
             </h1>
-            <p className="text-sm text-zinc-600 dark:text-zinc-400">
+            <p className="text-sm text-zinc-600">
               Request ID: {request.id}
             </p>
-            <p className="text-sm text-zinc-600 dark:text-zinc-400">
+            <p className="text-sm text-zinc-600">
               Created: {formatDate(request.createdAt)}
             </p>
             {request.status && (
-              <p className="text-sm text-zinc-600 dark:text-zinc-400">
+              <p className="text-sm text-zinc-600">
                 Status: <span className="font-medium capitalize">{request.status}</span>
               </p>
             )}
           </div>
 
           {/* Delivery Information */}
-          <div className="mb-8 border-b border-zinc-200 dark:border-zinc-800 pb-6">
-            <h2 className="text-xl font-semibold text-black dark:text-zinc-50 mb-4">
+          <div className="mb-8 border-b border-zinc-200 pb-6">
+            <h2 className="text-xl font-semibold text-black mb-4">
               Delivery Information
             </h2>
             <div className="space-y-2 text-sm">
               <div>
-                <span className="font-medium text-black dark:text-zinc-50">Mode: </span>
-                <span className="text-zinc-700 dark:text-zinc-300 capitalize">
+                <span className="font-medium text-black">Mode: </span>
+                <span className="text-zinc-700 capitalize">
                   {request.delivery.mode}
                 </span>
               </div>
               <div>
-                <span className="font-medium text-black dark:text-zinc-50">Need By: </span>
-                <span className="text-zinc-700 dark:text-zinc-300">
+                <span className="font-medium text-black">Need By: </span>
+                <span className="text-zinc-700">
                   {formatDateTime(request.delivery.needBy)}
                 </span>
               </div>
               {request.delivery.mode === "delivery" && request.delivery.address && (
                 <div>
-                  <span className="font-medium text-black dark:text-zinc-50">Delivery Address: </span>
-                  <span className="text-zinc-700 dark:text-zinc-300">
+                  <span className="font-medium text-black">Delivery Address: </span>
+                  <span className="text-zinc-700">
                     {request.delivery.address}
                   </span>
                 </div>
               )}
               {request.delivery.mode === "pickup" && request.delivery.pickupWindow && (
                 <div>
-                  <span className="font-medium text-black dark:text-zinc-50">Pickup Window: </span>
-                  <span className="text-zinc-700 dark:text-zinc-300">
+                  <span className="font-medium text-black">Pickup Window: </span>
+                  <span className="text-zinc-700">
                     {request.delivery.pickupWindow}
                   </span>
                 </div>
@@ -142,35 +142,35 @@ export default function RequestPreviewPage() {
           </div>
 
           {/* Line Items */}
-          <div className="mb-8 border-b border-zinc-200 dark:border-zinc-800 pb-6 print:mb-4 print:pb-4 print:break-inside-avoid">
-            <h2 className="text-xl font-semibold text-black dark:text-zinc-50 mb-4 print:text-lg print:mb-2">
+          <div className="mb-8 border-b border-zinc-200 pb-6 print:mb-4 print:pb-4 print:break-inside-avoid">
+            <h2 className="text-xl font-semibold text-black mb-4 print:text-lg print:mb-2">
               Line Items
             </h2>
             <div className="overflow-x-auto">
               <table className="w-full border-collapse">
                 <thead>
-                  <tr className="border-b border-zinc-200 dark:border-zinc-800">
-                    <th className="text-left py-2 px-4 font-semibold text-black dark:text-zinc-50">
+                  <tr className="border-b border-zinc-200">
+                    <th className="text-left py-2 px-4 font-semibold text-black">
                       Description
                     </th>
-                    <th className="text-right py-2 px-4 font-semibold text-black dark:text-zinc-50">
+                    <th className="text-right py-2 px-4 font-semibold text-black">
                       Quantity
                     </th>
-                    <th className="text-left py-2 px-4 font-semibold text-black dark:text-zinc-50">
+                    <th className="text-left py-2 px-4 font-semibold text-black">
                       Unit
                     </th>
                     {request.items.some((item) => item.category && item.category !== "unknown") && (
-                      <th className="text-left py-2 px-4 font-semibold text-black dark:text-zinc-50">
+                      <th className="text-left py-2 px-4 font-semibold text-black">
                         Category
                       </th>
                     )}
                     {request.items.some((item) => item.sku) && (
-                      <th className="text-left py-2 px-4 font-semibold text-black dark:text-zinc-50">
+                      <th className="text-left py-2 px-4 font-semibold text-black">
                         SKU
                       </th>
                     )}
                     {request.items.some((item) => item.brand) && (
-                      <th className="text-left py-2 px-4 font-semibold text-black dark:text-zinc-50">
+                      <th className="text-left py-2 px-4 font-semibold text-black">
                         Brand
                       </th>
                     )}
@@ -180,29 +180,29 @@ export default function RequestPreviewPage() {
                   {request.items.map((item, index) => (
                     <tr
                       key={item.id || index}
-                      className="border-b border-zinc-100 dark:border-zinc-900"
+                      className="border-b border-zinc-100"
                     >
-                      <td className="py-3 px-4 text-zinc-700 dark:text-zinc-300">
+                      <td className="py-3 px-4 text-zinc-700">
                         {item.description}
                       </td>
-                      <td className="py-3 px-4 text-right text-zinc-700 dark:text-zinc-300">
+                      <td className="py-3 px-4 text-right text-zinc-700">
                         {item.quantity}
                       </td>
-                      <td className="py-3 px-4 text-zinc-700 dark:text-zinc-300 uppercase">
+                      <td className="py-3 px-4 text-zinc-700 uppercase">
                         {item.unit}
                       </td>
                       {request.items.some((i) => i.category && i.category !== "unknown") && (
-                        <td className="py-3 px-4 text-zinc-700 dark:text-zinc-300">
+                        <td className="py-3 px-4 text-zinc-700">
                           {item.category && item.category !== "unknown" ? item.category : "—"}
                         </td>
                       )}
                       {request.items.some((i) => i.sku) && (
-                        <td className="py-3 px-4 text-zinc-700 dark:text-zinc-300">
+                        <td className="py-3 px-4 text-zinc-700">
                           {item.sku || "—"}
                         </td>
                       )}
                       {request.items.some((i) => i.brand) && (
-                        <td className="py-3 px-4 text-zinc-700 dark:text-zinc-300">
+                        <td className="py-3 px-4 text-zinc-700">
                           {item.brand || "—"}
                         </td>
                       )}
@@ -215,11 +215,11 @@ export default function RequestPreviewPage() {
 
           {/* Substitutions */}
           {request.substitutionsAllowed !== undefined && (
-            <div className="mb-8 border-b border-zinc-200 dark:border-zinc-800 pb-6 print:mb-4 print:pb-4 print:break-inside-avoid">
-              <h2 className="text-xl font-semibold text-black dark:text-zinc-50 mb-2 print:text-lg">
+            <div className="mb-8 border-b border-zinc-200 pb-6 print:mb-4 print:pb-4 print:break-inside-avoid">
+              <h2 className="text-xl font-semibold text-black mb-2 print:text-lg">
                 Substitutions
               </h2>
-              <p className="text-sm text-zinc-700 dark:text-zinc-300">
+              <p className="text-sm text-zinc-700">
                 {request.substitutionsAllowed
                   ? "Substitutions are allowed for all items."
                   : "Substitutions are not allowed."}
@@ -229,19 +229,19 @@ export default function RequestPreviewPage() {
 
           {/* Notes */}
           {request.notes && (
-            <div className="mb-8 border-b border-zinc-200 dark:border-zinc-800 pb-6 print:mb-4 print:pb-4 print:break-inside-avoid">
-              <h2 className="text-xl font-semibold text-black dark:text-zinc-50 mb-2 print:text-lg">
+            <div className="mb-8 border-b border-zinc-200 pb-6 print:mb-4 print:pb-4 print:break-inside-avoid">
+              <h2 className="text-xl font-semibold text-black mb-2 print:text-lg">
                 Notes
               </h2>
-              <p className="text-sm text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap">
+              <p className="text-sm text-zinc-700 whitespace-pre-wrap">
                 {request.notes}
               </p>
             </div>
           )}
 
           {/* Footer */}
-          <div className="mt-8 pt-6 border-t border-zinc-200 dark:border-zinc-800">
-            <p className="text-xs text-zinc-500 dark:text-zinc-500 text-center">
+          <div className="mt-8 pt-6 border-t border-zinc-200">
+            <p className="text-xs text-zinc-500 text-center">
               Generated on {formatDateTime(new Date().toISOString())}
             </p>
           </div>

@@ -39,7 +39,7 @@ export default function AgoraLogo({
   const wordmarkClass =
     variant === "auth"
       ? "text-[22px] font-bold leading-none text-[#111]"
-      : "text-[22px] font-bold leading-none text-[#111] dark:text-zinc-50";
+      : "text-[22px] font-bold leading-none text-[#111]";
 
   // Icon size matches the standard brand lockup
   const iconSize = 28;

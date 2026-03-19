@@ -268,36 +268,36 @@ export default function PurchaseOrderActions({ rfqId, role, rfq: rfqProp }: Purc
     <>
       <Card className="mb-6">
         <CardHeader>
-          <h3 className="text-lg font-semibold text-black dark:text-zinc-50">Purchase Order</h3>
+          <h3 className="text-lg font-semibold text-black">Purchase Order</h3>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             {/* PO Details */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-1">PO Number</p>
-                <p className="font-semibold text-black dark:text-zinc-50">{po.poNumber}</p>
+                <p className="text-sm text-zinc-600 mb-1">PO Number</p>
+                <p className="font-semibold text-black">{po.poNumber}</p>
               </div>
               <div>
-                <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-1">Total</p>
-                <p className="font-semibold text-black dark:text-zinc-50">${po.total.toFixed(2)}</p>
+                <p className="text-sm text-zinc-600 mb-1">Total</p>
+                <p className="font-semibold text-black">${po.total.toFixed(2)}</p>
               </div>
               <div>
-                <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-1">
+                <p className="text-sm text-zinc-600 mb-1">
                   {role === "BUYER" ? "Awarded Seller" : "Buyer"}
                 </p>
-                <p className="font-medium text-black dark:text-zinc-50">
+                <p className="font-medium text-black">
                   {role === "BUYER" ? sellerName : buyerName}
                 </p>
               </div>
               <div>
-                <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-1">Status</p>
-                <p className="font-medium text-black dark:text-zinc-50">Ready</p>
+                <p className="text-sm text-zinc-600 mb-1">Status</p>
+                <p className="font-medium text-black">Ready</p>
               </div>
             </div>
 
             {/* PO Action Buttons */}
-            <div className="flex gap-3 pt-4 border-t border-zinc-200 dark:border-zinc-800">
+            <div className="flex gap-3 pt-4 border-t border-zinc-200">
               <Button
                 variant="primary"
                 size="md"

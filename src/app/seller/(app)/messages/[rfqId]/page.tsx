@@ -418,7 +418,7 @@ export default function SellerMessagesPage() {
     return (
       <div className="flex flex-1 px-6 py-8">
         <div className="flex flex-1 items-center justify-center">
-          <p className="text-zinc-600 dark:text-zinc-400">Loading...</p>
+          <p className="text-zinc-600">Loading...</p>
         </div>
       </div>
     );
@@ -430,10 +430,10 @@ export default function SellerMessagesPage() {
       <div className="flex flex-1 px-6 py-8">
         <div className="flex flex-1 flex-col items-center justify-center px-6 py-8">
           <div className="text-center max-w-md">
-            <h2 className="text-xl font-semibold text-black dark:text-zinc-50 mb-2">
+            <h2 className="text-xl font-semibold text-black mb-2">
               Unable to load messages
             </h2>
-            <p className="text-zinc-600 dark:text-zinc-400 mb-4">
+            <p className="text-zinc-600 mb-4">
               There was a problem loading the conversation. Please try again.
             </p>
             <Link href="/seller/messages">
@@ -451,10 +451,10 @@ export default function SellerMessagesPage() {
       <div className="flex flex-1 px-6 py-8">
         <div className="flex flex-1 flex-col items-center justify-center px-6 py-8">
           <div className="text-center max-w-md">
-            <h2 className="text-xl font-semibold text-black dark:text-zinc-50 mb-2">
+            <h2 className="text-xl font-semibold text-black mb-2">
               Messages unavailable
             </h2>
-            <p className="text-zinc-600 dark:text-zinc-400 mb-4">
+            <p className="text-zinc-600 mb-4">
               Messages are tied to specific requests. Select a request or order to view messages.
             </p>
             <Link href="/seller/messages">
@@ -527,12 +527,12 @@ export default function SellerMessagesPage() {
     <AppShell role="seller" active="messages">
       <div className="flex flex-1 h-full overflow-hidden">
         {/* Left Sidebar: Action Queue Link */}
-        <div className="w-80 border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-y-auto">
-          <div className="p-4 border-b border-zinc-200 dark:border-zinc-800">
-            <h2 className="text-lg font-semibold text-black dark:text-zinc-50">
+        <div className="w-80 border-r border-zinc-200 bg-white overflow-y-auto">
+          <div className="p-4 border-b border-zinc-200">
+            <h2 className="text-lg font-semibold text-black">
               Action Queue
             </h2>
-            <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-1">
+            <p className="text-xs text-zinc-600 mt-1">
               Request #{rfq.rfqNumber}
             </p>
           </div>
@@ -548,16 +548,16 @@ export default function SellerMessagesPage() {
         {/* Main Conversation Panel */}
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Conversation Header */}
-          <div className="border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
+          <div className="border-b border-zinc-200 bg-white p-4">
             <div className="flex items-center justify-between">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-3 mb-1">
-                  <h1 className="text-xl font-semibold text-black dark:text-zinc-50 truncate">
+                  <h1 className="text-xl font-semibold text-black truncate">
                     {buyerName}
                   </h1>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
-                  <span className="text-zinc-600 dark:text-zinc-400">
+                  <span className="text-zinc-600">
                     Request #{rfq.rfqNumber}
                   </span>
                   {getStatusBadge() && (
@@ -577,9 +577,9 @@ export default function SellerMessagesPage() {
 
           {/* Activity Panel */}
           {systemMessages.length > 0 && (
-            <div className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/30">
+            <div className="border-b border-zinc-200 bg-zinc-50">
               <div className="p-4">
-                <h3 className="text-sm font-semibold text-black dark:text-zinc-50 mb-3">
+                <h3 className="text-sm font-semibold text-black mb-3">
                   Request Activity
                 </h3>
                 <div className="space-y-2 max-h-32 overflow-y-auto">
@@ -588,12 +588,12 @@ export default function SellerMessagesPage() {
                       key={message.id}
                       className="flex items-start gap-2 text-xs"
                     >
-                      <div className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-zinc-400 dark:bg-zinc-600 mt-1" />
+                      <div className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-zinc-400 mt-1" />
                       <div className="flex-1 min-w-0">
-                        <p className="text-black dark:text-zinc-50 font-medium">
+                        <p className="text-black font-medium">
                           {getActivityLabel(message)}
                         </p>
-                        <p className="text-zinc-500 dark:text-zinc-500 mt-0.5">
+                        <p className="text-zinc-500 mt-0.5">
                           {formatDateTime(message.createdAt)}
                         </p>
                       </div>
@@ -605,10 +605,10 @@ export default function SellerMessagesPage() {
           )}
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-zinc-50 dark:bg-black">
+          <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-zinc-50">
             {messages.filter((m) => (m.senderRole || m.fromRole || "SELLER") !== "SYSTEM").length === 0 ? (
               <div className="text-center py-12">
-                <p className="text-zinc-600 dark:text-zinc-400">
+                <p className="text-zinc-600">
                   No messages. Messaging is only available for exception handling.
                 </p>
               </div>
@@ -630,8 +630,8 @@ export default function SellerMessagesPage() {
                       <div
                         className={`max-w-[75%] rounded-lg p-4 shadow-sm ${
                           isSeller
-                            ? "bg-slate-600 dark:bg-slate-400 text-white dark:text-black"
-                            : "bg-white dark:bg-zinc-800 text-black dark:text-zinc-50 border border-zinc-200 dark:border-zinc-700"
+                            ? "bg-slate-600 text-white"
+                            : "bg-white text-black border border-zinc-200"
                         }`}
                       >
                         <p className="text-sm font-semibold mb-1.5">{senderName}</p>
@@ -646,7 +646,7 @@ export default function SellerMessagesPage() {
                         <p className="whitespace-pre-wrap text-sm leading-relaxed">{message.body}</p>
                         <p
                           className={`text-xs mt-2 ${
-                            isSeller ? "text-slate-200 dark:text-zinc-700" : "text-zinc-500 dark:text-zinc-400"
+                            isSeller ? "text-slate-200" : "text-zinc-500"
                           }`}
                         >
                           {formatTime(message.createdAt)}
@@ -661,25 +661,25 @@ export default function SellerMessagesPage() {
 
           {/* Structured Response Composer */}
           {activeExceptions.length > 0 && (
-            <div className="border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
-              <div className="mb-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
-                <p className="text-sm font-medium text-amber-800 dark:text-amber-200 mb-1">
+            <div className="border-t border-zinc-200 bg-white p-4">
+              <div className="mb-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                <p className="text-sm font-medium text-amber-800 mb-1">
                   Exception Handling Required
                 </p>
-                <p className="text-xs text-amber-700 dark:text-amber-300">
+                <p className="text-xs text-amber-700">
                   {activeExceptions.map((ex) => ex.message).join(" • ")}
                 </p>
               </div>
               <form onSubmit={handleSendStructuredResponse}>
                 {error && (
-                  <div className="mb-3 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-sm text-red-700 dark:text-red-400">
+                  <div className="mb-3 p-2 bg-red-50 border border-red-200 rounded text-sm text-red-700">
                     {error}
                   </div>
                 )}
 
                 {/* Response Action Selection (Required) */}
                 <div className="mb-3">
-                  <label htmlFor="response-action" className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+                  <label htmlFor="response-action" className="block text-sm font-medium text-zinc-700 mb-2">
                     Response Action <span className="text-red-500">*</span>
                   </label>
                   <select
@@ -690,7 +690,7 @@ export default function SellerMessagesPage() {
                       setError(null);
                     }}
                     required
-                    className="w-full px-4 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-black dark:text-zinc-50 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-zinc-50"
+                    className="w-full px-4 py-2 border border-zinc-300 rounded-lg bg-white text-black focus:outline-none focus:ring-2 focus:ring-black"
                   >
                     <option value="">Select a response...</option>
                     <option value="QUOTE_SUBMITTED">Quote submitted</option>
@@ -704,8 +704,8 @@ export default function SellerMessagesPage() {
 
                 {/* Optional Note */}
                 <div className="mb-3">
-                  <label htmlFor="optional-note" className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-                    Additional Note <span className="text-zinc-500 dark:text-zinc-400 text-xs">(optional, max 240 chars)</span>
+                  <label htmlFor="optional-note" className="block text-sm font-medium text-zinc-700 mb-2">
+                    Additional Note <span className="text-zinc-500 text-xs">(optional, max 240 chars)</span>
                   </label>
                   <textarea
                     id="optional-note"
@@ -718,10 +718,10 @@ export default function SellerMessagesPage() {
                     }}
                     rows={3}
                     maxLength={240}
-                    className="w-full px-4 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-black dark:text-zinc-50 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-zinc-50 resize-none"
+                    className="w-full px-4 py-2 border border-zinc-300 rounded-lg bg-white text-black focus:outline-none focus:ring-2 focus:ring-black resize-none"
                     placeholder="Add any additional details (optional)..."
                   />
-                  <div className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 text-right">
+                  <div className="text-xs text-zinc-500 mt-1 text-right">
                     {optionalNote.length}/240
                   </div>
                 </div>

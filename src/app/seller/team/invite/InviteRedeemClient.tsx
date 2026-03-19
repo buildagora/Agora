@@ -65,10 +65,10 @@ export default function InviteRedeemClient({ token }: InviteRedeemClientProps) {
   if (success) {
     return (
       <>
-        <p className="text-zinc-600 dark:text-zinc-400 mb-4">
+        <p className="text-zinc-600 mb-4">
           You've successfully joined <strong>{supplierName}</strong> on Agora.
         </p>
-        <p className="text-sm text-zinc-500 dark:text-zinc-500 mb-4">
+        <p className="text-sm text-zinc-500 mb-4">
           Redirecting to team settings...
         </p>
         <Button variant="primary" onClick={() => router.push("/seller/settings/team")}>
@@ -82,8 +82,8 @@ export default function InviteRedeemClient({ token }: InviteRedeemClientProps) {
   return (
     <>
       {error && (
-        <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded">
-          <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded">
+          <p className="text-sm text-red-600">{error}</p>
         </div>
       )}
       <Button

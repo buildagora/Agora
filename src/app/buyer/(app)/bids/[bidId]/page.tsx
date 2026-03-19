@@ -143,10 +143,10 @@ export default function BuyerBidDetailPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen flex-col bg-white dark:bg-black">
+      <div className="flex min-h-screen flex-col bg-white">
         <Header />
         <main className="flex flex-1 items-center justify-center">
-          <p className="text-zinc-600 dark:text-zinc-400">Loading...</p>
+          <p className="text-zinc-600">Loading...</p>
         </main>
       </div>
     );
@@ -154,12 +154,12 @@ export default function BuyerBidDetailPage() {
 
   if (!bid) {
     return (
-      <div className="flex min-h-screen flex-col bg-white dark:bg-black">
+      <div className="flex min-h-screen flex-col bg-white">
         <Header />
         <main className="flex flex-1 px-6 py-8 max-w-4xl mx-auto w-full">
           <div className="w-full">
             <div className="mt-8 text-center">
-              <p className="text-zinc-600 dark:text-zinc-400">Bid not found.</p>
+              <p className="text-zinc-600">Bid not found.</p>
             </div>
           </div>
         </main>
@@ -168,7 +168,7 @@ export default function BuyerBidDetailPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-white dark:bg-black">
+    <div className="flex min-h-screen flex-col bg-white">
       <Header />
 
       {/* Main content */}
@@ -177,14 +177,14 @@ export default function BuyerBidDetailPage() {
           <div className="mb-6">
             <Link
               href="/buyer/dashboard"
-              className="text-sm text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-zinc-50"
+              className="text-sm text-zinc-600 hover:text-black"
             >
               ← Back to Dashboard
             </Link>
-            <h1 className="text-3xl font-semibold text-black dark:text-zinc-50 mt-4">
+            <h1 className="text-3xl font-semibold text-black mt-4">
               Quote for Request #{rfq?.rfqNumber || "Unknown"}
             </h1>
-            <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">
+            <p className="text-sm text-zinc-600 mt-1">
               Buyer Company
             </p>
           </div>
@@ -194,50 +194,50 @@ export default function BuyerBidDetailPage() {
             {/* Seller Info */}
             <div>
               <div className="flex items-center gap-3 mb-2">
-                <h2 className="text-xl font-semibold text-black dark:text-zinc-50">
+                <h2 className="text-xl font-semibold text-black">
                   {bid.sellerName}
                 </h2>
                 {bid.status && (
-                  <span className="text-sm px-3 py-1 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300">
+                  <span className="text-sm px-3 py-1 rounded bg-zinc-100 text-zinc-700">
                     {bid.status}
                   </span>
                 )}
               </div>
-              <p className="text-sm text-zinc-600 dark:text-zinc-400">
+              <p className="text-sm text-zinc-600">
                 Submitted {formatDate(bid.createdAt)}
               </p>
             </div>
 
             {/* Line Items */}
             <div>
-              <h2 className="text-xl font-semibold text-black dark:text-zinc-50 mb-4">
+              <h2 className="text-xl font-semibold text-black mb-4">
                 Line Items
               </h2>
-              <div className="border border-zinc-200 dark:border-zinc-800 rounded-lg overflow-hidden">
+              <div className="border border-zinc-200 rounded-lg overflow-hidden">
                 <table className="w-full">
-                  <thead className="bg-zinc-50 dark:bg-zinc-900">
+                  <thead className="bg-zinc-50">
                     <tr>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-black dark:text-zinc-50">
+                      <th className="px-4 py-3 text-left text-sm font-medium text-black">
                         Description
                       </th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-black dark:text-zinc-50">
+                      <th className="px-4 py-3 text-left text-sm font-medium text-black">
                         Quantity
                       </th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-black dark:text-zinc-50">
+                      <th className="px-4 py-3 text-left text-sm font-medium text-black">
                         Unit Price
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
+                  <tbody className="divide-y divide-zinc-200">
                     {bid.lineItems.map((item, index) => (
                       <tr key={index}>
-                        <td className="px-4 py-3 text-black dark:text-zinc-50">
+                        <td className="px-4 py-3 text-black">
                           {item.description}
                         </td>
-                        <td className="px-4 py-3 text-black dark:text-zinc-50">
+                        <td className="px-4 py-3 text-black">
                           {item.quantity} {item.unit}
                         </td>
-                        <td className="px-4 py-3 text-black dark:text-zinc-50">
+                        <td className="px-4 py-3 text-black">
                           ${parseFloat(item.unitPrice || "0").toFixed(2)}
                         </td>
                       </tr>
@@ -250,10 +250,10 @@ export default function BuyerBidDetailPage() {
             {/* Bid Notes */}
             {bid.notes && (
               <div>
-                <h2 className="text-xl font-semibold text-black dark:text-zinc-50 mb-2">
+                <h2 className="text-xl font-semibold text-black mb-2">
                   Notes
                 </h2>
-                <p className="text-zinc-600 dark:text-zinc-400 whitespace-pre-wrap">
+                <p className="text-zinc-600 whitespace-pre-wrap">
                   {bid.notes}
                 </p>
               </div>
@@ -261,14 +261,14 @@ export default function BuyerBidDetailPage() {
 
             {/* Bid Totals */}
             <div>
-              <h2 className="text-xl font-semibold text-black dark:text-zinc-50 mb-4">
+              <h2 className="text-xl font-semibold text-black mb-4">
                 Bid Total
               </h2>
-              <div className="p-4 border border-zinc-200 dark:border-zinc-800 rounded-lg bg-zinc-50 dark:bg-zinc-900">
+              <div className="p-4 border border-zinc-200 rounded-lg bg-zinc-50">
                 <div className="flex justify-end">
                   <div className="text-right space-y-1">
                     {bid.deliveryCharge !== undefined && bid.deliveryCharge > 0 && (
-                      <div className="flex justify-between gap-8 text-sm text-zinc-600 dark:text-zinc-400">
+                      <div className="flex justify-between gap-8 text-sm text-zinc-600">
                         <span>Line Items Total:</span>
                         <span>
                           $
@@ -283,12 +283,12 @@ export default function BuyerBidDetailPage() {
                       </div>
                     )}
                     {bid.deliveryCharge !== undefined && bid.deliveryCharge > 0 && (
-                      <div className="flex justify-between gap-8 text-sm text-zinc-600 dark:text-zinc-400">
+                      <div className="flex justify-between gap-8 text-sm text-zinc-600">
                         <span>Delivery Charge:</span>
                         <span>${bid.deliveryCharge.toFixed(2)}</span>
                       </div>
                     )}
-                    <div className="flex justify-between gap-8 font-semibold text-black dark:text-zinc-50 pt-2 border-t border-zinc-200 dark:border-zinc-800">
+                    <div className="flex justify-between gap-8 font-semibold text-black pt-2 border-t border-zinc-200">
                       <span>Total:</span>
                       <span>
                         ${bid.total !== undefined ? bid.total.toFixed(2) : bid.lineItems.reduce((sum, item) => {
@@ -306,52 +306,52 @@ export default function BuyerBidDetailPage() {
             {/* RFQ Terms (Read-only) */}
             {rfq && (
               <div>
-                <h2 className="text-xl font-semibold text-black dark:text-zinc-50 mb-4">
+                <h2 className="text-xl font-semibold text-black mb-4">
                   Required Terms
                 </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border border-zinc-200 dark:border-zinc-800 rounded-lg bg-zinc-50 dark:bg-zinc-900">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border border-zinc-200 rounded-lg bg-zinc-50">
                   <div>
-                    <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-1">
+                    <p className="text-sm text-zinc-600 mb-1">
                       Fulfillment Type
                     </p>
-                    <p className="text-black dark:text-zinc-50">
+                    <p className="text-black">
                       {rfq.terms.fulfillmentType}
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-1">
+                    <p className="text-sm text-zinc-600 mb-1">
                       {rfq.terms.fulfillmentType === "PICKUP" ? "Pickup Date" : "Requested Delivery Date"}
                     </p>
-                    <p className="text-black dark:text-zinc-50">
+                    <p className="text-black">
                       {formatDateShort(rfq.terms.requestedDate)}
                     </p>
                   </div>
                   {rfq.terms.fulfillmentType === "DELIVERY" && (
                     <>
                       <div>
-                        <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-1">
+                        <p className="text-sm text-zinc-600 mb-1">
                           Delivery Preference
                         </p>
-                        <p className="text-black dark:text-zinc-50">
+                        <p className="text-black">
                           {rfq.terms.deliveryPreference || "ANYTIME"}
                         </p>
                       </div>
                       {rfq.terms.deliveryInstructions && (
                         <div className="md:col-span-2">
-                          <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-1">
+                          <p className="text-sm text-zinc-600 mb-1">
                             Special Delivery Instructions
                           </p>
-                          <p className="text-black dark:text-zinc-50 whitespace-pre-wrap">
+                          <p className="text-black whitespace-pre-wrap">
                             {rfq.terms.deliveryInstructions}
                           </p>
                         </div>
                       )}
                       {rfq.terms.location && (
                         <div className="md:col-span-2">
-                          <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-1">
+                          <p className="text-sm text-zinc-600 mb-1">
                             Delivery Address
                           </p>
-                          <p className="text-black dark:text-zinc-50">
+                          <p className="text-black">
                             {rfq.terms.location}
                           </p>
                         </div>
@@ -366,21 +366,21 @@ export default function BuyerBidDetailPage() {
             <div className="flex gap-4 pt-4">
               <Link
                 href="/buyer/dashboard"
-                className="flex-1 flex items-center justify-center h-12 bg-black dark:bg-zinc-50 text-white dark:text-black rounded-lg hover:bg-zinc-800 dark:hover:bg-zinc-200 font-medium"
+                className="flex-1 flex items-center justify-center h-12 bg-black text-white rounded-lg hover:bg-zinc-800 font-medium"
               >
                 Dashboard
               </Link>
               {bid?.sellerId && rfq?.id ? (
                 <Link
                   href={`/buyer/messages/${rfq.id}?sellerId=${bid.sellerId}`}
-                  className="flex-1 flex items-center justify-center h-12 border-2 border-black dark:border-zinc-50 rounded-lg text-black dark:text-zinc-50 hover:bg-zinc-100 dark:hover:bg-zinc-900 font-medium"
+                  className="flex-1 flex items-center justify-center h-12 border-2 border-black rounded-lg text-black hover:bg-zinc-100 font-medium"
                 >
                   View Messages
                 </Link>
               ) : (
                 <Link
                   href={`/buyer/messages/${rfq?.id || ""}`}
-                  className="flex-1 flex items-center justify-center h-12 border-2 border-black dark:border-zinc-50 rounded-lg text-black dark:text-zinc-50 hover:bg-zinc-100 dark:hover:bg-zinc-900 font-medium"
+                  className="flex-1 flex items-center justify-center h-12 border-2 border-black rounded-lg text-black hover:bg-zinc-100 font-medium"
                 >
                   View Messages
                 </Link>

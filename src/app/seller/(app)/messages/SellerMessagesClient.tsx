@@ -263,15 +263,15 @@ export default function SellerMessagesClient({
   return (
     <div className="flex flex-1 min-h-0 overflow-hidden h-full">
       {/* Left: Conversations List */}
-      <div className="w-64 border-r border-zinc-200 dark:border-zinc-800 overflow-y-auto bg-white dark:bg-zinc-900 flex-shrink-0 min-h-0">
-        <div className="p-4 border-b border-zinc-200 dark:border-zinc-800">
-          <h2 className="text-sm font-semibold text-black dark:text-zinc-50">
+      <div className="w-64 border-r border-zinc-200 overflow-y-auto bg-white flex-shrink-0 min-h-0">
+        <div className="p-4 border-b border-zinc-200">
+          <h2 className="text-sm font-semibold text-black">
             Conversations
           </h2>
         </div>
         <div className="p-2">
           {conversations.length === 0 ? (
-            <div className="text-xs text-zinc-500 dark:text-zinc-400 p-4 text-center">
+            <div className="text-xs text-zinc-500 p-4 text-center">
               No conversations yet
             </div>
           ) : (
@@ -280,8 +280,8 @@ export default function SellerMessagesClient({
                 key={conv.id}
                 className={`mb-2 cursor-pointer transition-colors ${
                   conv.id === selectedConversationId
-                    ? "bg-zinc-100 dark:bg-zinc-800"
-                    : "hover:bg-zinc-50 dark:hover:bg-zinc-900"
+                    ? "bg-zinc-100"
+                    : "hover:bg-zinc-50"
                 }`}
                 onClick={() => {
                   setSelectedConversationId(conv.id);
@@ -290,14 +290,14 @@ export default function SellerMessagesClient({
               >
                 <CardContent className="p-3">
                   <div className="flex items-start gap-2">
-                    <div className="w-8 h-8 rounded-full bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center flex-shrink-0">
-                      <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                    <div className="w-8 h-8 rounded-full bg-zinc-200 flex items-center justify-center flex-shrink-0">
+                      <span className="text-xs font-medium text-zinc-600">
                         {conv.buyerName.charAt(0).toUpperCase()}
                       </span>
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <div className="text-sm font-medium text-black dark:text-zinc-50 truncate flex-1">
+                        <div className="text-sm font-medium text-black truncate flex-1">
                           {conv.buyerName}
                         </div>
                         <button
@@ -307,14 +307,14 @@ export default function SellerMessagesClient({
                             handleDeleteConversation(conv.id);
                           }}
                           disabled={deletingConversationId === conv.id}
-                          className="flex-shrink-0 p-1 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded transition-colors"
+                          className="flex-shrink-0 p-1 hover:bg-zinc-200 rounded transition-colors"
                           title="Delete conversation"
                         >
                           {deletingConversationId === conv.id ? (
-                            <span className="text-xs text-zinc-400 dark:text-zinc-500">...</span>
+                            <span className="text-xs text-zinc-400">...</span>
                           ) : (
                             <svg
-                              className="w-4 h-4 text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300"
+                              className="w-4 h-4 text-zinc-400 hover:text-zinc-600"
                               fill="none"
                               stroke="currentColor"
                               viewBox="0 0 24 24"
@@ -335,14 +335,14 @@ export default function SellerMessagesClient({
                         )}
                       </div>
                       {conv.contextLabel && (
-                        <div className="text-xs font-medium text-zinc-600 dark:text-zinc-400 mt-1 truncate">
+                        <div className="text-xs font-medium text-zinc-600 mt-1 truncate">
                           {conv.contextLabel}
                         </div>
                       )}
-                      <div className="text-xs text-zinc-500 dark:text-zinc-400 truncate mt-1">
+                      <div className="text-xs text-zinc-500 truncate mt-1">
                         {conv.lastMessagePreview}
                       </div>
-                      <div className="text-xs text-zinc-400 dark:text-zinc-500 mt-1">
+                      <div className="text-xs text-zinc-400 mt-1">
                         {formatTime(conv.lastMessageAt)}
                       </div>
                     </div>
@@ -359,17 +359,17 @@ export default function SellerMessagesClient({
         {selectedConversation ? (
           <>
             {/* Header */}
-            <div className="flex-shrink-0 border-b border-zinc-200 dark:border-zinc-800 px-6 py-4 bg-white dark:bg-zinc-900">
+            <div className="flex-shrink-0 border-b border-zinc-200 px-6 py-4 bg-white">
               <div className="flex items-center gap-4">
                 <button
                   onClick={() => {
                     setSelectedConversationId(null);
                     router.push("/seller/messages");
                   }}
-                  className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+                  className="p-2 hover:bg-zinc-100 rounded-lg transition-colors"
                 >
                   <svg
-                    className="w-5 h-5 text-zinc-600 dark:text-zinc-400"
+                    className="w-5 h-5 text-zinc-600"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -383,16 +383,16 @@ export default function SellerMessagesClient({
                   </svg>
                 </button>
                 <div className="flex-1 min-w-0">
-                  <h1 className="text-xl font-semibold text-black dark:text-zinc-50">
+                  <h1 className="text-xl font-semibold text-black">
                     {selectedConversation.buyerName}
                   </h1>
                   {selectedConversation.buyerEmail && (
-                    <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                    <p className="text-sm text-zinc-600">
                       {selectedConversation.buyerEmail}
                     </p>
                   )}
                   {selectedConversation.contextLabel && (
-                    <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
+                    <p className="text-sm text-zinc-500 mt-1">
                       {selectedConversation.contextLabel}
                     </p>
                   )}
@@ -400,12 +400,12 @@ export default function SellerMessagesClient({
                     <div className="mt-2 flex items-center gap-2 flex-wrap">
                       <a
                         href={`/seller/rfqs/${selectedConversation.rfqId}`}
-                        className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline"
+                        className="text-sm font-medium text-blue-600 hover:underline"
                       >
                         {selectedConversation.rfqNumber}
                       </a>
                       {selectedConversation.rfqTitle && (
-                        <span className="text-sm text-zinc-500 dark:text-zinc-400">
+                        <span className="text-sm text-zinc-500">
                           • {selectedConversation.rfqTitle}
                         </span>
                       )}
@@ -418,11 +418,11 @@ export default function SellerMessagesClient({
             {/* Messages */}
             <div
               ref={messagesContainerRef}
-              className="flex-1 min-h-0 overflow-y-auto px-6 py-4 bg-zinc-50 dark:bg-zinc-950"
+              className="flex-1 min-h-0 overflow-y-auto px-6 py-4 bg-zinc-50"
             >
               {messages.length === 0 ? (
                 <div className="text-center py-12">
-                  <p className="text-zinc-600 dark:text-zinc-400">
+                  <p className="text-zinc-600">
                     No messages yet. Start the conversation!
                   </p>
                 </div>
@@ -435,22 +435,22 @@ export default function SellerMessagesClient({
                   if (isAgora) {
                     return (
                       <div key={message.id} className="flex justify-center my-4">
-                        <Card className="bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
+                        <Card className="bg-blue-50 border-blue-200">
                           <CardContent className="p-3">
                             <div className="flex items-center gap-2">
                               <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center">
                                 <span className="text-xs font-bold text-white">A</span>
                               </div>
                               <div>
-                                <div className="text-xs font-semibold text-blue-900 dark:text-blue-200 mb-1">
+                                <div className="text-xs font-semibold text-blue-900 mb-1">
                                   Agora
                                 </div>
-                                <p className="text-sm text-blue-800 dark:text-blue-300">
+                                <p className="text-sm text-blue-800">
                                   {message.body}
                                 </p>
                               </div>
                             </div>
-                            <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                            <div className="text-xs text-blue-600 mt-1">
                               {formatTime(message.createdAt)}
                             </div>
                           </CardContent>
@@ -467,8 +467,8 @@ export default function SellerMessagesClient({
                       <div
                         className={`max-w-[75%] rounded-lg p-4 shadow-sm relative ${
                           isSupplier
-                            ? "bg-slate-600 dark:bg-slate-500 text-white dark:text-black"
-                            : "bg-white dark:bg-zinc-800 text-black dark:text-zinc-50 border border-zinc-200 dark:border-zinc-700"
+                            ? "bg-slate-600 text-white"
+                            : "bg-white text-black border border-zinc-200"
                         }`}
                       >
                         {message.senderDisplayName && (
@@ -483,8 +483,8 @@ export default function SellerMessagesClient({
                           <p
                             className={`text-xs ${
                               isSupplier
-                                ? "text-slate-200 dark:text-zinc-700"
-                                : "text-zinc-500 dark:text-zinc-400"
+                                ? "text-slate-200"
+                                : "text-zinc-500"
                             }`}
                           >
                             {formatTime(message.createdAt)}
@@ -495,8 +495,8 @@ export default function SellerMessagesClient({
                               disabled={deletingMessageId === message.id}
                               className={`ml-2 text-xs transition-colors ${
                                 isSupplier
-                                  ? "text-slate-300 dark:text-zinc-600 hover:text-slate-100 dark:hover:text-zinc-400"
-                                  : "text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300"
+                                  ? "text-slate-300 hover:text-slate-100"
+                                  : "text-zinc-400 hover:text-zinc-600"
                               }`}
                               title="Delete message"
                             >
@@ -515,14 +515,14 @@ export default function SellerMessagesClient({
             </div>
 
             {/* Message Composer */}
-            <div className="flex-shrink-0 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
+            <div className="flex-shrink-0 border-t border-zinc-200 bg-white p-4">
               <form onSubmit={handleSendMessage} className="flex gap-2">
                 <input
                   type="text"
                   value={messageText}
                   onChange={(e) => setMessageText(e.target.value)}
                   placeholder="Type a message..."
-                  className="flex-1 px-4 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-black dark:text-zinc-50 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-zinc-50"
+                  className="flex-1 px-4 py-2 border border-zinc-300 rounded-lg bg-white text-black focus:outline-none focus:ring-2 focus:ring-black"
                   disabled={sending}
                 />
                 <Button
@@ -538,7 +538,7 @@ export default function SellerMessagesClient({
         ) : (
           <div className="flex-1 min-h-0 flex items-center justify-center">
             <div className="text-center">
-              <p className="text-zinc-600 dark:text-zinc-400">
+              <p className="text-zinc-600">
                 Select a conversation to view messages
               </p>
             </div>

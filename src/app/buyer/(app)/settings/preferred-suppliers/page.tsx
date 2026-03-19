@@ -337,10 +337,10 @@ export default function PreferredSuppliersPage() {
     <div className="flex flex-1 px-6 py-8">
         <div className="w-full max-w-6xl mx-auto">
           <div className="mb-6">
-            <h1 className="text-3xl font-semibold text-black dark:text-zinc-50">
+            <h1 className="text-3xl font-semibold text-black">
               Preferred Suppliers
             </h1>
-            <p className="text-zinc-600 dark:text-zinc-400 mt-2">
+            <p className="text-zinc-600 mt-2">
               Set preferred suppliers for each material category. These suppliers will be prioritized when routing requests.
             </p>
           </div>
@@ -349,8 +349,8 @@ export default function PreferredSuppliersPage() {
             <div
               className={`mb-4 p-4 rounded-lg ${
                 message.type === "success"
-                  ? "bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-200"
-                  : "bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200"
+                  ? "bg-green-50 text-green-800"
+                  : "bg-red-50 text-red-800"
               }`}
             >
               {message.text}
@@ -360,7 +360,7 @@ export default function PreferredSuppliersPage() {
           {/* Existing Rules */}
           {rules.length > 0 && (
             <div className="mb-8">
-              <h2 className="text-xl font-semibold text-black dark:text-zinc-50 mb-4">
+              <h2 className="text-xl font-semibold text-black mb-4">
                 Current Rules
               </h2>
               <div className="space-y-3">
@@ -371,19 +371,19 @@ export default function PreferredSuppliersPage() {
                   return (
                   <div
                     key={uniqueKey}
-                    className="p-4 border border-zinc-200 dark:border-zinc-800 rounded-lg"
+                    className="p-4 border border-zinc-200 rounded-lg"
                   >
                     <div className="flex items-center justify-between mb-2">
                       <div>
                         {/* V1 FIX: Display label but use categoryId internally */}
-                        <span className="font-semibold text-black dark:text-zinc-50">
+                        <span className="font-semibold text-black">
                           {rule.categoryId === "all" 
                             ? "All Categories" 
                             : (rule.categoryId 
                                 ? categoryIdToLabel[rule.categoryId as keyof typeof categoryIdToLabel] || rule.categoryId
                                 : (rule.category === "all" ? "All Categories" : rule.category))}
                         </span>
-                        <span className="ml-2 text-sm text-zinc-600 dark:text-zinc-400">
+                        <span className="ml-2 text-sm text-zinc-600">
                           ({rule.sellerIds.length} supplier{rule.sellerIds.length !== 1 ? "s" : ""})
                         </span>
                       </div>
@@ -397,9 +397,9 @@ export default function PreferredSuppliersPage() {
                               const categoryKey = rule.categoryId || rule.category || "all";
                               handleToggleEnabled(categoryKey, rule.enabled);
                             }}
-                            className="w-4 h-4 text-black border-zinc-300 dark:border-zinc-700 rounded focus:ring-black dark:focus:ring-zinc-50"
+                            className="w-4 h-4 text-black border-zinc-300 rounded focus:ring-black"
                           />
-                          <span className="text-sm text-zinc-600 dark:text-zinc-400">
+                          <span className="text-sm text-zinc-600">
                             {rule.enabled ? "Enabled" : "Disabled"}
                           </span>
                         </label>
@@ -409,20 +409,20 @@ export default function PreferredSuppliersPage() {
                             const categoryKey = rule.categoryId || rule.category || "all";
                             handleDelete(categoryKey);
                           }}
-                          className="text-sm text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
+                          className="text-sm text-red-600 hover:text-red-800"
                         >
                           Delete
                         </button>
                       </div>
                     </div>
                     {rule.sellerIds.length > 0 && (
-                      <div className="text-sm text-zinc-600 dark:text-zinc-400">
+                      <div className="text-sm text-zinc-600">
                         <span className="font-medium">Suppliers:</span>{" "}
                         <div className="flex flex-wrap gap-2 mt-1">
                           {rule.sellerIds.map((sellerId) => (
                             <span
                               key={sellerId}
-                              className="inline-flex items-center px-2 py-1 rounded-md bg-zinc-100 dark:bg-zinc-800 text-xs"
+                              className="inline-flex items-center px-2 py-1 rounded-md bg-zinc-100 text-xs"
                             >
                               {displaySellerName(sellerId)}
                             </span>
@@ -438,21 +438,21 @@ export default function PreferredSuppliersPage() {
           )}
 
           {/* Add/Edit Rule */}
-          <div className="border border-zinc-200 dark:border-zinc-800 rounded-lg p-6">
-            <h2 className="text-xl font-semibold text-black dark:text-zinc-50 mb-4">
+          <div className="border border-zinc-200 rounded-lg p-6">
+            <h2 className="text-xl font-semibold text-black mb-4">
               {selectedCategory ? "Edit Rule" : "Add New Rule"}
             </h2>
 
             <div className="space-y-4">
               {/* Category Selection */}
               <div>
-                <label className="block text-sm font-medium text-black dark:text-zinc-50 mb-2">
+                <label className="block text-sm font-medium text-black mb-2">
                   Category
                 </label>
                 <select
                   value={selectedCategory}
                   onChange={(e) => handleCategoryChange(e.target.value)}
-                  className="w-full px-4 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-black dark:text-zinc-50 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-zinc-50"
+                  className="w-full px-4 py-2 border border-zinc-300 rounded-lg bg-white text-black focus:outline-none focus:ring-2 focus:ring-black"
                 >
                   <option value="">Select a category...</option>
                   <option value="all">All Categories</option>
@@ -467,41 +467,41 @@ export default function PreferredSuppliersPage() {
               {/* Seller Selection */}
               {selectedCategory && (
                 <div>
-                  <label className="block text-sm font-medium text-black dark:text-zinc-50 mb-2">
+                  <label className="block text-sm font-medium text-black mb-2">
                     Preferred Suppliers
                   </label>
                   {isLoadingSellers ? (
-                    <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                    <p className="text-sm text-zinc-600">
                       Loading suppliers...
                     </p>
                   ) : sellersError ? (
-                    <p className="text-sm text-red-600 dark:text-red-400">
+                    <p className="text-sm text-red-600">
                       {sellersError}
                     </p>
                   ) : sellers.length === 0 ? (
-                    <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                    <p className="text-sm text-zinc-600">
                       No suppliers currently serve this category.
                     </p>
                   ) : (
-                    <div className="border border-zinc-300 dark:border-zinc-700 rounded-lg p-4 max-h-64 overflow-y-auto bg-white dark:bg-zinc-900">
+                    <div className="border border-zinc-300 rounded-lg p-4 max-h-64 overflow-y-auto bg-white">
                       <div className="flex flex-col gap-2">
                         {sellers.map((seller) => (
                           <label
                             key={seller.id}
-                            className="flex items-center gap-2 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800 p-2 rounded"
+                            className="flex items-center gap-2 cursor-pointer hover:bg-zinc-50 p-2 rounded"
                           >
                             <input
                               type="checkbox"
                               checked={selectedSellerIds.includes(seller.id)}
                               onChange={() => handleSellerToggle(seller.id)}
-                              className="w-4 h-4 text-black border-zinc-300 dark:border-zinc-700 rounded focus:ring-black dark:focus:ring-zinc-50"
+                              className="w-4 h-4 text-black border-zinc-300 rounded focus:ring-black"
                             />
                             <div className="flex-1">
-                              <span className="text-sm font-medium text-black dark:text-zinc-50">
+                              <span className="text-sm font-medium text-black">
                                 {seller.displayName || seller.companyName}
                               </span>
                               {seller.categoriesServed && seller.categoriesServed.length > 0 && (
-                                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                                <p className="text-xs text-zinc-500 mt-0.5">
                                   Serves {seller.categoriesServed.length} categor{seller.categoriesServed.length !== 1 ? "ies" : "y"}
                                 </p>
                               )}
@@ -520,7 +520,7 @@ export default function PreferredSuppliersPage() {
                   <button
                     onClick={handleSave}
                     disabled={isSaving}
-                    className="px-6 py-2 bg-black text-white rounded-lg hover:bg-zinc-800 dark:bg-zinc-50 dark:text-black dark:hover:bg-zinc-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-6 py-2 bg-black text-white rounded-lg hover:bg-zinc-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isSaving ? "Saving..." : "Save"}
                   </button>
@@ -531,7 +531,7 @@ export default function PreferredSuppliersPage() {
                         setSelectedSellerIds([]);
                         setMessage(null);
                       }}
-                      className="px-6 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg text-black dark:text-zinc-50 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors"
+                      className="px-6 py-2 border border-zinc-300 rounded-lg text-black hover:bg-zinc-50 transition-colors"
                     >
                       Cancel
                     </button>

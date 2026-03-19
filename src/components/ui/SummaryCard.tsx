@@ -26,23 +26,23 @@ export default function SummaryCard({
 }: SummaryCardProps) {
   return (
     <div className={`sticky top-6 ${className}`}>
-      <div className="border border-zinc-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-900">
+      <div className="border border-zinc-200 rounded-lg bg-white">
         <div className="p-6">
-          <h3 className="text-lg font-semibold text-black dark:text-zinc-50 mb-6">
+          <h3 className="text-lg font-semibold text-black mb-6">
             Summary
           </h3>
           <div className="space-y-4">
             <div className="flex justify-between text-sm">
-              <span className="text-zinc-600 dark:text-zinc-400">Line Items</span>
-              <span className="font-medium text-black dark:text-zinc-50">
+              <span className="text-zinc-600">Line Items</span>
+              <span className="font-medium text-black">
                 {lineItemCount}
               </span>
             </div>
             
             {fulfillmentType && (
               <div className="flex justify-between text-sm">
-                <span className="text-zinc-600 dark:text-zinc-400">Fulfillment</span>
-                <span className="font-medium text-black dark:text-zinc-50">
+                <span className="text-zinc-600">Fulfillment</span>
+                <span className="font-medium text-black">
                   {fulfillmentType}
                 </span>
               </div>
@@ -50,10 +50,10 @@ export default function SummaryCard({
             
             {requestedDate && (
               <div className="flex justify-between text-sm">
-                <span className="text-zinc-600 dark:text-zinc-400">
+                <span className="text-zinc-600">
                   {fulfillmentType === "PICKUP" ? "Pickup Date" : "Delivery Date"}
                 </span>
-                <span className="font-medium text-black dark:text-zinc-50">
+                <span className="font-medium text-black">
                   {new Date(requestedDate).toLocaleDateString()}
                 </span>
               </div>

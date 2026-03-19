@@ -234,7 +234,7 @@ function SellerSignupPageInner() {
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-6">
               <div>
-                <h3 className="text-lg font-semibold text-black dark:text-zinc-50 mb-4">
+                <h3 className="text-lg font-semibold text-black mb-4">
                   Account Information
                 </h3>
                 <div className="space-y-4">
@@ -259,7 +259,7 @@ function SellerSignupPageInner() {
               </div>
 
               <div>
-                <h3 className="text-lg font-semibold text-black dark:text-zinc-50 mb-4">
+                <h3 className="text-lg font-semibold text-black mb-4">
                   Contact Information
                 </h3>
                 <div className="space-y-4">
@@ -292,7 +292,7 @@ function SellerSignupPageInner() {
               </div>
 
               <div>
-                <h3 className="text-lg font-semibold text-black dark:text-zinc-50 mb-4">
+                <h3 className="text-lg font-semibold text-black mb-4">
                   Password
                 </h3>
                 <Input
@@ -309,7 +309,7 @@ function SellerSignupPageInner() {
               </div>
 
               <div>
-                <h3 className="text-lg font-semibold text-black dark:text-zinc-50 mb-4">
+                <h3 className="text-lg font-semibold text-black mb-4">
                   Categories Served *
                 </h3>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">

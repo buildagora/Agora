@@ -16,10 +16,10 @@ export default function UIPreviewPage() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-zinc-600 dark:text-zinc-400">Active Requests</p>
-                  <p className="text-2xl font-bold text-black dark:text-zinc-50 mt-1">12</p>
+                  <p className="text-sm text-zinc-600">Active Requests</p>
+                  <p className="text-2xl font-bold text-black mt-1">12</p>
                 </div>
-                <div className="w-12 h-12 rounded-lg bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
+                <div className="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center">
                   <span className="text-2xl">📋</span>
                 </div>
               </div>
@@ -30,10 +30,10 @@ export default function UIPreviewPage() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-zinc-600 dark:text-zinc-400">Pending Quotes</p>
-                  <p className="text-2xl font-bold text-black dark:text-zinc-50 mt-1">8</p>
+                  <p className="text-sm text-zinc-600">Pending Quotes</p>
+                  <p className="text-2xl font-bold text-black mt-1">8</p>
                 </div>
-                <div className="w-12 h-12 rounded-lg bg-amber-100 dark:bg-amber-900 flex items-center justify-center">
+                <div className="w-12 h-12 rounded-lg bg-amber-100 flex items-center justify-center">
                   <span className="text-2xl">💬</span>
                 </div>
               </div>
@@ -44,10 +44,10 @@ export default function UIPreviewPage() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-zinc-600 dark:text-zinc-400">Active Orders</p>
-                  <p className="text-2xl font-bold text-black dark:text-zinc-50 mt-1">5</p>
+                  <p className="text-sm text-zinc-600">Active Orders</p>
+                  <p className="text-2xl font-bold text-black mt-1">5</p>
                 </div>
-                <div className="w-12 h-12 rounded-lg bg-green-100 dark:bg-green-900 flex items-center justify-center">
+                <div className="w-12 h-12 rounded-lg bg-green-100 flex items-center justify-center">
                   <span className="text-2xl">📦</span>
                 </div>
               </div>
@@ -58,10 +58,10 @@ export default function UIPreviewPage() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-zinc-600 dark:text-zinc-400">Suppliers</p>
-                  <p className="text-2xl font-bold text-black dark:text-zinc-50 mt-1">24</p>
+                  <p className="text-sm text-zinc-600">Suppliers</p>
+                  <p className="text-2xl font-bold text-black mt-1">24</p>
                 </div>
-                <div className="w-12 h-12 rounded-lg bg-purple-100 dark:bg-purple-900 flex items-center justify-center">
+                <div className="w-12 h-12 rounded-lg bg-purple-100 flex items-center justify-center">
                   <span className="text-2xl">🏢</span>
                 </div>
               </div>
@@ -81,7 +81,7 @@ export default function UIPreviewPage() {
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-black dark:text-zinc-50">
+                  <h3 className="text-lg font-semibold text-black">
                     Recent Requests
                   </h3>
                   <Button size="sm">New Request</Button>
@@ -91,20 +91,20 @@ export default function UIPreviewPage() {
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
-                      <tr className="border-b border-zinc-200 dark:border-zinc-800">
-                        <th className="text-left py-3 px-4 text-sm font-medium text-zinc-600 dark:text-zinc-400">
+                      <tr className="border-b border-zinc-200">
+                        <th className="text-left py-3 px-4 text-sm font-medium text-zinc-600">
                           Request ID
                         </th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-zinc-600 dark:text-zinc-400">
+                        <th className="text-left py-3 px-4 text-sm font-medium text-zinc-600">
                           Material
                         </th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-zinc-600 dark:text-zinc-400">
+                        <th className="text-left py-3 px-4 text-sm font-medium text-zinc-600">
                           Status
                         </th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-zinc-600 dark:text-zinc-400">
+                        <th className="text-left py-3 px-4 text-sm font-medium text-zinc-600">
                           Quotes
                         </th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-zinc-600 dark:text-zinc-400">
+                        <th className="text-left py-3 px-4 text-sm font-medium text-zinc-600">
                           Created
                         </th>
                       </tr>
@@ -118,12 +118,12 @@ export default function UIPreviewPage() {
                       ].map((request) => (
                         <tr
                           key={request.id}
-                          className="border-b border-zinc-100 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
+                          className="border-b border-zinc-100 hover:bg-zinc-50"
                         >
-                          <td className="py-3 px-4 text-sm text-black dark:text-zinc-50 font-medium">
+                          <td className="py-3 px-4 text-sm text-black font-medium">
                             {request.id}
                           </td>
-                          <td className="py-3 px-4 text-sm text-zinc-700 dark:text-zinc-300">
+                          <td className="py-3 px-4 text-sm text-zinc-700">
                             {request.material}
                           </td>
                           <td className="py-3 px-4">
@@ -139,10 +139,10 @@ export default function UIPreviewPage() {
                               {request.status}
                             </Badge>
                           </td>
-                          <td className="py-3 px-4 text-sm text-zinc-700 dark:text-zinc-300">
+                          <td className="py-3 px-4 text-sm text-zinc-700">
                             {request.quotes}
                           </td>
-                          <td className="py-3 px-4 text-sm text-zinc-600 dark:text-zinc-400">
+                          <td className="py-3 px-4 text-sm text-zinc-600">
                             {request.created}
                           </td>
                         </tr>
@@ -157,7 +157,7 @@ export default function UIPreviewPage() {
           <TabsContent value="orders">
             <Card>
               <CardHeader>
-                <h3 className="text-lg font-semibold text-black dark:text-zinc-50">
+                <h3 className="text-lg font-semibold text-black">
                   Active Orders
                 </h3>
               </CardHeader>
@@ -170,17 +170,17 @@ export default function UIPreviewPage() {
                   ].map((order) => (
                     <div
                       key={order.id}
-                      className="flex items-center justify-between p-4 border border-zinc-200 dark:border-zinc-800 rounded-lg"
+                      className="flex items-center justify-between p-4 border border-zinc-200 rounded-lg"
                     >
                       <div>
-                        <p className="font-medium text-black dark:text-zinc-50">{order.id}</p>
-                        <p className="text-sm text-zinc-600 dark:text-zinc-400">{order.supplier}</p>
+                        <p className="font-medium text-black">{order.id}</p>
+                        <p className="text-sm text-zinc-600">{order.supplier}</p>
                       </div>
                       <div className="flex items-center gap-4">
                         <Badge variant={order.status === "Delivered" ? "success" : "info"}>
                           {order.status}
                         </Badge>
-                        <span className="text-sm text-zinc-600 dark:text-zinc-400">
+                        <span className="text-sm text-zinc-600">
                           {order.delivery}
                         </span>
                       </div>
@@ -194,7 +194,7 @@ export default function UIPreviewPage() {
           <TabsContent value="suppliers">
             <Card>
               <CardHeader>
-                <h3 className="text-lg font-semibold text-black dark:text-zinc-50">
+                <h3 className="text-lg font-semibold text-black">
                   Supplier Directory
                 </h3>
               </CardHeader>
@@ -210,12 +210,12 @@ export default function UIPreviewPage() {
                   ].map((supplier) => (
                     <div
                       key={supplier.name}
-                      className="p-4 border border-zinc-200 dark:border-zinc-800 rounded-lg"
+                      className="p-4 border border-zinc-200 rounded-lg"
                     >
-                      <h4 className="font-medium text-black dark:text-zinc-50">{supplier.name}</h4>
-                      <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">{supplier.category}</p>
+                      <h4 className="font-medium text-black">{supplier.name}</h4>
+                      <p className="text-sm text-zinc-600 mt-1">{supplier.category}</p>
                       <div className="mt-2 flex items-center gap-2">
-                        <span className="text-sm text-zinc-600 dark:text-zinc-400">⭐ {supplier.rating}</span>
+                        <span className="text-sm text-zinc-600">⭐ {supplier.rating}</span>
                       </div>
                     </div>
                   ))}

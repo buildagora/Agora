@@ -45,25 +45,25 @@ export default function ResendVerificationPage() {
   return (
     <div className="flex flex-1 items-center justify-center px-6 py-16">
       <div className="w-full max-w-md">
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-8 shadow-sm">
-          <h1 className="text-2xl font-semibold text-black dark:text-zinc-50 mb-2 text-center">
+        <div className="bg-white border border-zinc-200 rounded-lg p-8 shadow-sm">
+          <h1 className="text-2xl font-semibold text-black mb-2 text-center">
             Resend Verification Email
           </h1>
-          <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-8 text-center">
+          <p className="text-sm text-zinc-600 mb-8 text-center">
             Enter your email address and we'll send you a new verification link.
           </p>
 
           {status === "success" && (
-            <div className="mb-6 p-4 border border-green-300 dark:border-green-700 rounded-lg bg-green-50 dark:bg-green-900/20">
-              <p className="text-sm text-green-600 dark:text-green-400 text-center">
+            <div className="mb-6 p-4 border border-green-300 rounded-lg bg-green-50">
+              <p className="text-sm text-green-600 text-center">
                 {message}
               </p>
             </div>
           )}
 
           {status === "error" && (
-            <div className="mb-6 p-4 border border-red-300 dark:border-red-700 rounded-lg bg-red-50 dark:bg-red-900/20">
-              <p className="text-sm text-red-600 dark:text-red-400 text-center">
+            <div className="mb-6 p-4 border border-red-300 rounded-lg bg-red-50">
+              <p className="text-sm text-red-600 text-center">
                 {message}
               </p>
             </div>
@@ -71,7 +71,7 @@ export default function ResendVerificationPage() {
 
           <form onSubmit={handleSubmit} className="mb-6">
             <div className="mb-4">
-              <label className="block text-sm font-medium text-black dark:text-zinc-50 mb-2">
+              <label className="block text-sm font-medium text-black mb-2">
                 Email address
               </label>
               <input
@@ -83,7 +83,7 @@ export default function ResendVerificationPage() {
                   setMessage("");
                 }}
                 placeholder="Enter your email"
-                className="w-full px-4 py-3 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-black dark:text-zinc-50 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-zinc-50"
+                className="w-full px-4 py-3 border border-zinc-300 rounded-lg bg-white text-black focus:outline-none focus:ring-2 focus:ring-black"
                 required
                 autoComplete="email"
                 disabled={isSubmitting}
@@ -92,7 +92,7 @@ export default function ResendVerificationPage() {
             <button
               type="submit"
               disabled={isSubmitting || !email.trim()}
-              className="w-full h-12 rounded-lg bg-black text-white transition-colors hover:bg-zinc-800 dark:bg-zinc-50 dark:text-black dark:hover:bg-zinc-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full h-12 rounded-lg bg-black text-white transition-colors hover:bg-zinc-800 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSubmitting ? "Sending..." : "Send Verification Email"}
             </button>
@@ -101,7 +101,7 @@ export default function ResendVerificationPage() {
           <div className="text-center">
             <Link
               href="/auth/sign-in"
-              className="text-sm text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors"
+              className="text-sm text-zinc-600 hover:text-zinc-900 transition-colors"
             >
               Back to Sign In
             </Link>

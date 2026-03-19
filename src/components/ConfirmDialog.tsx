@@ -96,7 +96,7 @@ export default function ConfirmDialog({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/70"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
       onClick={(e) => {
         // Close on backdrop click
         if (e.target === e.currentTarget) {
@@ -107,10 +107,10 @@ export default function ConfirmDialog({
     >
       <Card className="w-full max-w-md mx-4">
         <CardContent className="p-6">
-          <h3 className="text-lg font-semibold text-black dark:text-zinc-50 mb-2">
+          <h3 className="text-lg font-semibold text-black mb-2">
             {title}
           </h3>
-          <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-6">
+          <p className="text-sm text-zinc-600 mb-6">
             {message}
           </p>
           <div className="flex gap-3 justify-end">
@@ -125,7 +125,7 @@ export default function ConfirmDialog({
               ref={confirmButtonRef}
               variant={variant === "danger" ? "primary" : "primary"}
               onClick={onConfirm}
-              className={variant === "danger" ? "bg-red-600 hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700" : ""}
+              className={variant === "danger" ? "bg-red-600 hover:bg-red-700" : ""}
             >
               {confirmLabel}
             </Button>

@@ -468,10 +468,10 @@ export default function SellerRFQDetailPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen flex-col bg-white dark:bg-black">
+      <div className="flex min-h-screen flex-col bg-white">
         <Header />
         <main className="flex flex-1 items-center justify-center">
-          <p className="text-zinc-600 dark:text-zinc-400">Loading...</p>
+          <p className="text-zinc-600">Loading...</p>
         </main>
       </div>
     );
@@ -479,12 +479,12 @@ export default function SellerRFQDetailPage() {
 
   if (!rfq) {
     return (
-      <div className="flex min-h-screen flex-col bg-white dark:bg-black">
+      <div className="flex min-h-screen flex-col bg-white">
         <Header />
         <main className="flex flex-1 px-6 py-8 max-w-4xl mx-auto w-full">
           <div className="w-full">
             <div className="mt-8 text-center">
-              <p className="text-zinc-600 dark:text-zinc-400">RFQ not found.</p>
+              <p className="text-zinc-600">RFQ not found.</p>
             </div>
           </div>
         </main>
@@ -493,7 +493,7 @@ export default function SellerRFQDetailPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-white dark:bg-black">
+    <div className="flex min-h-screen flex-col bg-white">
       <Header />
 
       {/* Main content */}
@@ -509,16 +509,16 @@ export default function SellerRFQDetailPage() {
 
           {/* V1 FIX: Page Header - Job Name/PO as primary identifier */}
           <div className="mb-6">
-            <h1 className="text-2xl font-semibold text-black dark:text-zinc-50 mb-1">
+            <h1 className="text-2xl font-semibold text-black mb-1">
               {rfq.jobNameOrPo || rfq.title || "Material Request"}
             </h1>
             {rfq.jobNameOrPo && rfq.title && rfq.title !== rfq.jobNameOrPo && (
-              <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-1">
+              <p className="text-sm text-zinc-600 mb-1">
                 {rfq.title}
               </p>
             )}
             <div className="flex items-center gap-2 mt-2">
-              <p className="text-xs text-zinc-500 dark:text-zinc-400">
+              <p className="text-xs text-zinc-500">
                 {rfq.rfqNumber}
               </p>
               <Badge variant={rfq.status === "OPEN" ? "info" : rfq.status === "AWARDED" ? "success" : "default"}>
@@ -532,14 +532,14 @@ export default function SellerRFQDetailPage() {
 
           {/* Order Status Header - Inline component at top */}
           {order && (
-            <div className="mb-6 p-4 border border-zinc-200 dark:border-zinc-800 rounded-lg bg-zinc-50 dark:bg-zinc-900">
+            <div className="mb-6 p-4 border border-zinc-200 rounded-lg bg-zinc-50">
               <div className="flex items-center justify-between">
                 {/* Left: Status Badge */}
                 <div className="flex items-center gap-3">
                   <div>
-                    <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-1">Order Status</p>
+                    <p className="text-sm text-zinc-600 mb-1">Order Status</p>
                     <div className="flex items-center gap-2">
-                      <p className="text-lg font-semibold text-black dark:text-zinc-50">
+                      <p className="text-lg font-semibold text-black">
                         {order.status === "delivered" ? "Delivered" :
                          order.status === "picked_up" ? "Picked Up" :
                          order.status === "scheduled" ? "Scheduled" :
@@ -567,7 +567,7 @@ export default function SellerRFQDetailPage() {
                     </div>
                     {/* Last updated timestamp */}
                     {order.statusHistory.length > 0 && (
-                      <p className="text-xs text-zinc-500 dark:text-zinc-500 mt-1">
+                      <p className="text-xs text-zinc-500 mt-1">
                         Last updated: {new Date(order.statusHistory[order.statusHistory.length - 1].at).toLocaleString()}
                       </p>
                     )}
@@ -614,7 +614,7 @@ export default function SellerRFQDetailPage() {
 
                     if (actions.length === 0) {
                       return (
-                        <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                        <p className="text-sm text-zinc-600">
                           {order.status === "delivered" 
                             ? "Order delivered"
                             : order.status === "picked_up"
@@ -627,8 +627,8 @@ export default function SellerRFQDetailPage() {
                     return (
                       <>
                         {orderError && (
-                          <div className="absolute top-full left-0 right-0 mt-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-                            <p className="text-sm text-red-800 dark:text-red-200">{orderError}</p>
+                          <div className="absolute top-full left-0 right-0 mt-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+                            <p className="text-sm text-red-800">{orderError}</p>
                           </div>
                         )}
                         {actions.map((action) => {
@@ -755,11 +755,11 @@ export default function SellerRFQDetailPage() {
 
           {/* Buyer Notes */}
           {rfq.notes?.trim() && (
-            <div className="mb-6 p-4 border border-zinc-200 dark:border-zinc-800 rounded-lg bg-zinc-50 dark:bg-zinc-900">
-              <p className="text-xs font-medium text-zinc-500 dark:text-zinc-500 mb-2">
+            <div className="mb-6 p-4 border border-zinc-200 rounded-lg bg-zinc-50">
+              <p className="text-xs font-medium text-zinc-500 mb-2">
                 Buyer Notes
               </p>
-              <p className="text-sm text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap break-words">
+              <p className="text-sm text-zinc-700 whitespace-pre-wrap break-words">
                 {rfq.notes}
               </p>
             </div>
@@ -768,34 +768,34 @@ export default function SellerRFQDetailPage() {
           {/* Line Items */}
           <div className="flex flex-col gap-6 mb-8">
             <div>
-              <h2 className="text-xl font-semibold text-black dark:text-zinc-50 mb-4">
+              <h2 className="text-xl font-semibold text-black mb-4">
                 Line Items
               </h2>
-              <div className="border border-zinc-200 dark:border-zinc-800 rounded-lg overflow-hidden">
+              <div className="border border-zinc-200 rounded-lg overflow-hidden">
                 <table className="w-full">
-                  <thead className="bg-zinc-50 dark:bg-zinc-900">
+                  <thead className="bg-zinc-50">
                     <tr>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-black dark:text-zinc-50">
+                      <th className="px-4 py-3 text-left text-sm font-medium text-black">
                         Description
                       </th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-black dark:text-zinc-50">
+                      <th className="px-4 py-3 text-left text-sm font-medium text-black">
                         Quantity
                       </th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-black dark:text-zinc-50">
+                      <th className="px-4 py-3 text-left text-sm font-medium text-black">
                         Unit
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
+                  <tbody className="divide-y divide-zinc-200">
                     {rfq.lineItems.map((item, index) => (
                       <tr key={index}>
-                        <td className="px-4 py-3 text-black dark:text-zinc-50">
+                        <td className="px-4 py-3 text-black">
                           {item.description}
                         </td>
-                        <td className="px-4 py-3 text-black dark:text-zinc-50">
+                        <td className="px-4 py-3 text-black">
                           {item.quantity}
                         </td>
-                        <td className="px-4 py-3 text-black dark:text-zinc-50">
+                        <td className="px-4 py-3 text-black">
                           {item.unit}
                         </td>
                       </tr>
@@ -808,10 +808,10 @@ export default function SellerRFQDetailPage() {
             {/* Job Name / PO # */}
             {rfq.jobNameOrPo && (
               <div className="mb-4">
-                <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-1">
+                <p className="text-sm text-zinc-600 mb-1">
                   Job Name / PO #
                 </p>
-                <p className="text-black dark:text-zinc-50">
+                <p className="text-black">
                   {rfq.jobNameOrPo}
                 </p>
               </div>
@@ -819,52 +819,52 @@ export default function SellerRFQDetailPage() {
 
             {/* Required Terms (Read-only) */}
             <div>
-              <h2 className="text-xl font-semibold text-black dark:text-zinc-50 mb-4">
+              <h2 className="text-xl font-semibold text-black mb-4">
                 Required Terms
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border border-zinc-200 dark:border-zinc-800 rounded-lg bg-zinc-50 dark:bg-zinc-900">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border border-zinc-200 rounded-lg bg-zinc-50">
                 <div>
-                  <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-1">
+                  <p className="text-sm text-zinc-600 mb-1">
                     Fulfillment Type
                   </p>
-                  <p className="text-black dark:text-zinc-50">
+                  <p className="text-black">
                     {rfq.terms.fulfillmentType}
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-1">
+                  <p className="text-sm text-zinc-600 mb-1">
                     {rfq.terms.fulfillmentType === "PICKUP" ? "Pickup Date" : "Requested Delivery Date"}
                   </p>
-                  <p className="text-black dark:text-zinc-50">
+                  <p className="text-black">
                     {formatDateShort(rfq.terms.requestedDate)}
                   </p>
                 </div>
                 {rfq.terms.fulfillmentType === "DELIVERY" && (
                   <>
                     <div>
-                      <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-1">
+                      <p className="text-sm text-zinc-600 mb-1">
                         Delivery Preference
                       </p>
-                      <p className="text-black dark:text-zinc-50">
+                      <p className="text-black">
                         {rfq.terms.deliveryPreference || "ANYTIME"}
                       </p>
                     </div>
                     {rfq.terms.deliveryInstructions && (
                       <div className="md:col-span-2">
-                        <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-1">
+                        <p className="text-sm text-zinc-600 mb-1">
                           Special Delivery Instructions
                         </p>
-                        <p className="text-black dark:text-zinc-50 whitespace-pre-wrap">
+                        <p className="text-black whitespace-pre-wrap">
                           {rfq.terms.deliveryInstructions}
                         </p>
                       </div>
                     )}
                     {rfq.terms.location && (
                       <div className="md:col-span-2">
-                        <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-1">
+                        <p className="text-sm text-zinc-600 mb-1">
                           Delivery Address
                         </p>
-                        <p className="text-black dark:text-zinc-50">
+                        <p className="text-black">
                           {rfq.terms.location}
                         </p>
                       </div>
@@ -879,7 +879,7 @@ export default function SellerRFQDetailPage() {
               <div>
                 <button
                   onClick={scrollToBidForm}
-                  className="px-6 py-3 bg-black dark:bg-zinc-50 text-white dark:text-black rounded-lg hover:bg-zinc-800 dark:hover:bg-zinc-200 font-medium"
+                  className="px-6 py-3 bg-black text-white rounded-lg hover:bg-zinc-800 font-medium"
                 >
                   Place Bid
                 </button>
@@ -887,7 +887,7 @@ export default function SellerRFQDetailPage() {
             )}
             {mode === "create" && rfq.status !== "OPEN" && !showBidForm && (
               <div>
-                <p className="text-sm text-zinc-500 dark:text-zinc-500">
+                <p className="text-sm text-zinc-500">
                   Bidding is closed for this request.
                 </p>
               </div>
@@ -896,13 +896,13 @@ export default function SellerRFQDetailPage() {
 
           {/* Bid Details Section - Collapsible (collapsed by default) */}
           {mode === "view" && existingBid && (
-            <details className="border-t border-zinc-200 dark:border-zinc-800 pt-8">
+            <details className="border-t border-zinc-200 pt-8">
               <summary className="cursor-pointer list-none">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-semibold text-black dark:text-zinc-50">
+                  <h2 className="text-xl font-semibold text-black">
                     Submitted Bid (optional)
                   </h2>
-                  <span className="text-sm text-zinc-500 dark:text-zinc-500">Click to expand</span>
+                  <span className="text-sm text-zinc-500">Click to expand</span>
                 </div>
               </summary>
               
@@ -910,26 +910,26 @@ export default function SellerRFQDetailPage() {
                 {/* Bid Status and Timestamp */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-1">
+                    <p className="text-sm text-zinc-600 mb-1">
                       Bid Status
                     </p>
-                    <p className="text-black dark:text-zinc-50 font-medium">
+                    <p className="text-black font-medium">
                       {existingBid.status === "WON" && (
-                        <span className="text-green-600 dark:text-green-400">Won</span>
+                        <span className="text-green-600">Won</span>
                       )}
                       {existingBid.status === "LOST" && (
-                        <span className="text-red-600 dark:text-red-400">Lost</span>
+                        <span className="text-red-600">Lost</span>
                       )}
                       {(!existingBid.status || existingBid.status === "SUBMITTED") && (
-                        <span className="text-blue-600 dark:text-blue-400">Submitted</span>
+                        <span className="text-blue-600">Submitted</span>
                       )}
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-1">
+                    <p className="text-sm text-zinc-600 mb-1">
                       Submitted
                     </p>
-                    <p className="text-black dark:text-zinc-50">
+                    <p className="text-black">
                       {formatDateShort(existingBid.createdAt)}
                     </p>
                   </div>
@@ -937,50 +937,50 @@ export default function SellerRFQDetailPage() {
 
                 {/* Line Items Table */}
                 <div>
-                  <h3 className="text-lg font-semibold text-black dark:text-zinc-50 mb-4">
+                  <h3 className="text-lg font-semibold text-black mb-4">
                     Line Items
                   </h3>
-                  <div className="border border-zinc-200 dark:border-zinc-800 rounded-lg overflow-hidden">
+                  <div className="border border-zinc-200 rounded-lg overflow-hidden">
                     <table className="w-full">
-                      <thead className="bg-zinc-50 dark:bg-zinc-900">
+                      <thead className="bg-zinc-50">
                         <tr>
-                          <th className="px-4 py-3 text-left text-sm font-medium text-black dark:text-zinc-50">
+                          <th className="px-4 py-3 text-left text-sm font-medium text-black">
                             Description
                           </th>
-                          <th className="px-4 py-3 text-left text-sm font-medium text-black dark:text-zinc-50">
+                          <th className="px-4 py-3 text-left text-sm font-medium text-black">
                             Quantity
                           </th>
-                          <th className="px-4 py-3 text-left text-sm font-medium text-black dark:text-zinc-50">
+                          <th className="px-4 py-3 text-left text-sm font-medium text-black">
                             Unit
                           </th>
-                          <th className="px-4 py-3 text-left text-sm font-medium text-black dark:text-zinc-50">
+                          <th className="px-4 py-3 text-left text-sm font-medium text-black">
                             Unit Price
                           </th>
-                          <th className="px-4 py-3 text-right text-sm font-medium text-black dark:text-zinc-50">
+                          <th className="px-4 py-3 text-right text-sm font-medium text-black">
                             Line Total
                           </th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
+                      <tbody className="divide-y divide-zinc-200">
                         {(existingBid.lineItems || []).map((item, index) => {
                           const qty = parseFloat(item.quantity) || 0;
                           const unitPrice = parseFloat(item.unitPrice) || 0;
                           const lineTotal = qty * unitPrice;
                           return (
-                            <tr key={index} className="hover:bg-zinc-50 dark:hover:bg-zinc-900">
-                              <td className="px-4 py-3 text-black dark:text-zinc-50">
+                            <tr key={index} className="hover:bg-zinc-50">
+                              <td className="px-4 py-3 text-black">
                                 {item.description}
                               </td>
-                              <td className="px-4 py-3 text-black dark:text-zinc-50">
+                              <td className="px-4 py-3 text-black">
                                 {qty.toLocaleString()}
                               </td>
-                              <td className="px-4 py-3 text-black dark:text-zinc-50">
+                              <td className="px-4 py-3 text-black">
                                 {item.unit}
                               </td>
-                              <td className="px-4 py-3 text-black dark:text-zinc-50">
+                              <td className="px-4 py-3 text-black">
                                 ${formatCurrency(unitPrice)}
                               </td>
-                              <td className="px-4 py-3 text-right text-black dark:text-zinc-50 font-medium">
+                              <td className="px-4 py-3 text-right text-black font-medium">
                                 ${formatCurrency(lineTotal)}
                               </td>
                             </tr>
@@ -994,11 +994,11 @@ export default function SellerRFQDetailPage() {
                 {/* Lead Time */}
                 {existingBid.leadTimeDays !== undefined && (
                   <div>
-                    <h3 className="text-lg font-semibold text-black dark:text-zinc-50 mb-4">
+                    <h3 className="text-lg font-semibold text-black mb-4">
                       Lead Time
                     </h3>
-                    <div className="p-4 border border-zinc-200 dark:border-zinc-800 rounded-lg bg-zinc-50 dark:bg-zinc-900">
-                      <p className="text-black dark:text-zinc-50">
+                    <div className="p-4 border border-zinc-200 rounded-lg bg-zinc-50">
+                      <p className="text-black">
                         <span className="font-medium">{existingBid.leadTimeDays}</span> day{existingBid.leadTimeDays !== 1 ? "s" : ""}
                       </p>
                     </div>
@@ -1006,9 +1006,9 @@ export default function SellerRFQDetailPage() {
                 )}
 
                 {/* Bid Totals */}
-                <div className="border-t border-zinc-200 dark:border-zinc-800 pt-6">
+                <div className="border-t border-zinc-200 pt-6">
                   <div className="flex flex-col gap-2 max-w-md ml-auto">
-                    <div className="flex justify-between text-sm text-zinc-600 dark:text-zinc-400">
+                    <div className="flex justify-between text-sm text-zinc-600">
                       <span>Line Items Total:</span>
                       <span>
                         $
@@ -1022,13 +1022,13 @@ export default function SellerRFQDetailPage() {
                       </span>
                     </div>
                     {existingBid.deliveryCharge !== undefined && existingBid.deliveryCharge > 0 && (
-                      <div className="flex justify-between text-sm text-zinc-600 dark:text-zinc-400">
+                      <div className="flex justify-between text-sm text-zinc-600">
                         <span>Delivery Charge:</span>
                         <span>${formatCurrency(existingBid.deliveryCharge)}</span>
                       </div>
                     )}
-                    <div className="pt-2 border-t border-zinc-200 dark:border-zinc-800">
-                      <div className="flex justify-between font-semibold text-lg text-black dark:text-zinc-50">
+                    <div className="pt-2 border-t border-zinc-200">
+                      <div className="flex justify-between font-semibold text-lg text-black">
                         <span>Total:</span>
                         <span>
                           $
@@ -1054,10 +1054,10 @@ export default function SellerRFQDetailPage() {
                 {/* Bid Notes */}
                 {existingBid.notes && (
                   <div>
-                    <h3 className="text-lg font-semibold text-black dark:text-zinc-50 mb-2">
+                    <h3 className="text-lg font-semibold text-black mb-2">
                       Notes
                     </h3>
-                    <p className="text-zinc-600 dark:text-zinc-400 whitespace-pre-wrap">
+                    <p className="text-zinc-600 whitespace-pre-wrap">
                       {existingBid.notes}
                     </p>
                   </div>
@@ -1068,33 +1068,33 @@ export default function SellerRFQDetailPage() {
 
           {/* Bid Form - Only show in create mode */}
           {mode === "create" && showBidForm && (
-            <div id="bid-form" className="border-t border-zinc-200 dark:border-zinc-800 pt-8">
-              <h2 className="text-2xl font-semibold text-black dark:text-zinc-50 mb-6">
+            <div id="bid-form" className="border-t border-zinc-200 pt-8">
+              <h2 className="text-2xl font-semibold text-black mb-6">
                 Submit Bid
               </h2>
               <form onSubmit={handleSubmitBid} className="flex flex-col gap-6">
                 {/* Bid Line Items */}
                 <div>
-                  <h3 className="text-lg font-semibold text-black dark:text-zinc-50 mb-4">
+                  <h3 className="text-lg font-semibold text-black mb-4">
                     Line Items
                   </h3>
                   <div className="flex flex-col gap-4">
                     {bidLineItems.map((item, index) => (
                       <div
                         key={index}
-                        className="p-4 border border-zinc-200 dark:border-zinc-800 rounded-lg"
+                        className="p-4 border border-zinc-200 rounded-lg"
                       >
                         <div className="mb-2">
-                          <p className="font-medium text-black dark:text-zinc-50">
+                          <p className="font-medium text-black">
                             {item.description}
                           </p>
-                          <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                          <p className="text-sm text-zinc-600">
                             Unit: {item.unit}
                           </p>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                           <div>
-                            <label className="block text-sm font-medium text-black dark:text-zinc-50 mb-2">
+                            <label className="block text-sm font-medium text-black mb-2">
                               Quantity *
                             </label>
                             <input
@@ -1105,15 +1105,15 @@ export default function SellerRFQDetailPage() {
                               }
                               disabled
                               readOnly
-                              className="w-full px-4 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-black dark:text-zinc-50 cursor-not-allowed opacity-75"
+                              className="w-full px-4 py-2 border border-zinc-300 rounded-lg bg-zinc-100 text-black cursor-not-allowed opacity-75"
                               placeholder="0"
                             />
-                            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-500">
+                            <p className="mt-1 text-xs text-zinc-500">
                               Quantity from buyer RFQ (locked)
                             </p>
                           </div>
                           <div>
-                            <label className="block text-sm font-medium text-black dark:text-zinc-50 mb-2">
+                            <label className="block text-sm font-medium text-black mb-2">
                               Unit Price *
                             </label>
                             <input
@@ -1128,17 +1128,17 @@ export default function SellerRFQDetailPage() {
                                   rawValue
                                 );
                               }}
-                              className={`w-full px-4 py-2 border rounded-lg bg-white dark:bg-zinc-900 text-black dark:text-zinc-50 focus:outline-none focus:ring-2 ${
+                              className={`w-full px-4 py-2 border rounded-lg bg-white text-black focus:outline-none focus:ring-2 ${
                                 bidErrors.lineItems[index]
                                   ? "border-red-500 focus:ring-red-500"
-                                  : "border-zinc-300 dark:border-zinc-700 focus:ring-black dark:focus:ring-zinc-50"
+                                  : "border-zinc-300 focus:ring-black"
                               }`}
                               placeholder="0.00"
                             />
                           </div>
                         </div>
                         {bidErrors.lineItems[index] && (
-                          <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                          <p className="mt-1 text-sm text-red-600">
                             {bidErrors.lineItems[index]}
                           </p>
                         )}
@@ -1150,17 +1150,17 @@ export default function SellerRFQDetailPage() {
                 {/* Delivery Charge (only for DELIVERY) */}
                 {rfq.terms.fulfillmentType === "DELIVERY" && (
                   <div>
-                    <label className="block text-sm font-medium text-black dark:text-zinc-50 mb-2">
+                    <label className="block text-sm font-medium text-black mb-2">
                       Delivery Charge (optional)
                     </label>
                     <input
                       type="text"
                       value={deliveryCharge}
                       onChange={(e) => setDeliveryCharge(e.target.value)}
-                      className="w-full px-4 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-black dark:text-zinc-50 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-zinc-50"
+                      className="w-full px-4 py-2 border border-zinc-300 rounded-lg bg-white text-black focus:outline-none focus:ring-2 focus:ring-black"
                       placeholder="0.00"
                     />
-                    <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-500">
+                    <p className="mt-1 text-xs text-zinc-500">
                       Optional delivery charge will be added to line item total
                     </p>
                   </div>
@@ -1168,8 +1168,8 @@ export default function SellerRFQDetailPage() {
 
                 {/* Lead Time */}
                 <div>
-                  <label className="block text-sm font-medium text-black dark:text-zinc-50 mb-2">
-                    Lead Time (days) <span className="text-red-600 dark:text-red-400">*</span>
+                  <label className="block text-sm font-medium text-black mb-2">
+                    Lead Time (days) <span className="text-red-600">*</span>
                   </label>
                   <input
                     type="number"
@@ -1177,30 +1177,30 @@ export default function SellerRFQDetailPage() {
                     step="1"
                     value={leadTimeDays}
                     onChange={(e) => setLeadTimeDays(e.target.value)}
-                    className={`w-full px-4 py-2 border rounded-lg bg-white dark:bg-zinc-900 text-black dark:text-zinc-50 focus:outline-none focus:ring-2 ${
+                    className={`w-full px-4 py-2 border rounded-lg bg-white text-black focus:outline-none focus:ring-2 ${
                       bidErrors.leadTimeDays
                         ? "border-red-500 focus:ring-red-500"
-                        : "border-zinc-300 dark:border-zinc-700 focus:ring-black dark:focus:ring-zinc-50"
+                        : "border-zinc-300 focus:ring-black"
                     }`}
                     placeholder="e.g., 7"
                   />
                   {bidErrors.leadTimeDays && (
-                    <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                    <p className="mt-1 text-sm text-red-600">
                       {bidErrors.leadTimeDays}
                     </p>
                   )}
-                  <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-500">
+                  <p className="mt-1 text-xs text-zinc-500">
                     Number of days until you can fulfill this order
                   </p>
                 </div>
 
                 {/* Total */}
                 <div>
-                  <label className="block text-sm font-medium text-black dark:text-zinc-50 mb-2">
+                  <label className="block text-sm font-medium text-black mb-2">
                     {rfq.terms.fulfillmentType === "DELIVERY" ? "Grand Total" : "Total"}
                   </label>
                   <div className="space-y-2">
-                    <div className="flex justify-between text-sm text-zinc-600 dark:text-zinc-400">
+                    <div className="flex justify-between text-sm text-zinc-600">
                       <span>Line Items Total:</span>
                       <span>
                         $
@@ -1214,13 +1214,13 @@ export default function SellerRFQDetailPage() {
                       </span>
                     </div>
                     {rfq.terms.fulfillmentType === "DELIVERY" && deliveryCharge.trim() && (
-                      <div className="flex justify-between text-sm text-zinc-600 dark:text-zinc-400">
+                      <div className="flex justify-between text-sm text-zinc-600">
                         <span>Delivery Charge:</span>
                         <span>${formatCurrency(parseFloat(deliveryCharge) || 0)}</span>
                       </div>
                     )}
-                    <div className="pt-2 border-t border-zinc-200 dark:border-zinc-800">
-                      <div className="flex justify-between font-semibold text-black dark:text-zinc-50">
+                    <div className="pt-2 border-t border-zinc-200">
+                      <div className="flex justify-between font-semibold text-black">
                         <span>Total:</span>
                         <span>
                           $
@@ -1245,14 +1245,14 @@ export default function SellerRFQDetailPage() {
 
                 {/* Notes */}
                 <div>
-                  <label className="block text-sm font-medium text-black dark:text-zinc-50 mb-2">
+                  <label className="block text-sm font-medium text-black mb-2">
                     Notes (optional)
                   </label>
                   <textarea
                     value={bidNotes}
                     onChange={(e) => setBidNotes(e.target.value)}
                     rows={4}
-                    className="w-full px-4 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-black dark:text-zinc-50 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-zinc-50"
+                    className="w-full px-4 py-2 border border-zinc-300 rounded-lg bg-white text-black focus:outline-none focus:ring-2 focus:ring-black"
                     placeholder="Additional notes about your bid..."
                   />
                 </div>
@@ -1262,13 +1262,13 @@ export default function SellerRFQDetailPage() {
                   <button
                     type="button"
                     onClick={() => setShowBidForm(false)}
-                    className="flex-1 flex items-center justify-center h-12 border-2 border-black dark:border-zinc-50 rounded-lg text-black dark:text-zinc-50 hover:bg-zinc-100 dark:hover:bg-zinc-900 font-medium"
+                    className="flex-1 flex items-center justify-center h-12 border-2 border-black rounded-lg text-black hover:bg-zinc-100 font-medium"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 flex items-center justify-center h-12 bg-black dark:bg-zinc-50 text-white dark:text-black rounded-lg hover:bg-zinc-800 dark:hover:bg-zinc-200 font-medium"
+                    className="flex-1 flex items-center justify-center h-12 bg-black text-white rounded-lg hover:bg-zinc-800 font-medium"
                   >
                     Submit Bid
                   </button>
@@ -1280,8 +1280,8 @@ export default function SellerRFQDetailPage() {
 
           {/* Exception Panel - Resolve/Escalate Actions */}
           {exceptions.filter((ex) => !ex.isResolved).length > 0 && (
-            <div className="mb-6 p-4 border border-amber-200 dark:border-amber-800 rounded-lg bg-amber-50 dark:bg-amber-900/20">
-              <h3 className="text-lg font-semibold text-amber-900 dark:text-amber-100 mb-3">
+            <div className="mb-6 p-4 border border-amber-200 rounded-lg bg-amber-50">
+              <h3 className="text-lg font-semibold text-amber-900 mb-3">
                 Needs Attention
               </h3>
               <div className="space-y-3">
@@ -1290,10 +1290,10 @@ export default function SellerRFQDetailPage() {
                   .map((exception) => (
                     <div key={exception.id} className="flex items-start justify-between gap-4">
                       <div className="flex-1">
-                        <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
+                        <p className="text-sm font-medium text-amber-900">
                           {exception.message}
                         </p>
-                        <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                        <p className="text-xs text-amber-700 mt-1">
                           Severity: {exception.severity}
                         </p>
                       </div>
@@ -1344,7 +1344,7 @@ export default function SellerRFQDetailPage() {
                                 console.error("Error sending update request");
                               }
                             }}
-                            className="px-4 py-2 text-sm bg-amber-600 dark:bg-amber-500 text-white rounded-lg hover:bg-amber-700 dark:hover:bg-amber-600 font-medium"
+                            className="px-4 py-2 text-sm bg-amber-600 text-white rounded-lg hover:bg-amber-700 font-medium"
                           >
                             Request update
                           </button>

@@ -30,15 +30,15 @@ export default async function InviteRedeemPage({
   // If no token, show invalid invitation message
   if (!token) {
     return (
-      <div className="flex min-h-dvh items-center justify-center bg-zinc-50 dark:bg-zinc-900 px-6">
+      <div className="flex min-h-dvh items-center justify-center bg-zinc-50 px-6">
         <Card className="w-full max-w-md">
           <CardHeader>
-            <h1 className="text-2xl font-semibold text-black dark:text-zinc-50">
+            <h1 className="text-2xl font-semibold text-black">
               Invalid Invitation
             </h1>
           </CardHeader>
           <CardContent>
-            <p className="text-zinc-600 dark:text-zinc-400 mb-4">
+            <p className="text-zinc-600 mb-4">
               Invalid invitation link. Please check your email for the invitation link.
             </p>
           </CardContent>
@@ -63,15 +63,15 @@ export default async function InviteRedeemPage({
 
   if (!invite) {
     return (
-      <div className="flex min-h-dvh items-center justify-center bg-zinc-50 dark:bg-zinc-900 px-6">
+      <div className="flex min-h-dvh items-center justify-center bg-zinc-50 px-6">
         <Card className="w-full max-w-md">
           <CardHeader>
-            <h1 className="text-2xl font-semibold text-black dark:text-zinc-50">
+            <h1 className="text-2xl font-semibold text-black">
               Invalid Invitation
             </h1>
           </CardHeader>
           <CardContent>
-            <p className="text-zinc-600 dark:text-zinc-400 mb-4">
+            <p className="text-zinc-600 mb-4">
               This invitation link is invalid or has expired. Please check your email for a valid invitation.
             </p>
           </CardContent>
@@ -83,15 +83,15 @@ export default async function InviteRedeemPage({
   // Check invite status
   if (invite.status !== "PENDING") {
     return (
-      <div className="flex min-h-dvh items-center justify-center bg-zinc-50 dark:bg-zinc-900 px-6">
+      <div className="flex min-h-dvh items-center justify-center bg-zinc-50 px-6">
         <Card className="w-full max-w-md">
           <CardHeader>
-            <h1 className="text-2xl font-semibold text-black dark:text-zinc-50">
+            <h1 className="text-2xl font-semibold text-black">
               Invitation Already Used
             </h1>
           </CardHeader>
           <CardContent>
-            <p className="text-zinc-600 dark:text-zinc-400 mb-4">
+            <p className="text-zinc-600 mb-4">
               This invitation has already been used or revoked.
             </p>
           </CardContent>
@@ -109,15 +109,15 @@ export default async function InviteRedeemPage({
       data: { status: "EXPIRED" },
     });
     return (
-      <div className="flex min-h-dvh items-center justify-center bg-zinc-50 dark:bg-zinc-900 px-6">
+      <div className="flex min-h-dvh items-center justify-center bg-zinc-50 px-6">
         <Card className="w-full max-w-md">
           <CardHeader>
-            <h1 className="text-2xl font-semibold text-black dark:text-zinc-50">
+            <h1 className="text-2xl font-semibold text-black">
               Invitation Expired
             </h1>
           </CardHeader>
           <CardContent>
-            <p className="text-zinc-600 dark:text-zinc-400 mb-4">
+            <p className="text-zinc-600 mb-4">
               This invitation has expired. Please contact the team administrator for a new invitation.
             </p>
           </CardContent>
@@ -164,15 +164,15 @@ export default async function InviteRedeemPage({
 
   // STATE B: Email matches → show redeem UI
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-zinc-50 dark:bg-zinc-900 px-6">
+    <div className="flex min-h-dvh items-center justify-center bg-zinc-50 px-6">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <h1 className="text-2xl font-semibold text-black dark:text-zinc-50">
+          <h1 className="text-2xl font-semibold text-black">
             Accept Team Invitation
           </h1>
         </CardHeader>
         <CardContent>
-          <p className="text-zinc-600 dark:text-zinc-400 mb-4">
+          <p className="text-zinc-600 mb-4">
             You've been invited to join <strong>{invite.supplier.name}</strong> on Agora. Click the button below to accept the invitation.
           </p>
           {/* Client component only handles the redeem button click */}

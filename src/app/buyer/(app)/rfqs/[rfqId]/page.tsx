@@ -633,7 +633,7 @@ export default function RFQDetailPage() {
   if (loading) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-zinc-600 dark:text-zinc-400">Loading...</p>
+        <p className="text-zinc-600">Loading...</p>
       </div>
     );
   }
@@ -647,12 +647,12 @@ export default function RFQDetailPage() {
         <div className="w-full max-w-6xl mx-auto">
             <Link
               href="/buyer/dashboard"
-              className="text-sm text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-zinc-50"
+              className="text-sm text-zinc-600 hover:text-black"
             >
               ← Back to Dashboard
             </Link>
             <div className="mt-8 text-center">
-              <p className="text-zinc-600 dark:text-zinc-400">
+              <p className="text-zinc-600">
                 RFQ not found.
               </p>
             </div>
@@ -679,8 +679,8 @@ export default function RFQDetailPage() {
       <div className="w-full max-w-7xl mx-auto">
           {/* Exception Panel - Resolve/Escalate Actions */}
           {exceptions.filter((ex) => !ex.isResolved).length > 0 && (
-            <div className="mb-6 p-4 border border-amber-200 dark:border-amber-800 rounded-lg bg-amber-50 dark:bg-amber-900/20">
-              <h3 className="text-lg font-semibold text-amber-900 dark:text-amber-100 mb-3">
+            <div className="mb-6 p-4 border border-amber-200 rounded-lg bg-amber-50">
+              <h3 className="text-lg font-semibold text-amber-900 mb-3">
                 Needs Attention
               </h3>
               <div className="space-y-3">
@@ -689,10 +689,10 @@ export default function RFQDetailPage() {
                   .map((exception) => (
                     <div key={exception.id} className="flex items-start justify-between gap-4">
                       <div className="flex-1">
-                        <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
+                        <p className="text-sm font-medium text-amber-900">
                           {exception.message}
                         </p>
-                        <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                        <p className="text-xs text-amber-700 mt-1">
                           Severity: {exception.severity}
                         </p>
                       </div>
@@ -745,7 +745,7 @@ export default function RFQDetailPage() {
                                 console.error("Error expanding fallback:", error);
                               }
                             }}
-                            className="px-4 py-2 text-sm bg-amber-600 dark:bg-amber-500 text-white rounded-lg hover:bg-amber-700 dark:hover:bg-amber-600 font-medium"
+                            className="px-4 py-2 text-sm bg-amber-600 text-white rounded-lg hover:bg-amber-700 font-medium"
                           >
                             Expand to fallback suppliers
                           </button>
@@ -782,7 +782,7 @@ export default function RFQDetailPage() {
                                 console.error("Error sending reminder:", error);
                               }
                             }}
-                            className="px-4 py-2 text-sm bg-amber-600 dark:bg-amber-500 text-white rounded-lg hover:bg-amber-700 dark:hover:bg-amber-600 font-medium"
+                            className="px-4 py-2 text-sm bg-amber-600 text-white rounded-lg hover:bg-amber-700 font-medium"
                           >
                             Remind supplier to confirm
                           </button>
@@ -819,7 +819,7 @@ export default function RFQDetailPage() {
                                 console.error("Error sending update request:", error);
                               }
                             }}
-                            className="px-4 py-2 text-sm bg-amber-600 dark:bg-amber-500 text-white rounded-lg hover:bg-amber-700 dark:hover:bg-amber-600 font-medium"
+                            className="px-4 py-2 text-sm bg-amber-600 text-white rounded-lg hover:bg-amber-700 font-medium"
                           >
                             Request update
                           </button>
@@ -851,27 +851,27 @@ export default function RFQDetailPage() {
                 <CardHeader>
                   <div className="flex items-center gap-2 mb-2">
                     {/* V1 FIX: Job Name / PO as primary identifier */}
-                    <h2 className="text-2xl font-semibold text-black dark:text-zinc-50">
+                    <h2 className="text-2xl font-semibold text-black">
                       {rfq.jobNameOrPo || rfq.title || "Untitled Request"}
                     </h2>
                     <UnreadBidBadge rfqId={rfq.id} />
                   </div>
                   {rfq.jobNameOrPo && rfq.title && rfq.title !== rfq.jobNameOrPo && (
-                    <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-1">
+                    <p className="text-sm text-zinc-600 mb-1">
                       {rfq.title}
                     </p>
                   )}
-                  <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                  <p className="text-xs text-zinc-500">
                     {rfq.rfqNumber}
                   </p>
                 </CardHeader>
                 <CardContent className="px-6 py-6 space-y-8">
                   {rfq.notes && (
                     <div>
-                      <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-2">
+                      <p className="text-sm font-medium text-zinc-600 mb-2">
                         Notes
                       </p>
-                      <p className="text-black dark:text-zinc-50 whitespace-pre-wrap">
+                      <p className="text-black whitespace-pre-wrap">
                         {rfq.notes}
                       </p>
                     </div>
@@ -879,60 +879,60 @@ export default function RFQDetailPage() {
 
                   {/* Required Terms */}
                   <div>
-                    <h3 className="text-sm font-semibold text-black dark:text-zinc-50 mb-4">
+                    <h3 className="text-sm font-semibold text-black mb-4">
                       Required Terms
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-2">
+                  <p className="text-sm font-medium text-zinc-600 mb-2">
                     Category
                   </p>
-                  <p className="text-black dark:text-zinc-50">
+                  <p className="text-black">
                     {rfq.category}
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-2">
+                  <p className="text-sm font-medium text-zinc-600 mb-2">
                     Fulfillment Type
                   </p>
-                  <p className="text-black dark:text-zinc-50">
+                  <p className="text-black">
                     {rfq.terms.fulfillmentType}
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-2">
+                  <p className="text-sm font-medium text-zinc-600 mb-2">
                     {rfq.terms.fulfillmentType === "PICKUP" ? "Pickup Date" : "Requested Delivery Date"}
                   </p>
-                  <p className="text-black dark:text-zinc-50">
+                  <p className="text-black">
                     {formatDateShort(rfq.terms.requestedDate)}
                   </p>
                 </div>
                 {rfq.terms.fulfillmentType === "DELIVERY" && (
                   <>
                     <div>
-                      <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-2">
+                      <p className="text-sm font-medium text-zinc-600 mb-2">
                         Delivery Preference
                       </p>
-                      <p className="text-black dark:text-zinc-50">
+                      <p className="text-black">
                         {rfq.terms.deliveryPreference || "ANYTIME"}
                       </p>
                     </div>
                     {rfq.terms.deliveryInstructions && (
                       <div className="md:col-span-2">
-                        <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-2">
+                        <p className="text-sm font-medium text-zinc-600 mb-2">
                           Special Delivery Instructions
                         </p>
-                        <p className="text-black dark:text-zinc-50 whitespace-pre-wrap">
+                        <p className="text-black whitespace-pre-wrap">
                           {rfq.terms.deliveryInstructions}
                         </p>
                       </div>
                     )}
                     {rfq.terms.location && (
                       <div className="md:col-span-2">
-                        <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-2">
+                        <p className="text-sm font-medium text-zinc-600 mb-2">
                           Delivery Address
                         </p>
-                        <p className="text-black dark:text-zinc-50">
+                        <p className="text-black">
                           {rfq.terms.location}
                         </p>
                       </div>
@@ -944,34 +944,34 @@ export default function RFQDetailPage() {
 
                   {/* Line Items */}
                   <div>
-                    <h3 className="text-sm font-semibold text-black dark:text-zinc-50 mb-4">
+                    <h3 className="text-sm font-semibold text-black mb-4">
                       Line Items
                     </h3>
-              <div className="border border-zinc-200 dark:border-zinc-800 rounded-lg overflow-hidden">
+              <div className="border border-zinc-200 rounded-lg overflow-hidden">
                 <table className="w-full">
-                  <thead className="bg-zinc-50 dark:bg-zinc-900">
+                  <thead className="bg-zinc-50">
                     <tr>
-                      <th className="px-6 py-4 text-left text-sm font-medium text-black dark:text-zinc-50">
+                      <th className="px-6 py-4 text-left text-sm font-medium text-black">
                         Description
                       </th>
-                      <th className="px-6 py-4 text-left text-sm font-medium text-black dark:text-zinc-50">
+                      <th className="px-6 py-4 text-left text-sm font-medium text-black">
                         Quantity
                       </th>
-                      <th className="px-6 py-4 text-left text-sm font-medium text-black dark:text-zinc-50">
+                      <th className="px-6 py-4 text-left text-sm font-medium text-black">
                         Unit
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
+                  <tbody className="divide-y divide-zinc-200">
                     {rfq.lineItems.map((item, index) => (
                       <tr key={index}>
-                        <td className="px-6 py-4 text-black dark:text-zinc-50">
+                        <td className="px-6 py-4 text-black">
                           {item.description}
                         </td>
-                        <td className="px-6 py-4 text-black dark:text-zinc-50">
+                        <td className="px-6 py-4 text-black">
                           {item.quantity}
                         </td>
-                        <td className="px-6 py-4 text-black dark:text-zinc-50">
+                        <td className="px-6 py-4 text-black">
                           {item.unit}
                         </td>
                       </tr>
@@ -987,7 +987,7 @@ export default function RFQDetailPage() {
               {dispatchedSuppliers.length > 0 && (
                 <Card>
                   <CardHeader>
-                    <h2 className="text-xl font-semibold text-black dark:text-zinc-50">
+                    <h2 className="text-xl font-semibold text-black">
                       Routing Status
                     </h2>
                   </CardHeader>
@@ -995,7 +995,7 @@ export default function RFQDetailPage() {
                   {/* Primary Suppliers */}
                   {dispatchedSuppliers.filter((s) => s.phase === "primary").length > 0 && (
                     <div className="mb-4">
-                      <h3 className="text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+                      <h3 className="text-sm font-medium text-zinc-700 mb-2">
                         Primary Suppliers
                       </h3>
                       <div className="space-y-1">
@@ -1004,18 +1004,18 @@ export default function RFQDetailPage() {
                           .map((supplier) => (
                             <div
                               key={supplier.sellerId}
-                              className="flex items-center justify-between py-1.5 px-2 rounded hover:bg-zinc-50 dark:hover:bg-zinc-900"
+                              className="flex items-center justify-between py-1.5 px-2 rounded hover:bg-zinc-50"
                             >
-                              <span className="text-sm text-black dark:text-zinc-50">
+                              <span className="text-sm text-black">
                                 {supplier.companyName}
                               </span>
                               <span
                                 className={`text-xs px-2 py-0.5 rounded ${
                                   supplier.status === "responded"
-                                    ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300"
+                                    ? "bg-green-100 text-green-700"
                                     : supplier.status === "opened"
-                                    ? "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"
-                                    : "bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300"
+                                    ? "bg-blue-100 text-blue-700"
+                                    : "bg-zinc-100 text-zinc-700"
                                 }`}
                               >
                                 {supplier.status === "responded"
@@ -1033,7 +1033,7 @@ export default function RFQDetailPage() {
                   {/* Fallback Suppliers */}
                   {dispatchedSuppliers.filter((s) => s.phase === "fallback").length > 0 && (
                     <div>
-                      <h3 className="text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+                      <h3 className="text-sm font-medium text-zinc-700 mb-2">
                         Fallback Suppliers
                       </h3>
                       <div className="space-y-1">
@@ -1042,16 +1042,16 @@ export default function RFQDetailPage() {
                           .map((supplier) => (
                             <div
                               key={supplier.sellerId}
-                              className="flex items-center justify-between py-1.5 px-2 rounded hover:bg-zinc-50 dark:hover:bg-zinc-900"
+                              className="flex items-center justify-between py-1.5 px-2 rounded hover:bg-zinc-50"
                             >
-                              <span className="text-sm text-black dark:text-zinc-50">
+                              <span className="text-sm text-black">
                                 {supplier.companyName}
                               </span>
                               <span
                                 className={`text-xs px-2 py-0.5 rounded ${
                                   supplier.status === "responded"
-                                    ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300"
-                                    : "bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300"
+                                    ? "bg-green-100 text-green-700"
+                                    : "bg-zinc-100 text-zinc-700"
                                 }`}
                               >
                                 {supplier.status === "responded" ? "Responded" : "Sent"}
@@ -1064,8 +1064,8 @@ export default function RFQDetailPage() {
 
                   {/* Summary */}
                   {dispatchedSuppliers.length > 0 && (
-                    <div className="mt-4 pt-3 border-t border-zinc-200 dark:border-zinc-800">
-                      <p className="text-xs text-zinc-600 dark:text-zinc-400">
+                    <div className="mt-4 pt-3 border-t border-zinc-200">
+                      <p className="text-xs text-zinc-600">
                         {dispatchedSuppliers.filter((s) => s.phase === "primary").length} primary,{" "}
                         {dispatchedSuppliers.filter((s) => s.phase === "fallback").length} fallback
                       </p>
@@ -1079,28 +1079,28 @@ export default function RFQDetailPage() {
               {bids.length === 0 ? (
                 <Card>
                   <CardContent className="px-6 py-8 text-center">
-                    <p className="text-zinc-600 dark:text-zinc-400">
+                    <p className="text-zinc-600">
                       Awaiting quotes
                     </p>
                   </CardContent>
                 </Card>
               ) : recommendation && recommendation.recommended ? (
                 <div>
-                  <h2 className="text-xl font-semibold text-black dark:text-zinc-50 mb-6">
+                  <h2 className="text-xl font-semibold text-black mb-6">
                     Recommendations
                   </h2>
                 <div className="flex flex-col gap-4">
                   {/* Recommended Card */}
                   {recommendation.recommended && (
-                    <div className="border-2 border-green-200 dark:border-green-800 rounded-lg p-8 bg-green-50 dark:bg-green-900/20">
+                    <div className="border-2 border-green-200 rounded-lg p-8 bg-green-50">
                       <div className="flex items-start justify-between mb-3">
                         <div>
                             <div className="flex items-center gap-2 mb-1">
-                            <span className="text-sm font-medium text-green-700 dark:text-green-300 uppercase tracking-wide">
+                            <span className="text-sm font-medium text-green-700 uppercase tracking-wide">
                               {bids.length === 1 ? "Only Bid" : "Recommended"}
                             </span>
                           </div>
-                          <h3 className="text-lg font-semibold text-black dark:text-zinc-50">
+                          <h3 className="text-lg font-semibold text-black">
                             {bids.find((b) => b.sellerId === recommendation.recommended?.sellerId)?.sellerDisplayName || 
                              bids.find((b) => b.sellerId === recommendation.recommended?.sellerId)?.sellerName || 
                              "Supplier"}
@@ -1121,8 +1121,8 @@ export default function RFQDetailPage() {
                                     key={idx}
                                     className={`text-xs px-2 py-0.5 rounded ${
                                       tag.type === "positive"
-                                        ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300"
-                                        : "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300"
+                                        ? "bg-green-100 text-green-700"
+                                        : "bg-amber-100 text-amber-700"
                                     }`}
                                   >
                                     {tag.label}
@@ -1133,11 +1133,11 @@ export default function RFQDetailPage() {
                           })()}
                         </div>
                         <div className="text-right">
-                          <p className="text-2xl font-bold text-black dark:text-zinc-50">
+                          <p className="text-2xl font-bold text-black">
                             ${recommendation.recommended.totalPrice.toFixed(2)}
                           </p>
                           {recommendation.recommended.leadTimeDays !== undefined && (
-                            <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                            <p className="text-sm text-zinc-600">
                               {recommendation.recommended.leadTimeDays} day{recommendation.recommended.leadTimeDays !== 1 ? "s" : ""}
                             </p>
                           )}
@@ -1145,7 +1145,7 @@ export default function RFQDetailPage() {
                       </div>
                       {/* Award Button - Only show if no order exists or order is cancelled */}
                       {rfq.status === "OPEN" && (!order || order.status === "cancelled") && (
-                        <div className="mt-4 pt-3 border-t border-green-200 dark:border-green-800">
+                        <div className="mt-4 pt-3 border-t border-green-200">
                           <button
                             onClick={() => {
                               const recommendedBid = bids.find((b) => b.sellerId === recommendation.recommended?.sellerId);
@@ -1153,15 +1153,15 @@ export default function RFQDetailPage() {
                                 setConfirmingBidId(recommendedBid.id);
                               }
                             }}
-                            className="w-full px-4 py-2 text-sm bg-black dark:bg-zinc-50 text-white dark:text-black rounded-lg hover:bg-zinc-800 dark:hover:bg-zinc-200 font-medium"
+                            className="w-full px-4 py-2 text-sm bg-black text-white rounded-lg hover:bg-zinc-800 font-medium"
                           >
                             Award This Quote
                           </button>
                         </div>
                       )}
                       {order && order.status !== "cancelled" && (
-                        <div className="mt-4 pt-3 border-t border-green-200 dark:border-green-800">
-                          <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                        <div className="mt-4 pt-3 border-t border-green-200">
+                          <p className="text-sm text-zinc-600">
                             Already awarded
                           </p>
                         </div>
@@ -1170,17 +1170,17 @@ export default function RFQDetailPage() {
                         const rankingInfo = recommendation.ranking.find((r) => r.quote.sellerId === recommendation.recommended?.sellerId);
                         const isExpanded = expandedBreakdown === recommendation.recommended?.sellerId;
                         return rankingInfo && (
-                          <div className="mt-3 pt-3 border-t border-green-200 dark:border-green-800">
+                          <div className="mt-3 pt-3 border-t border-green-200">
                             <button
                               onClick={() => setExpandedBreakdown(isExpanded ? null : recommendation.recommended?.sellerId || null)}
-                              className="text-xs font-medium text-green-700 dark:text-green-300 hover:underline mb-2 flex items-center gap-1"
+                              className="text-xs font-medium text-green-700 hover:underline mb-2 flex items-center gap-1"
                             >
                               Why this recommendation? {isExpanded ? "−" : "+"}
                             </button>
                             {isExpanded && rankingInfo.breakdown && (
-                              <div className="text-xs text-zinc-600 dark:text-zinc-400 space-y-2">
+                              <div className="text-xs text-zinc-600 space-y-2">
                                 <div>
-                                  <p className="font-medium text-zinc-700 dark:text-zinc-300 mb-1">Score breakdown:</p>
+                                  <p className="font-medium text-zinc-700 mb-1">Score breakdown:</p>
                                   <ul className="space-y-0.5 ml-2">
                                     <li>Price: {rankingInfo.breakdown.priceComponent.toFixed(3)}</li>
                                     <li>Speed: {rankingInfo.breakdown.speedComponent.toFixed(3)}</li>
@@ -1191,13 +1191,13 @@ export default function RFQDetailPage() {
                                     {rankingInfo.breakdown.reliabilityBonus > 0 && (
                                       <li>Reliability: {rankingInfo.breakdown.reliabilityBonus.toFixed(3)}</li>
                                     )}
-                                    <li className="font-medium pt-1 border-t border-zinc-200 dark:border-zinc-700 mt-1">
+                                    <li className="font-medium pt-1 border-t border-zinc-200 mt-1">
                                       Total: {rankingInfo.breakdown.totalScore.toFixed(3)}
                                     </li>
                                   </ul>
                                 </div>
                                 <div>
-                                  <p className="font-medium text-zinc-700 dark:text-zinc-300 mb-1">Values used:</p>
+                                  <p className="font-medium text-zinc-700 mb-1">Values used:</p>
                                   <ul className="space-y-0.5 ml-2">
                                     <li>Price: ${rankingInfo.breakdown.priceUsed?.toFixed(2) ?? "N/A"}</li>
                                     <li>Lead time: {rankingInfo.breakdown.leadTimeUsed ? `${rankingInfo.breakdown.leadTimeUsed} day${rankingInfo.breakdown.leadTimeUsed !== 1 ? "s" : ""}` : "N/A"}</li>
@@ -1206,7 +1206,7 @@ export default function RFQDetailPage() {
                               </div>
                             )}
                             {!isExpanded && rankingInfo.reasons.length > 0 && (
-                              <ul className="text-sm text-zinc-600 dark:text-zinc-400 space-y-0.5">
+                              <ul className="text-sm text-zinc-600 space-y-0.5">
                                 {rankingInfo.reasons.map((reason, idx) => (
                                   <li key={idx}>• {reason}</li>
                                 ))}
@@ -1220,15 +1220,15 @@ export default function RFQDetailPage() {
 
                   {/* Backup Card */}
                   {recommendation.backup && (
-                    <div className="border border-blue-200 dark:border-blue-800 rounded-lg p-6 bg-blue-50 dark:bg-blue-900/20">
+                    <div className="border border-blue-200 rounded-lg p-6 bg-blue-50">
                       <div className="flex items-start justify-between mb-3">
                         <div>
                           <div className="flex items-center gap-2 mb-1">
-                            <span className="text-sm font-medium text-blue-700 dark:text-blue-300 uppercase tracking-wide">
+                            <span className="text-sm font-medium text-blue-700 uppercase tracking-wide">
                               Backup Option
                             </span>
                           </div>
-                          <h3 className="text-lg font-semibold text-black dark:text-zinc-50">
+                          <h3 className="text-lg font-semibold text-black">
                             {bids.find((b) => b.sellerId === recommendation.backup?.sellerId)?.sellerDisplayName || 
                              bids.find((b) => b.sellerId === recommendation.backup?.sellerId)?.sellerName || 
                              "Supplier"}
@@ -1249,8 +1249,8 @@ export default function RFQDetailPage() {
                                     key={idx}
                                     className={`text-xs px-2 py-0.5 rounded ${
                                       tag.type === "positive"
-                                        ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300"
-                                        : "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300"
+                                        ? "bg-green-100 text-green-700"
+                                        : "bg-amber-100 text-amber-700"
                                     }`}
                                   >
                                     {tag.label}
@@ -1261,11 +1261,11 @@ export default function RFQDetailPage() {
                           })()}
                         </div>
                         <div className="text-right">
-                          <p className="text-2xl font-bold text-black dark:text-zinc-50">
+                          <p className="text-2xl font-bold text-black">
                             ${(recommendation.backup.totalPrice ?? 0).toFixed(2)}
                           </p>
                           {recommendation.backup.leadTimeDays !== undefined && (
-                            <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                            <p className="text-sm text-zinc-600">
                               {recommendation.backup.leadTimeDays} day{recommendation.backup.leadTimeDays !== 1 ? "s" : ""}
                             </p>
                           )}
@@ -1275,17 +1275,17 @@ export default function RFQDetailPage() {
                         const rankingInfo = recommendation.ranking.find((r) => r.quote.sellerId === recommendation.backup?.sellerId);
                         const isExpanded = expandedBreakdown === recommendation.backup?.sellerId;
                         return rankingInfo && (
-                          <div className="mt-3 pt-3 border-t border-blue-200 dark:border-blue-800">
+                          <div className="mt-3 pt-3 border-t border-blue-200">
                             <button
                               onClick={() => setExpandedBreakdown(isExpanded ? null : recommendation.backup?.sellerId || null)}
-                              className="text-xs font-medium text-blue-700 dark:text-blue-300 hover:underline mb-2 flex items-center gap-1"
+                              className="text-xs font-medium text-blue-700 hover:underline mb-2 flex items-center gap-1"
                             >
                               Why this recommendation? {isExpanded ? "−" : "+"}
                             </button>
                             {isExpanded && rankingInfo.breakdown && (
-                              <div className="text-xs text-zinc-600 dark:text-zinc-400 space-y-2">
+                              <div className="text-xs text-zinc-600 space-y-2">
                                 <div>
-                                  <p className="font-medium text-zinc-700 dark:text-zinc-300 mb-1">Score breakdown:</p>
+                                  <p className="font-medium text-zinc-700 mb-1">Score breakdown:</p>
                                   <ul className="space-y-0.5 ml-2">
                                     <li>Price: {rankingInfo.breakdown.priceComponent.toFixed(3)}</li>
                                     <li>Speed: {rankingInfo.breakdown.speedComponent.toFixed(3)}</li>
@@ -1296,13 +1296,13 @@ export default function RFQDetailPage() {
                                     {rankingInfo.breakdown.reliabilityBonus > 0 && (
                                       <li>Reliability: {rankingInfo.breakdown.reliabilityBonus.toFixed(3)}</li>
                                     )}
-                                    <li className="font-medium pt-1 border-t border-zinc-200 dark:border-zinc-700 mt-1">
+                                    <li className="font-medium pt-1 border-t border-zinc-200 mt-1">
                                       Total: {rankingInfo.breakdown.totalScore.toFixed(3)}
                                     </li>
                                   </ul>
                                 </div>
                                 <div>
-                                  <p className="font-medium text-zinc-700 dark:text-zinc-300 mb-1">Values used:</p>
+                                  <p className="font-medium text-zinc-700 mb-1">Values used:</p>
                                   <ul className="space-y-0.5 ml-2">
                                     <li>Price: ${rankingInfo.breakdown.priceUsed?.toFixed(2) ?? "N/A"}</li>
                                     <li>Lead time: {rankingInfo.breakdown.leadTimeUsed ? `${rankingInfo.breakdown.leadTimeUsed} day${rankingInfo.breakdown.leadTimeUsed !== 1 ? "s" : ""}` : "N/A"}</li>
@@ -1311,7 +1311,7 @@ export default function RFQDetailPage() {
                               </div>
                             )}
                             {!isExpanded && rankingInfo.reasons.length > 0 && (
-                              <ul className="text-sm text-zinc-600 dark:text-zinc-400 space-y-0.5">
+                              <ul className="text-sm text-zinc-600 space-y-0.5">
                                 {rankingInfo.reasons.map((reason, idx) => (
                                   <li key={idx}>• {reason}</li>
                                 ))}
@@ -1329,14 +1329,14 @@ export default function RFQDetailPage() {
               {/* Bids Section */}
               <div>
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-semibold text-black dark:text-zinc-50">
+                  <h2 className="text-xl font-semibold text-black">
                     All Bids ({bids.length})
                   </h2>
                 </div>
                 {bids.length === 0 ? (
                   <Card>
                     <CardContent className="p-6 text-center">
-                      <p className="text-zinc-600 dark:text-zinc-400">
+                      <p className="text-zinc-600">
                         No bids yet.
                       </p>
                     </CardContent>
@@ -1362,13 +1362,13 @@ export default function RFQDetailPage() {
                         key={bid.id}
                         className={
                           isRecommended
-                            ? "border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-900/20"
+                            ? "border-green-300 bg-green-50"
                             : isBackup
-                            ? "border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/20"
+                            ? "border-blue-300 bg-blue-50"
                             : isUnseen
-                            ? "border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/20"
+                            ? "border-blue-300 bg-blue-50"
                             : isWon
-                            ? "border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20"
+                            ? "border-green-200 bg-green-50"
                             : isLost
                             ? "opacity-60"
                             : ""
@@ -1378,7 +1378,7 @@ export default function RFQDetailPage() {
                         <div className="flex items-start justify-between mb-4">
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
-                              <h3 className="text-lg font-semibold text-black dark:text-zinc-50">
+                              <h3 className="text-lg font-semibold text-black">
                                 {bid.sellerDisplayName || bid.sellerName}
                               </h3>
                               {isRecommended && (
@@ -1400,8 +1400,8 @@ export default function RFQDetailPage() {
                                 <span
                                   className={`text-xs px-2 py-1 rounded ${
                                     isWon
-                                      ? "bg-green-200 dark:bg-green-800 text-green-800 dark:text-green-200"
-                                      : "bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300"
+                                      ? "bg-green-200 text-green-800"
+                                      : "bg-zinc-200 text-zinc-700"
                                   }`}
                                 >
                                   {bidStatus}
@@ -1418,7 +1418,7 @@ export default function RFQDetailPage() {
                                   return null;
                                 }
                                 return rankingInfo ? (
-                                  <span className="text-xs px-2 py-1 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300">
+                                  <span className="text-xs px-2 py-1 rounded bg-zinc-100 text-zinc-700">
                                     Score: {rankingInfo.score.toFixed(2)}
                                   </span>
                                 ) : null;
@@ -1438,8 +1438,8 @@ export default function RFQDetailPage() {
                                         key={idx}
                                         className={`text-xs px-2 py-1 rounded ${
                                           tag.type === "positive"
-                                            ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300"
-                                            : "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300"
+                                            ? "bg-green-100 text-green-700"
+                                            : "bg-amber-100 text-amber-700"
                                         }`}
                                       >
                                         {tag.label}
@@ -1449,12 +1449,12 @@ export default function RFQDetailPage() {
                                 );
                               })()}
                             </div>
-                            <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                            <p className="text-sm text-zinc-600">
                               Submitted {formatDateShort(bid.createdAt)}
                             </p>
                             {rankingInfo && rankingInfo.reasons.length > 0 && (
                               <div className="mt-2">
-                                <ul className="text-xs text-zinc-600 dark:text-zinc-400 space-y-0.5">
+                                <ul className="text-xs text-zinc-600 space-y-0.5">
                                   {rankingInfo.reasons.map((reason, idx) => (
                                     <li key={idx}>• {reason}</li>
                                   ))}
@@ -1463,7 +1463,7 @@ export default function RFQDetailPage() {
                             )}
                           </div>
                           <div className="flex items-center gap-3">
-                            <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                            <p className="text-sm text-zinc-600">
                               {bid.lineItems.length} line item(s)
                             </p>
                             {rfq.status === "OPEN" && (!order || order.status === "cancelled") && (
@@ -1476,18 +1476,18 @@ export default function RFQDetailPage() {
                                           setConfirmingBidId(null);
                                           await handleAwardBid(bid.id, bid.sellerName);
                                         }}
-                                        className="px-4 py-2 text-sm bg-black dark:bg-zinc-50 text-white dark:text-black rounded-lg hover:bg-zinc-800 dark:hover:bg-zinc-200 font-medium"
+                                        className="px-4 py-2 text-sm bg-black text-white rounded-lg hover:bg-zinc-800 font-medium"
                                       >
                                         Confirm Award
                                       </button>
                                       <button
                                         onClick={() => setConfirmingBidId(null)}
-                                        className="px-4 py-2 text-sm border border-zinc-300 dark:border-zinc-700 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-900 text-black dark:text-zinc-50 font-medium"
+                                        className="px-4 py-2 text-sm border border-zinc-300 rounded-lg hover:bg-zinc-100 text-black font-medium"
                                       >
                                         Cancel
                                       </button>
                                     </div>
-                                    <p className="text-xs text-amber-600 dark:text-amber-400">
+                                    <p className="text-xs text-amber-600">
                                       Awarding will close this request and notify the seller.
                                     </p>
                                   </>
@@ -1497,7 +1497,7 @@ export default function RFQDetailPage() {
                                       // Clear any other confirming bid
                                       setConfirmingBidId(bid.id);
                                     }}
-                                    className="px-4 py-2 text-sm bg-black dark:bg-zinc-50 text-white dark:text-black rounded-lg hover:bg-zinc-800 dark:hover:bg-zinc-200 font-medium"
+                                    className="px-4 py-2 text-sm bg-black text-white rounded-lg hover:bg-zinc-800 font-medium"
                                   >
                                     Award
                                   </button>
@@ -1506,7 +1506,7 @@ export default function RFQDetailPage() {
                             )}
                             {order && order.status !== "cancelled" && (
                               <div className="flex flex-col items-end gap-2">
-                                <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                                <p className="text-sm text-zinc-600">
                                   Already awarded
                                 </p>
                               </div>
@@ -1515,31 +1515,31 @@ export default function RFQDetailPage() {
                         </div>
 
                       {/* Bid Line Items Table */}
-                      <div className="border border-zinc-200 dark:border-zinc-800 rounded-lg overflow-hidden">
+                      <div className="border border-zinc-200 rounded-lg overflow-hidden">
                         <table className="w-full">
-                          <thead className="bg-zinc-50 dark:bg-zinc-900">
+                          <thead className="bg-zinc-50">
                             <tr>
-                              <th className="px-4 py-2 text-left text-sm font-medium text-black dark:text-zinc-50">
+                              <th className="px-4 py-2 text-left text-sm font-medium text-black">
                                 Description
                               </th>
-                              <th className="px-4 py-2 text-left text-sm font-medium text-black dark:text-zinc-50">
+                              <th className="px-4 py-2 text-left text-sm font-medium text-black">
                                 Quantity
                               </th>
-                              <th className="px-4 py-2 text-left text-sm font-medium text-black dark:text-zinc-50">
+                              <th className="px-4 py-2 text-left text-sm font-medium text-black">
                                 Unit Price
                               </th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
+                          <tbody className="divide-y divide-zinc-200">
                             {bid.lineItems.map((item, index) => (
                               <tr key={index}>
-                                <td className="px-4 py-2 text-black dark:text-zinc-50">
+                                <td className="px-4 py-2 text-black">
                                   {item.description}
                                 </td>
-                                <td className="px-4 py-2 text-black dark:text-zinc-50">
+                                <td className="px-4 py-2 text-black">
                                   {item.quantity} {item.unit}
                                 </td>
-                                <td className="px-4 py-2 text-black dark:text-zinc-50">
+                                <td className="px-4 py-2 text-black">
                                   ${parseFloat(item.unitPrice || "0").toFixed(2)}
                                 </td>
                               </tr>
@@ -1549,11 +1549,11 @@ export default function RFQDetailPage() {
                       </div>
 
                       {/* Bid Totals */}
-                      <div className="mt-4 pt-4 border-t border-zinc-200 dark:border-zinc-800">
+                      <div className="mt-4 pt-4 border-t border-zinc-200">
                         <div className="flex justify-end">
                           <div className="text-right space-y-1">
                             {bid.deliveryCharge !== undefined && bid.deliveryCharge > 0 && (
-                              <div className="flex justify-between gap-8 text-sm text-zinc-600 dark:text-zinc-400">
+                              <div className="flex justify-between gap-8 text-sm text-zinc-600">
                                 <span>Line Items Total:</span>
                                 <span>
                                   $
@@ -1568,12 +1568,12 @@ export default function RFQDetailPage() {
                               </div>
                             )}
                             {bid.deliveryCharge !== undefined && bid.deliveryCharge > 0 && (
-                              <div className="flex justify-between gap-8 text-sm text-zinc-600 dark:text-zinc-400">
+                              <div className="flex justify-between gap-8 text-sm text-zinc-600">
                                 <span>Delivery Charge:</span>
                                 <span>${bid.deliveryCharge.toFixed(2)}</span>
                               </div>
                             )}
-                            <div className="flex justify-between gap-8 font-semibold text-black dark:text-zinc-50 pt-2 border-t border-zinc-200 dark:border-zinc-800">
+                            <div className="flex justify-between gap-8 font-semibold text-black pt-2 border-t border-zinc-200">
                               <span>Total:</span>
                               <span>
                                 ${bid.total !== undefined ? bid.total.toFixed(2) : bid.lineItems.reduce((sum, item) => {
@@ -1589,10 +1589,10 @@ export default function RFQDetailPage() {
 
                       {bid.notes && (
                         <div className="mt-4">
-                          <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-1">
+                          <p className="text-sm text-zinc-600 mb-1">
                             Notes:
                           </p>
-                          <p className="text-black dark:text-zinc-50 whitespace-pre-wrap">
+                          <p className="text-black whitespace-pre-wrap">
                             {bid.notes}
                           </p>
                         </div>
@@ -1600,10 +1600,10 @@ export default function RFQDetailPage() {
 
                       {/* View Messages link - per seller */}
                       {bid.sellerId && (
-                        <div className="mt-4 pt-4 border-t border-zinc-200 dark:border-zinc-800">
+                        <div className="mt-4 pt-4 border-t border-zinc-200">
                           <Link
                             href={`/buyer/messages/${id}?sellerId=${bid.sellerId}`}
-                            className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                            className="text-sm text-blue-600 hover:underline"
                           >
                             View Messages with {bid.sellerName}
                           </Link>
@@ -1623,21 +1623,21 @@ export default function RFQDetailPage() {
               <div className="sticky top-6">
                 <Card>
                   <CardHeader>
-                    <h3 className="text-lg font-semibold text-black dark:text-zinc-50">
+                    <h3 className="text-lg font-semibold text-black">
                       Status & Actions
                     </h3>
                   </CardHeader>
                   <CardContent className="px-6 py-6 space-y-6">
                     {/* Current Status */}
                     <div>
-                      <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-3">
+                      <p className="text-sm font-medium text-zinc-600 mb-3">
                         Current Status
                       </p>
                       <Badge variant={statusVariant} className="text-base px-3 py-1">
                         {currentStatus}
                       </Badge>
                       {rfq.status === "AWARDED" && getAwardedBid() && (
-                        <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-3">
+                        <p className="text-sm text-zinc-600 mt-3">
                           Awarded to {getAwardedBid()?.sellerName}
                           {rfq.awardedAt && (
                             <span className="block text-xs mt-1">
@@ -1649,25 +1649,25 @@ export default function RFQDetailPage() {
                     </div>
 
                     {/* Fulfillment Info */}
-                    <div className="pt-6 border-t border-zinc-200 dark:border-zinc-800">
-                      <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-2">
+                    <div className="pt-6 border-t border-zinc-200">
+                      <p className="text-sm font-medium text-zinc-600 mb-2">
                         Fulfillment Type
                       </p>
-                      <p className="text-black dark:text-zinc-50 font-medium mb-3">
+                      <p className="text-black font-medium mb-3">
                         {rfq.terms.fulfillmentType}
                       </p>
-                      <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-2">
+                      <p className="text-sm font-medium text-zinc-600 mb-2">
                         {rfq.terms.fulfillmentType === "PICKUP" ? "Pickup Date" : "Requested Delivery Date"}
                       </p>
-                      <p className="text-black dark:text-zinc-50">
+                      <p className="text-black">
                         {formatDateShort(rfq.terms.requestedDate)}
                       </p>
                       {rfq.terms.fulfillmentType === "DELIVERY" && rfq.terms.location && (
                         <div className="mt-4">
-                          <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-2">
+                          <p className="text-sm font-medium text-zinc-600 mb-2">
                             Delivery Address
                           </p>
-                          <p className="text-sm text-black dark:text-zinc-50">
+                          <p className="text-sm text-black">
                             {rfq.terms.location}
                           </p>
                         </div>
@@ -1675,7 +1675,7 @@ export default function RFQDetailPage() {
                     </div>
 
                     {/* Key Actions */}
-                    <div className="pt-6 border-t border-zinc-200 dark:border-zinc-800 space-y-3">
+                    <div className="pt-6 border-t border-zinc-200 space-y-3">
                       {/* Award Action - Show if OPEN and has bids */}
                       {rfq.status === "OPEN" && (!order || order.status === "cancelled") && recommendation?.recommended && (
                         <Button
@@ -1865,16 +1865,16 @@ export default function RFQDetailPage() {
                             <Link
                               key={conversation.id}
                               href={talkLink}
-                              className="block p-4 border border-zinc-200 dark:border-zinc-800 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors"
+                              className="block p-4 border border-zinc-200 rounded-lg hover:bg-zinc-50 transition-colors"
                             >
                               <div className="flex items-center justify-between">
                                 <div>
-                                  <p className="font-medium text-black dark:text-zinc-50">{conversation.supplierName}</p>
-                                  <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                                  <p className="font-medium text-black">{conversation.supplierName}</p>
+                                  <p className="text-sm text-zinc-600">
                                     {conversation.lastMessagePreview || "View conversation"}
                                   </p>
                                 </div>
-                                <span className="text-sm text-zinc-500 dark:text-zinc-400">→</span>
+                                <span className="text-sm text-zinc-500">→</span>
                               </div>
                             </Link>
                           );
@@ -1882,7 +1882,7 @@ export default function RFQDetailPage() {
                       </div>
                     ) : (
                       <div className="text-center py-12">
-                        <p className="text-sm text-zinc-500 dark:text-zinc-500">
+                        <p className="text-sm text-zinc-500">
                           No supplier conversations yet for this RFQ.
                         </p>
                       </div>
@@ -1897,8 +1897,8 @@ export default function RFQDetailPage() {
               <div className="mt-6">
                 {/* Section Header */}
                 <div className="mb-8">
-                  <h2 className="text-xl font-semibold text-black dark:text-zinc-50 mb-1">Activity</h2>
-                  <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                  <h2 className="text-xl font-semibold text-black mb-1">Activity</h2>
+                  <p className="text-sm text-zinc-600">
                     A timeline of request, bid, and order updates.
                   </p>
                 </div>
@@ -1907,20 +1907,20 @@ export default function RFQDetailPage() {
                 {getActivityEvents().length > 0 ? (
                   <div className="relative pl-8">
                     {/* Vertical Timeline Line */}
-                    <div className="absolute left-3 top-0 bottom-0 w-px bg-zinc-200 dark:bg-zinc-800" />
+                    <div className="absolute left-3 top-0 bottom-0 w-px bg-zinc-200" />
 
                     {/* Events */}
                     <div className="space-y-6">
                       {getActivityEvents().map((event) => (
                         <div key={event.id} className="relative">
                           {/* Circular Marker */}
-                          <div className="absolute left-[-26px] top-1 w-2 h-2 rounded-full bg-zinc-400 dark:bg-zinc-500 border-2 border-white dark:border-zinc-900" />
+                          <div className="absolute left-[-26px] top-1 w-2 h-2 rounded-full bg-zinc-400 border-2 border-white" />
 
                           {/* Event Content */}
                           <div className="flex items-start gap-3">
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 flex-wrap">
-                                <p className="text-sm font-medium text-black dark:text-zinc-50">{event.label}</p>
+                                <p className="text-sm font-medium text-black">{event.label}</p>
                                 {event.badge && (
                                   <Badge
                                     variant={
@@ -1938,7 +1938,7 @@ export default function RFQDetailPage() {
                                   </Badge>
                                 )}
                               </div>
-                              <p className="text-xs text-zinc-500 dark:text-zinc-500 mt-1.5">
+                              <p className="text-xs text-zinc-500 mt-1.5">
                                 {new Date(event.timestamp).toLocaleString()}
                               </p>
                             </div>
@@ -1948,8 +1948,8 @@ export default function RFQDetailPage() {
                     </div>
                   </div>
                 ) : (
-                  <div className="rounded-lg bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 py-12 px-6">
-                    <p className="text-sm text-zinc-500 dark:text-zinc-500 text-center">
+                  <div className="rounded-lg bg-zinc-50 border border-zinc-200 py-12 px-6">
+                    <p className="text-sm text-zinc-500 text-center">
                       No activity events yet.
                     </p>
                   </div>
@@ -1966,7 +1966,7 @@ export default function RFQDetailPage() {
                   <Card>
                     <CardContent className="p-6">
                       <div className="text-center py-12">
-                        <p className="text-zinc-600 dark:text-zinc-400">
+                        <p className="text-zinc-600">
                           Purchase order will be available after the request is awarded.
                         </p>
                       </div>

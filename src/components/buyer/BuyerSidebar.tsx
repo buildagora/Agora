@@ -118,7 +118,7 @@ export default function BuyerSidebar({ onNavigate }: BuyerSidebarProps) {
               <div className="flex items-center justify-between w-full">
                 <span>All Requests</span>
                 {unreadRfqActivityCount === 1 && (
-                  <div className="ml-2 w-2 h-2 rounded-full bg-blue-500 dark:bg-blue-400" />
+                  <div className="ml-2 w-2 h-2 rounded-full bg-blue-500" />
                 )}
                 {unreadRfqActivityCount > 1 && (
                   <Badge variant="info" className="ml-2">

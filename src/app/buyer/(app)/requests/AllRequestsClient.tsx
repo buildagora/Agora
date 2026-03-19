@@ -159,10 +159,10 @@ export default function AllRequestsClient() {
     <div className="flex flex-1 px-6 py-8">
       <div className="w-full max-w-6xl mx-auto">
         <div className="mb-6">
-          <h1 className="text-2xl font-semibold text-black dark:text-zinc-50 mb-2">
+          <h1 className="text-2xl font-semibold text-black mb-2">
             All Requests
           </h1>
-          <p className="text-sm text-zinc-600 dark:text-zinc-400">
+          <p className="text-sm text-zinc-600">
             Manage all your material requests and bid requests
           </p>
         </div>
@@ -177,7 +177,7 @@ export default function AllRequestsClient() {
             {loadingMaterials ? (
               <Card>
                 <CardContent className="p-6">
-                  <p className="text-zinc-600 dark:text-zinc-400 text-center">
+                  <p className="text-zinc-600 text-center">
                     Loading material requests...
                   </p>
                 </CardContent>
@@ -185,7 +185,7 @@ export default function AllRequestsClient() {
             ) : materialsError ? (
               <Card>
                 <CardContent className="p-6">
-                  <p className="text-red-600 dark:text-red-400 text-center">
+                  <p className="text-red-600 text-center">
                     {materialsError}
                   </p>
                 </CardContent>
@@ -193,7 +193,7 @@ export default function AllRequestsClient() {
             ) : materialRequests.length === 0 ? (
               <Card>
                 <CardContent className="p-6">
-                  <p className="text-zinc-600 dark:text-zinc-400 text-center">
+                  <p className="text-zinc-600 text-center">
                     No material requests yet.
                   </p>
                 </CardContent>
@@ -206,14 +206,14 @@ export default function AllRequestsClient() {
                     href={`/buyer/material-requests/${request.id}`}
                     className="block"
                   >
-                    <Card className="hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer">
+                    <Card className="hover:bg-gray-50 transition-colors cursor-pointer">
                       <CardContent className="p-6">
                         <div className="flex items-start justify-between mb-3">
                           <div className="flex-1">
-                            <h3 className="text-base font-semibold text-black dark:text-zinc-50 mb-1">
+                            <h3 className="text-base font-semibold text-black mb-1">
                               {truncateText(request.requestText)}
                             </h3>
-                            <div className="flex items-center gap-3 text-sm text-zinc-600 dark:text-zinc-400">
+                            <div className="flex items-center gap-3 text-sm text-zinc-600">
                               <span>{getCategoryLabel(request.categoryId)}</span>
                               <span>•</span>
                               <span>{formatShortDate(request.createdAt)}</span>
@@ -223,7 +223,7 @@ export default function AllRequestsClient() {
                             {getStatusBadge(request.status)}
                           </div>
                         </div>
-                        <div className="text-sm text-zinc-600 dark:text-zinc-400 mt-3 pt-3 border-t border-zinc-200 dark:border-zinc-700">
+                        <div className="text-sm text-zinc-600 mt-3 pt-3 border-t border-zinc-200">
                           Sent to {request.counts.totalRecipients} supplier{request.counts.totalRecipients !== 1 ? "s" : ""}
                           {request.counts.repliedCount > 0 && (
                             <> • {request.counts.repliedCount} response{request.counts.repliedCount !== 1 ? "s" : ""}</>
@@ -244,7 +244,7 @@ export default function AllRequestsClient() {
             {loadingBids ? (
               <Card>
                 <CardContent className="p-6">
-                  <p className="text-zinc-600 dark:text-zinc-400 text-center">
+                  <p className="text-zinc-600 text-center">
                     Loading bid requests...
                   </p>
                 </CardContent>
@@ -252,7 +252,7 @@ export default function AllRequestsClient() {
             ) : bidsError ? (
               <Card>
                 <CardContent className="p-6">
-                  <p className="text-red-600 dark:text-red-400 text-center">
+                  <p className="text-red-600 text-center">
                     {bidsError}
                   </p>
                 </CardContent>
@@ -260,7 +260,7 @@ export default function AllRequestsClient() {
             ) : bidRequests.length === 0 ? (
               <Card>
                 <CardContent className="p-6">
-                  <p className="text-zinc-600 dark:text-zinc-400 text-center">
+                  <p className="text-zinc-600 text-center">
                     No bid requests yet.
                   </p>
                 </CardContent>
@@ -273,14 +273,14 @@ export default function AllRequestsClient() {
                     href={`/buyer/rfqs/${rfq.id}`}
                     className="block"
                   >
-                    <Card className="hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer">
+                    <Card className="hover:bg-gray-50 transition-colors cursor-pointer">
                       <CardContent className="p-6">
                         <div className="flex items-start justify-between mb-3">
                           <div className="flex-1">
-                            <h3 className="text-base font-semibold text-black dark:text-zinc-50 mb-1">
+                            <h3 className="text-base font-semibold text-black mb-1">
                               {rfq.jobNameOrPo || rfq.title || "Untitled Request"}
                             </h3>
-                            <div className="flex items-center gap-3 text-sm text-zinc-600 dark:text-zinc-400">
+                            <div className="flex items-center gap-3 text-sm text-zinc-600">
                               <span>{rfq.rfqNumber}</span>
                               <span>•</span>
                               <span>{formatShortDate(rfq.createdAt)}</span>
@@ -290,7 +290,7 @@ export default function AllRequestsClient() {
                             {getRfqStatusBadge(rfq.status)}
                           </div>
                         </div>
-                        <div className="text-sm text-zinc-600 dark:text-zinc-400 mt-3 pt-3 border-t border-zinc-200 dark:border-zinc-700">
+                        <div className="text-sm text-zinc-600 mt-3 pt-3 border-t border-zinc-200">
                           {rfq.lineItems.length} item{rfq.lineItems.length !== 1 ? "s" : ""}
                         </div>
                       </CardContent>

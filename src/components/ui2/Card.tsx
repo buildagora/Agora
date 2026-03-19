@@ -17,7 +17,7 @@ const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElemen
     <div
       ref={ref}
       className={cn(
-        "bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-700 shadow-sm",
+        "bg-white rounded-lg border border-zinc-200 shadow-sm",
         className
       )}
       {...props}
@@ -33,7 +33,7 @@ const CardHeader = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDiv
   ({ className, ...props }, ref) => (
     <div
       ref={ref}
-      className={cn("px-6 py-4 border-b border-zinc-200 dark:border-zinc-700", className)}
+      className={cn("px-6 py-4 border-b border-zinc-200", className)}
       {...props}
     />
   )

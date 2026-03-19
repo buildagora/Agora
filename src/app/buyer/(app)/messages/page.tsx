@@ -110,7 +110,7 @@ export default function BuyerMessagesInboxPage() {
   if (loading) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-zinc-600 dark:text-zinc-400">Loading...</p>
+        <p className="text-zinc-600">Loading...</p>
       </div>
     );
   }
@@ -118,10 +118,10 @@ export default function BuyerMessagesInboxPage() {
   return (
       <div className="flex flex-1 flex-col px-6 py-8 max-w-6xl mx-auto w-full">
         <div className="mb-6">
-          <h1 className="text-3xl font-semibold text-black dark:text-zinc-50">
+          <h1 className="text-3xl font-semibold text-black">
             Messages
           </h1>
-          <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">
+          <p className="text-sm text-zinc-600 mt-1">
             Your message threads with sellers
           </p>
         </div>
@@ -129,7 +129,7 @@ export default function BuyerMessagesInboxPage() {
         {threads.length === 0 ? (
           <Card>
             <CardContent className="p-8 text-center">
-              <p className="text-zinc-600 dark:text-zinc-400">
+              <p className="text-zinc-600">
                 No messages yet. Start a conversation from a request.
               </p>
             </CardContent>
@@ -146,12 +146,12 @@ export default function BuyerMessagesInboxPage() {
                   key={summary.threadId}
                   href={`/buyer/messages/${parsed.requestId}?sellerId=${parsed.sellerId}`}
                 >
-                  <Card className="hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors">
+                  <Card className="hover:bg-zinc-50 transition-colors">
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
-                            <span className="font-medium text-black dark:text-zinc-50">
+                            <span className="font-medium text-black">
                               {counterpartyName}
                             </span>
                             {unreadCount > 0 && (
@@ -160,14 +160,14 @@ export default function BuyerMessagesInboxPage() {
                               </Badge>
                             )}
                           </div>
-                          <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-1">
+                          <p className="text-sm text-zinc-600 mb-1">
                             Request {parsed.requestId.substring(0, 8)}
                           </p>
-                          <p className="text-sm text-zinc-500 dark:text-zinc-500 truncate">
+                          <p className="text-sm text-zinc-500 truncate">
                             {summary.lastMessagePreview}
                           </p>
                         </div>
-                        <div className="text-xs text-zinc-500 dark:text-zinc-500 whitespace-nowrap">
+                        <div className="text-xs text-zinc-500 whitespace-nowrap">
                           {summary.lastMessageAt ? formatDate(summary.lastMessageAt) : ""}
                         </div>
                       </div>

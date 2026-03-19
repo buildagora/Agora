@@ -177,7 +177,7 @@ export default function AppShell({
   // If no role, render without sidebar (for landing/auth pages)
   if (!role) {
     return (
-      <div className={`flex min-h-screen flex-col bg-zinc-50 dark:bg-black ${className}`}>
+      <div className={`flex min-h-screen flex-col bg-zinc-50 ${className}`}>
         <main className={mainClassName ? `flex-1 min-w-0 ${mainClassName}` : "flex-1"}>
           {children}
         </main>
@@ -236,7 +236,7 @@ export default function AppShell({
                 <div className="flex items-center justify-between w-full">
                   <span>{item.label}</span>
                   {showDot && (
-                    <div className="ml-2 w-2 h-2 rounded-full bg-blue-500 dark:bg-blue-400" />
+                    <div className="ml-2 w-2 h-2 rounded-full bg-blue-500" />
                   )}
                   {showCountBadge && (
                     <Badge variant="info" className="ml-2">
@@ -253,7 +253,7 @@ export default function AppShell({
   );
 
   return (
-    <div className={`flex min-h-dvh bg-zinc-50 dark:bg-black overflow-x-hidden ${className}`}>
+    <div className={`flex min-h-dvh bg-zinc-50 overflow-x-hidden ${className}`}>
       {/* Desktop Sidebar - hidden on mobile */}
       <div className="hidden md:flex">
         <Sidebar>
@@ -275,7 +275,7 @@ export default function AppShell({
               {/* Mobile hamburger button */}
               <button
                 onClick={() => setMobileMenuOpen(true)}
-                className="md:hidden p-2 -ml-2 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-50"
+                className="md:hidden p-2 -ml-2 text-zinc-600 hover:text-zinc-900"
                 aria-label="Open menu"
               >
                 <svg
@@ -295,7 +295,7 @@ export default function AppShell({
                 <AgoraLogo variant={logoVariant} />
               </div>
               {!isAgentPage && (
-                <h2 className="hidden md:block text-lg font-semibold text-black dark:text-zinc-50">
+                <h2 className="hidden md:block text-lg font-semibold text-black">
                   {navItems.find((item) => item.href.includes(active))?.label || (role === "buyer" ? "Dashboard" : "Dashboard")}
                 </h2>
               )}
@@ -311,7 +311,7 @@ export default function AppShell({
                 Sign out
               </Button>
               <Link href="/profile" aria-label="View profile">
-                <div className="w-8 h-8 rounded-full bg-zinc-200 dark:bg-zinc-700 hover:bg-zinc-300 dark:hover:bg-zinc-600 transition-colors cursor-pointer"></div>
+                <div className="w-8 h-8 rounded-full bg-zinc-200 hover:bg-zinc-300 transition-colors cursor-pointer"></div>
               </Link>
             </div>
           </div>

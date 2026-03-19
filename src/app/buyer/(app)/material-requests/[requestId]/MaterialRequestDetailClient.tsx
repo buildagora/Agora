@@ -80,15 +80,15 @@ function formatSendMode(sendMode: string): string {
 
 function statusBadge(status: string) {
   const colors: Record<string, string> = {
-    OPEN: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
-    CLOSED: "bg-zinc-100 text-zinc-800 dark:bg-zinc-700 dark:text-zinc-200",
-    FULFILLED: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
-    CANCELLED: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300",
+    OPEN: "bg-blue-100 text-blue-800",
+    CLOSED: "bg-zinc-100 text-zinc-800",
+    FULFILLED: "bg-green-100 text-green-800",
+    CANCELLED: "bg-red-100 text-red-800",
   };
   return (
     <span
       className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-        colors[status] || "bg-zinc-100 text-zinc-800 dark:bg-zinc-700 dark:text-zinc-200"
+        colors[status] || "bg-zinc-100 text-zinc-800"
       }`}
     >
       {status}
@@ -110,17 +110,17 @@ function getRecipientStatusLabel(status: string): string {
 
 function recipientStatusBadge(status: string) {
   const colors: Record<string, string> = {
-    REPLIED: "bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300 border border-green-200 dark:border-green-800",
-    SENT: "bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 border border-amber-200 dark:border-amber-800",
-    VIEWED: "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-800",
-    DECLINED: "bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300 border border-red-200 dark:border-red-800",
-    OUT_OF_STOCK: "bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300 border border-orange-200 dark:border-orange-800",
-    NO_RESPONSE: "bg-zinc-50 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-600",
+    REPLIED: "bg-green-50 text-green-700 border border-green-200",
+    SENT: "bg-amber-50 text-amber-700 border border-amber-200",
+    VIEWED: "bg-blue-50 text-blue-700 border border-blue-200",
+    DECLINED: "bg-red-50 text-red-700 border border-red-200",
+    OUT_OF_STOCK: "bg-orange-50 text-orange-700 border border-orange-200",
+    NO_RESPONSE: "bg-zinc-50 text-zinc-600 border border-zinc-200",
   };
   return (
     <span
       className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium shrink-0 ${
-        colors[status] || "bg-zinc-50 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-600"
+        colors[status] || "bg-zinc-50 text-zinc-600 border border-zinc-200"
       }`}
     >
       {getRecipientStatusLabel(status)}
@@ -140,25 +140,25 @@ function SupplierRow({
   return (
     <Link
       href={`/buyer/suppliers/talk/${recipient.supplierId}?conversationId=${recipient.conversationId}`}
-      className="flex items-center gap-4 py-4 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors cursor-pointer group first:pt-0 last:pb-0"
+      className="flex items-center gap-4 py-4 rounded-lg hover:bg-zinc-50 transition-colors cursor-pointer group first:pt-0 last:pb-0"
     >
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2.5 flex-wrap">
-          <span className="font-semibold text-black dark:text-zinc-50 truncate">
+          <span className="font-semibold text-black truncate">
             {recipient.supplierName}
           </span>
           {recipientStatusBadge(recipient.status)}
         </div>
         {recipient.lastMessagePreview && (
-          <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-2 line-clamp-2 leading-relaxed">
+          <p className="text-sm text-zinc-600 mt-2 line-clamp-2 leading-relaxed">
             {recipient.lastMessagePreview}
           </p>
         )}
-        <p className="text-xs text-zinc-500 dark:text-zinc-500 mt-1.5">
+        <p className="text-xs text-zinc-500 mt-1.5">
           {timeLabel} {timeValue}
         </p>
       </div>
-      <span className="text-zinc-300 dark:text-zinc-600 group-hover:text-zinc-500 dark:group-hover:text-zinc-400 shrink-0 self-center" aria-hidden>→</span>
+      <span className="text-zinc-300 group-hover:text-zinc-500 shrink-0 self-center" aria-hidden>→</span>
     </Link>
   );
 }
@@ -189,16 +189,16 @@ export default function MaterialRequestDetailClient({
             <div className="flex items-center gap-2.5 flex-wrap mb-2">
               <Link
                 href="/buyer/requests"
-                className="text-sm text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors"
+                className="text-sm text-zinc-500 hover:text-zinc-700 transition-colors"
               >
                 ← Back
               </Link>
               {statusBadge(request.status)}
             </div>
-            <h1 className="text-xl font-semibold text-black dark:text-zinc-50 tracking-tight break-words">
+            <h1 className="text-xl font-semibold text-black tracking-tight break-words">
               {request.requestText.trim() || "Material request"}
             </h1>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1.5 tracking-wide">
+            <p className="text-xs text-zinc-500 mt-1.5 tracking-wide">
               {metaParts.join(" · ")}
             </p>
           </div>
@@ -208,8 +208,8 @@ export default function MaterialRequestDetailClient({
         <Card>
           <CardContent className="p-5 sm:p-6">
             <dl>
-              <dt className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-1.5">Request</dt>
-              <dd className="text-sm text-black dark:text-zinc-50 whitespace-pre-wrap break-words leading-relaxed">
+              <dt className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-1.5">Request</dt>
+              <dd className="text-sm text-black whitespace-pre-wrap break-words leading-relaxed">
                 {request.requestText.trim() || "—"}
               </dd>
             </dl>
@@ -218,31 +218,31 @@ export default function MaterialRequestDetailClient({
 
         {/* Mini stats row */}
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
-          <span className="text-zinc-600 dark:text-zinc-400">
-            <strong className="text-black dark:text-zinc-50 font-semibold">{totalRecipients}</strong> total
+          <span className="text-zinc-600">
+            <strong className="text-black font-semibold">{totalRecipients}</strong> total
           </span>
-          <span className="text-zinc-300 dark:text-zinc-600 select-none" aria-hidden>·</span>
-          <span className="text-zinc-600 dark:text-zinc-400">
-            <strong className="text-green-600 dark:text-green-400 font-semibold">{recipients.replied.length}</strong> responded
+          <span className="text-zinc-300 select-none" aria-hidden>·</span>
+          <span className="text-zinc-600">
+            <strong className="text-green-600 font-semibold">{recipients.replied.length}</strong> responded
           </span>
-          <span className="text-zinc-300 dark:text-zinc-600 select-none" aria-hidden>·</span>
-          <span className="text-zinc-600 dark:text-zinc-400">
-            <strong className="text-amber-600 dark:text-amber-400 font-semibold">{recipients.pending.length}</strong> pending
+          <span className="text-zinc-300 select-none" aria-hidden>·</span>
+          <span className="text-zinc-600">
+            <strong className="text-amber-600 font-semibold">{recipients.pending.length}</strong> pending
           </span>
-          <span className="text-zinc-300 dark:text-zinc-600 select-none" aria-hidden>·</span>
-          <span className="text-zinc-600 dark:text-zinc-400">
-            <strong className="text-zinc-600 dark:text-zinc-400 font-semibold">{recipients.closedOut.length}</strong> closed out
+          <span className="text-zinc-300 select-none" aria-hidden>·</span>
+          <span className="text-zinc-600">
+            <strong className="text-zinc-600 font-semibold">{recipients.closedOut.length}</strong> closed out
           </span>
         </div>
 
         {/* Supplier Responses */}
         {recipients.replied.length > 0 && (
           <div>
-            <h2 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-3">
+            <h2 className="text-sm font-semibold text-zinc-700 mb-3">
               Supplier responses ({recipients.replied.length})
             </h2>
             <Card>
-              <CardContent className="p-5 divide-y divide-zinc-100 dark:divide-zinc-700/50">
+              <CardContent className="p-5 divide-y divide-zinc-100">
                 {recipients.replied.map((recipient) => (
                   <SupplierRow
                     key={recipient.conversationId}
@@ -259,11 +259,11 @@ export default function MaterialRequestDetailClient({
         {/* Pending Response */}
         {recipients.pending.length > 0 && (
           <div>
-            <h2 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-3">
+            <h2 className="text-sm font-semibold text-zinc-700 mb-3">
               Pending response ({recipients.pending.length})
             </h2>
             <Card>
-              <CardContent className="p-5 divide-y divide-zinc-100 dark:divide-zinc-700/50">
+              <CardContent className="p-5 divide-y divide-zinc-100">
                 {recipients.pending.map((recipient) => (
                   <SupplierRow
                     key={recipient.conversationId}
@@ -280,11 +280,11 @@ export default function MaterialRequestDetailClient({
         {/* Closed Out */}
         {recipients.closedOut.length > 0 && (
           <div>
-            <h2 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-3">
+            <h2 className="text-sm font-semibold text-zinc-700 mb-3">
               Closed out ({recipients.closedOut.length})
             </h2>
             <Card>
-              <CardContent className="p-5 divide-y divide-zinc-100 dark:divide-zinc-700/50">
+              <CardContent className="p-5 divide-y divide-zinc-100">
                 {recipients.closedOut.map((recipient) => (
                   <SupplierRow
                     key={recipient.conversationId}
@@ -304,7 +304,7 @@ export default function MaterialRequestDetailClient({
         {totalRecipients === 0 && (
           <Card>
             <CardContent className="py-12 text-center">
-              <p className="text-sm text-zinc-500 dark:text-zinc-400">
+              <p className="text-sm text-zinc-500">
                 No suppliers were attached to this request.
               </p>
             </CardContent>

@@ -105,8 +105,8 @@ function VerifyEmailPageInner() {
   return (
     <div className="flex flex-1 items-center justify-center px-6 py-16">
       <div className="w-full max-w-md">
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-8 shadow-sm">
-          <h1 className="text-2xl font-semibold text-black dark:text-zinc-50 mb-2 text-center">
+        <div className="bg-white border border-zinc-200 rounded-lg p-8 shadow-sm">
+          <h1 className="text-2xl font-semibold text-black mb-2 text-center">
             {status === "loading" && "Verifying your email..."}
             {status === "success" && "Email Verified"}
             {status === "expired" && "Verification Expired"}
@@ -116,8 +116,8 @@ function VerifyEmailPageInner() {
 
           {status === "loading" && (
             <div className="mt-8 text-center">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-black dark:border-zinc-50"></div>
-              <p className="mt-4 text-sm text-zinc-600 dark:text-zinc-400">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-black"></div>
+              <p className="mt-4 text-sm text-zinc-600">
                 Please wait while we verify your email address...
               </p>
             </div>
@@ -125,15 +125,15 @@ function VerifyEmailPageInner() {
 
           {status === "success" && (
             <div className="mt-8">
-              <div className="mb-6 p-4 border border-green-300 dark:border-green-700 rounded-lg bg-green-50 dark:bg-green-900/20">
-                <p className="text-sm text-green-600 dark:text-green-400 text-center">
+              <div className="mb-6 p-4 border border-green-300 rounded-lg bg-green-50">
+                <p className="text-sm text-green-600 text-center">
                   {message}
                 </p>
               </div>
               <div className="text-center">
                 <Link
                   href="/auth/sign-in"
-                  className="inline-block w-full px-4 py-3 rounded-lg bg-black text-white transition-colors hover:bg-zinc-800 dark:bg-zinc-50 dark:text-black dark:hover:bg-zinc-200 font-medium"
+                  className="inline-block w-full px-4 py-3 rounded-lg bg-black text-white transition-colors hover:bg-zinc-800 font-medium"
                 >
                   Sign In
                 </Link>
@@ -143,21 +143,21 @@ function VerifyEmailPageInner() {
 
           {(status === "expired" || status === "invalid") && (
             <div className="mt-8">
-              <div className="mb-6 p-4 border border-red-300 dark:border-red-700 rounded-lg bg-red-50 dark:bg-red-900/20">
-                <p className="text-sm text-red-600 dark:text-red-400 text-center">
+              <div className="mb-6 p-4 border border-red-300 rounded-lg bg-red-50">
+                <p className="text-sm text-red-600 text-center">
                   {message}
                 </p>
               </div>
               <div className="text-center space-y-3">
                 <Link
                   href="/auth/resend-verification"
-                  className="inline-block w-full px-4 py-3 rounded-lg bg-black text-white transition-colors hover:bg-zinc-800 dark:bg-zinc-50 dark:text-black dark:hover:bg-zinc-200 font-medium"
+                  className="inline-block w-full px-4 py-3 rounded-lg bg-black text-white transition-colors hover:bg-zinc-800 font-medium"
                 >
                   Request New Verification Email
                 </Link>
                 <Link
                   href="/auth/sign-in"
-                  className="block text-sm text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors"
+                  className="block text-sm text-zinc-600 hover:text-zinc-900 transition-colors"
                 >
                   Back to Sign In
                 </Link>
@@ -167,8 +167,8 @@ function VerifyEmailPageInner() {
 
           {status === "error" && (
             <div className="mt-8">
-              <div className="mb-6 p-4 border border-red-300 dark:border-red-700 rounded-lg bg-red-50 dark:bg-red-900/20">
-                <p className="text-sm text-red-600 dark:text-red-400 text-center">
+              <div className="mb-6 p-4 border border-red-300 rounded-lg bg-red-50">
+                <p className="text-sm text-red-600 text-center">
                   {message}
                 </p>
               </div>
@@ -223,13 +223,13 @@ function VerifyEmailPageInner() {
                         });
                     }
                   }}
-                  className="w-full px-4 py-3 rounded-lg bg-black text-white transition-colors hover:bg-zinc-800 dark:bg-zinc-50 dark:text-black dark:hover:bg-zinc-200 font-medium"
+                  className="w-full px-4 py-3 rounded-lg bg-black text-white transition-colors hover:bg-zinc-800 font-medium"
                 >
                   Try Again
                 </button>
                 <Link
                   href="/auth/sign-in"
-                  className="block text-sm text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors"
+                  className="block text-sm text-zinc-600 hover:text-zinc-900 transition-colors"
                 >
                   Back to Sign In
                 </Link>
@@ -247,12 +247,12 @@ export default function VerifyEmailPage() {
     <Suspense fallback={
       <div className="flex flex-1 items-center justify-center px-6 py-16">
         <div className="w-full max-w-md">
-          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-8 shadow-sm">
-            <h1 className="text-2xl font-semibold text-black dark:text-zinc-50 mb-2 text-center">
+          <div className="bg-white border border-zinc-200 rounded-lg p-8 shadow-sm">
+            <h1 className="text-2xl font-semibold text-black mb-2 text-center">
               Verifying your email...
             </h1>
             <div className="mt-8 text-center">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-black dark:border-zinc-50"></div>
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-black"></div>
             </div>
           </div>
         </div>

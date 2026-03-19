@@ -27,18 +27,18 @@ function formatMetric(value: number | "N/A", isPercentage: boolean = false): str
 }
 
 function getMetricColor(value: number | "N/A", isPercentage: boolean = false): string {
-  if (value === "N/A") return "text-zinc-500 dark:text-zinc-500";
+  if (value === "N/A") return "text-zinc-500";
   if (typeof value === "number") {
     if (isPercentage) {
-      if (value > 0.8) return "text-green-600 dark:text-green-400";
-      if (value > 0.6) return "text-amber-600 dark:text-amber-400";
-      return "text-red-600 dark:text-red-400";
+      if (value > 0.8) return "text-green-600";
+      if (value > 0.6) return "text-amber-600";
+      return "text-red-600";
     }
-    if (value < 60) return "text-green-600 dark:text-green-400";
-    if (value < 120) return "text-amber-600 dark:text-amber-400";
-    return "text-red-600 dark:text-red-400";
+    if (value < 60) return "text-green-600";
+    if (value < 120) return "text-amber-600";
+    return "text-red-600";
   }
-  return "text-zinc-500 dark:text-zinc-500";
+  return "text-zinc-500";
 }
 
 export default function SellerScorecardPage() {
@@ -70,10 +70,10 @@ export default function SellerScorecardPage() {
       <div className="flex flex-1 px-6 py-8">
         <div className="w-full max-w-4xl mx-auto">
           <div className="mb-6">
-            <h1 className="text-3xl font-semibold text-black dark:text-zinc-50">
+            <h1 className="text-3xl font-semibold text-black">
               Performance Scorecard
             </h1>
-            <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">
+            <p className="text-sm text-zinc-600 mt-1">
               Your supplier performance metrics
             </p>
           </div>
@@ -81,23 +81,23 @@ export default function SellerScorecardPage() {
           {status === "loading" || loading ? (
             <Card>
               <CardContent className="py-12 text-center">
-                <p className="text-zinc-600 dark:text-zinc-400">Loading metrics...</p>
+                <p className="text-zinc-600">Loading metrics...</p>
               </CardContent>
             </Card>
           ) : !currentUser || currentUser.role !== "SELLER" ? (
             <Card>
               <CardContent className="py-12 text-center">
-                <p className="text-zinc-600 dark:text-zinc-400">Access denied. Seller access required.</p>
+                <p className="text-zinc-600">Access denied. Seller access required.</p>
               </CardContent>
             </Card>
           ) : !showMetricGrid ? (
             /* Honest empty/unavailable state – no wall of N/A cards */
             <Card>
               <CardContent className="py-12 px-8 text-center max-w-lg mx-auto">
-                <p className="text-base font-medium text-zinc-700 dark:text-zinc-300">
+                <p className="text-base font-medium text-zinc-700">
                   Live performance metrics are not available yet
                 </p>
-                <p className="text-sm text-zinc-500 dark:text-zinc-500 mt-2 leading-relaxed">
+                <p className="text-sm text-zinc-500 mt-2 leading-relaxed">
                   Scorecard metrics will appear as supplier response and fulfillment tracking is enabled for the live workflow.
                 </p>
               </CardContent>
@@ -105,11 +105,11 @@ export default function SellerScorecardPage() {
           ) : (
             <>
               <div className="flex items-center gap-2 mb-6">
-                <label className="text-sm text-zinc-600 dark:text-zinc-400">Time period:</label>
+                <label className="text-sm text-zinc-600">Time period:</label>
                 <select
                   value={windowDays}
                   onChange={(e) => setWindowDays(Number(e.target.value))}
-                  className="px-3 py-1.5 text-sm border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-black dark:text-zinc-50 focus:outline-none focus:ring-2 focus:ring-slate-500"
+                  className="px-3 py-1.5 text-sm border border-zinc-300 rounded-lg bg-white text-black focus:outline-none focus:ring-2 focus:ring-slate-500"
                 >
                   <option value={7}>Last 7 days</option>
                   <option value={30}>Last 30 days</option>
@@ -121,49 +121,49 @@ export default function SellerScorecardPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Card>
                   <CardContent className="p-6">
-                    <h3 className="text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-2">Response Rate</h3>
+                    <h3 className="text-sm font-medium text-zinc-600 mb-2">Response Rate</h3>
                     <p className={`text-3xl font-bold ${getMetricColor(metrics!.responseRate, true)}`}>
                       {formatMetric(metrics!.responseRate, true)}
                     </p>
-                    <p className="text-xs text-zinc-500 dark:text-zinc-500 mt-2">Percentage of requests responded to</p>
+                    <p className="text-xs text-zinc-500 mt-2">Percentage of requests responded to</p>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardContent className="p-6">
-                    <h3 className="text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-2">Median Response Time</h3>
+                    <h3 className="text-sm font-medium text-zinc-600 mb-2">Median Response Time</h3>
                     <p className={`text-3xl font-bold ${getMetricColor(metrics!.medianResponseTimeMinutes, false)}`}>
                       {formatMetric(metrics!.medianResponseTimeMinutes, false)}
                     </p>
-                    <p className="text-xs text-zinc-500 dark:text-zinc-500 mt-2">Time from dispatch to first response</p>
+                    <p className="text-xs text-zinc-500 mt-2">Time from dispatch to first response</p>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardContent className="p-6">
-                    <h3 className="text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-2">Win Rate</h3>
+                    <h3 className="text-sm font-medium text-zinc-600 mb-2">Win Rate</h3>
                     <p className={`text-3xl font-bold ${getMetricColor(metrics!.winRate, true)}`}>
                       {formatMetric(metrics!.winRate, true)}
                     </p>
-                    <p className="text-xs text-zinc-500 dark:text-zinc-500 mt-2">Percentage of bids that were awarded</p>
+                    <p className="text-xs text-zinc-500 mt-2">Percentage of bids that were awarded</p>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardContent className="p-6">
-                    <h3 className="text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-2">On-Time Confirm Rate</h3>
+                    <h3 className="text-sm font-medium text-zinc-600 mb-2">On-Time Confirm Rate</h3>
                     <p className={`text-3xl font-bold ${getMetricColor(metrics!.onTimeConfirmRate, true)}`}>
                       {formatMetric(metrics!.onTimeConfirmRate, true)}
                     </p>
-                    <p className="text-xs text-zinc-500 dark:text-zinc-500 mt-2">
+                    <p className="text-xs text-zinc-500 mt-2">
                       Orders confirmed within {windowDays === 30 ? "4 hours" : "SLA"}
                     </p>
                   </CardContent>
                 </Card>
                 <Card className="md:col-span-2">
                   <CardContent className="p-6">
-                    <h3 className="text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-2">On-Time Delivery Rate</h3>
+                    <h3 className="text-sm font-medium text-zinc-600 mb-2">On-Time Delivery Rate</h3>
                     <p className={`text-3xl font-bold ${getMetricColor(metrics!.onTimeDeliveryRate, true)}`}>
                       {formatMetric(metrics!.onTimeDeliveryRate, true)}
                     </p>
-                    <p className="text-xs text-zinc-500 dark:text-zinc-500 mt-2">Orders delivered by need-by date or within SLA</p>
+                    <p className="text-xs text-zinc-500 mt-2">Orders delivered by need-by date or within SLA</p>
                   </CardContent>
                 </Card>
               </div>

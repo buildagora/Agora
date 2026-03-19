@@ -239,36 +239,36 @@ export default function FindMaterialsClient() {
           {/* Step context */}
           <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-2">
             <div>
-              <p className="text-xs font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-1">
+              <p className="text-xs font-medium uppercase tracking-wider text-zinc-500 mb-1">
                 Step 2 of 2
               </p>
-              <h1 className="text-2xl sm:text-3xl font-semibold text-black dark:text-zinc-50 tracking-tight">
+              <h1 className="text-2xl sm:text-3xl font-semibold text-black tracking-tight">
                 Review your request
               </h1>
             </div>
-            <p className="text-sm text-zinc-600 dark:text-zinc-400">
+            <p className="text-sm text-zinc-600">
               Review & Send
             </p>
           </div>
 
           {/* A. Request Details – hero-style card (continuation of dashboard) */}
-          <Card className="border-zinc-200 dark:border-zinc-700 shadow-md shadow-zinc-200/50 dark:shadow-zinc-900/50">
+          <Card className="border-zinc-200 shadow-md shadow-zinc-200/50">
             <CardContent className="p-8 sm:p-10">
-              <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-6">
+              <p className="text-sm text-zinc-600 mb-6">
                 Agora will route this through the supplier network based on your selected category.
               </p>
-              <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-700 dark:text-zinc-300 mb-4">
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-700 mb-4">
                 Request details
               </h2>
               <div className="space-y-5">
                 <div>
-                  <label className="block text-sm font-medium text-black dark:text-zinc-50 mb-2">
+                  <label className="block text-sm font-medium text-black mb-2">
                     Category
                   </label>
                   <select
                     value={selectedCategory}
                     onChange={(e) => handleCategoryChange(e.target.value)}
-                    className="w-full max-w-md px-4 py-2.5 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-900 text-black dark:text-zinc-50 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent"
+                    className="w-full max-w-md px-4 py-2.5 border border-zinc-300 rounded-lg bg-white text-black focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent"
                   >
                     <option value="" disabled>
                       Select a category...
@@ -282,7 +282,7 @@ export default function FindMaterialsClient() {
                 </div>
                 {hasCategory && (
                   <div>
-                    <label className="block text-sm font-medium text-black dark:text-zinc-50 mb-2">
+                    <label className="block text-sm font-medium text-black mb-2">
                       What materials do you need?
                     </label>
                     <textarea
@@ -290,7 +290,7 @@ export default function FindMaterialsClient() {
                       onChange={(e) => setRequestText(e.target.value)}
                       placeholder="Add details, quantities, delivery requirements, or refine your request..."
                       rows={5}
-                      className="w-full max-w-2xl px-4 py-3 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-900 text-black dark:text-zinc-50 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent resize-none"
+                      className="w-full max-w-2xl px-4 py-3 border border-zinc-300 rounded-lg bg-white text-black focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent resize-none"
                     />
                   </div>
                 )}
@@ -299,11 +299,11 @@ export default function FindMaterialsClient() {
           </Card>
 
           {showEmptyState && (
-            <div className="text-center py-12 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50/50 dark:bg-zinc-800/30">
-              <p className="text-zinc-600 dark:text-zinc-400 mb-2">
+            <div className="text-center py-12 rounded-lg border border-zinc-200 bg-zinc-50/50">
+              <p className="text-zinc-600 mb-2">
                 Please select a category to get started
               </p>
-              <p className="text-sm text-zinc-500 dark:text-zinc-500">
+              <p className="text-sm text-zinc-500">
                 Choose a category from the dropdown above to see routing options and suppliers.
               </p>
             </div>
@@ -314,15 +314,15 @@ export default function FindMaterialsClient() {
               {/* B. Routing Options */}
               <Card>
                 <CardContent className="p-6 sm:p-8">
-                  <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-700 dark:text-zinc-300 mb-4">
+                  <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-700 mb-4">
                     How should Agora route this?
                   </h2>
                   <div className="flex flex-col sm:flex-row gap-4">
                     <label
                       className={`flex items-start gap-4 p-4 rounded-lg border-2 cursor-pointer transition-colors ${
                         sendMode === "NETWORK"
-                          ? "border-slate-600 dark:border-slate-400 bg-slate-50/50 dark:bg-slate-900/30"
-                          : "border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600"
+                          ? "border-slate-600 bg-slate-50/50"
+                          : "border-zinc-200 hover:border-zinc-300"
                       }`}
                     >
                       <input
@@ -337,16 +337,16 @@ export default function FindMaterialsClient() {
                         className="mt-1 w-4 h-4"
                       />
                       <div>
-                        <span className="font-medium text-black dark:text-zinc-50 block">
+                        <span className="font-medium text-black block">
                           Send to entire network
                         </span>
                         {!loading && !error && suppliers.length > 0 && (
-                          <span className="text-sm text-zinc-600 dark:text-zinc-400 mt-0.5 block">
+                          <span className="text-sm text-zinc-600 mt-0.5 block">
                             {suppliers.length} supplier{suppliers.length !== 1 ? "s" : ""} in this category
                           </span>
                         )}
                         {loading && (
-                          <span className="text-sm text-zinc-500 dark:text-zinc-500 mt-0.5 block">
+                          <span className="text-sm text-zinc-500 mt-0.5 block">
                             Loading...
                           </span>
                         )}
@@ -355,8 +355,8 @@ export default function FindMaterialsClient() {
                     <label
                       className={`flex items-start gap-4 p-4 rounded-lg border-2 cursor-pointer transition-colors ${
                         sendMode === "DIRECT"
-                          ? "border-slate-600 dark:border-slate-400 bg-slate-50/50 dark:bg-slate-900/30"
-                          : "border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600"
+                          ? "border-slate-600 bg-slate-50/50"
+                          : "border-zinc-200 hover:border-zinc-300"
                       }`}
                     >
                       <input
@@ -368,10 +368,10 @@ export default function FindMaterialsClient() {
                         className="mt-1 w-4 h-4"
                       />
                       <div>
-                        <span className="font-medium text-black dark:text-zinc-50 block">
+                        <span className="font-medium text-black block">
                           Choose suppliers directly
                         </span>
-                        <span className="text-sm text-zinc-600 dark:text-zinc-400 mt-0.5 block">
+                        <span className="text-sm text-zinc-600 mt-0.5 block">
                           Select who receives this request
                         </span>
                       </div>
@@ -382,27 +382,27 @@ export default function FindMaterialsClient() {
 
               {/* C. Suppliers receiving this request */}
               <div>
-                <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-700 dark:text-zinc-300 mb-4">
+                <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-700 mb-4">
                   Suppliers receiving this request
                   {!loading && !error && suppliers.length > 0 && (
-                    <span className="normal-case font-normal text-zinc-600 dark:text-zinc-400 ml-2">
+                    <span className="normal-case font-normal text-zinc-600 ml-2">
                       ({suppliers.length})
                     </span>
                   )}
                 </h2>
 
                 {loading && (
-                  <div className="py-10 text-center text-zinc-600 dark:text-zinc-400 text-sm">
+                  <div className="py-10 text-center text-zinc-600 text-sm">
                     Loading suppliers...
                   </div>
                 )}
                 {error && (
-                  <div className="py-10 text-center text-red-600 dark:text-red-400 text-sm">
+                  <div className="py-10 text-center text-red-600 text-sm">
                     Error: {error}
                   </div>
                 )}
                 {showNoSuppliers && (
-                  <div className="py-10 text-center text-zinc-600 dark:text-zinc-400 text-sm">
+                  <div className="py-10 text-center text-zinc-600 text-sm">
                     No suppliers found in this category
                   </div>
                 )}
@@ -410,13 +410,13 @@ export default function FindMaterialsClient() {
                 {!loading && !error && suppliers.length > 0 && sendMode === "NETWORK" && (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                     {suppliers.map((supplier) => (
-                      <Card key={supplier.id} className="bg-zinc-50/80 dark:bg-zinc-800/50 border-zinc-200 dark:border-zinc-700">
+                      <Card key={supplier.id} className="bg-zinc-50/80 border-zinc-200">
                         <CardContent className="p-4">
-                          <h3 className="text-sm font-semibold text-black dark:text-zinc-50">
+                          <h3 className="text-sm font-semibold text-black">
                             {supplier.name}
                           </h3>
                           {supplier.categories.length > 0 && (
-                            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+                            <p className="text-xs text-zinc-500 mt-1">
                               {supplier.categories
                                 .map((cat) => categoryIdToLabel[cat as keyof typeof categoryIdToLabel] || cat)
                                 .join(", ")}
@@ -442,8 +442,8 @@ export default function FindMaterialsClient() {
                           <Card
                             className={`transition-colors ${
                               isSelected
-                                ? "bg-zinc-100 dark:bg-zinc-800 border-2 border-slate-600 dark:border-slate-400"
-                                : "border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
+                                ? "bg-zinc-100 border-2 border-slate-600"
+                                : "border-zinc-200 hover:bg-zinc-50"
                             }`}
                           >
                             <CardContent className="p-4">
@@ -456,11 +456,11 @@ export default function FindMaterialsClient() {
                                   onClick={(e) => e.stopPropagation()}
                                 />
                                 <div className="min-w-0">
-                                  <h3 className="text-sm font-semibold text-black dark:text-zinc-50">
+                                  <h3 className="text-sm font-semibold text-black">
                                     {supplier.name}
                                   </h3>
                                   {supplier.categories.length > 0 && (
-                                    <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+                                    <p className="text-xs text-zinc-500 mt-1">
                                       {supplier.categories
                                         .map((cat) => categoryIdToLabel[cat as keyof typeof categoryIdToLabel] || cat)
                                         .join(", ")}
@@ -479,10 +479,10 @@ export default function FindMaterialsClient() {
 
               {/* D. Submit actions */}
               {hasCategory && (
-                <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-4 pt-2 border-t border-zinc-200 dark:border-zinc-700">
+                <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-4 pt-2 border-t border-zinc-200">
                   <Link
                     href="/buyer/dashboard"
-                    className="text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-50 transition-colors"
+                    className="text-sm font-medium text-zinc-600 hover:text-zinc-900 transition-colors"
                   >
                     Edit Search
                   </Link>

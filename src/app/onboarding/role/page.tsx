@@ -52,35 +52,35 @@ export default function RoleOnboardingPage() {
 
   if (!mounted || status === "loading" || !user) {
     return (
-      <div className="flex min-h-screen flex-col bg-white dark:bg-black">
+      <div className="flex min-h-screen flex-col bg-white">
         <Header />
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-white dark:bg-black">
+    <div className="flex min-h-screen flex-col bg-white">
       <Header />
 
       <main className="flex flex-1 items-center justify-center px-6 py-16">
         <div className="w-full max-w-md">
-          <h1 className="text-3xl font-semibold text-black dark:text-zinc-50 mb-6 text-center">
+          <h1 className="text-3xl font-semibold text-black mb-6 text-center">
             Choose Your Role
           </h1>
-          <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-8 text-center">
+          <p className="text-sm text-zinc-600 mb-8 text-center">
             Select how you&apos;ll use Agora
           </p>
 
           <div className="flex flex-col gap-4">
             <button
               onClick={() => handleRoleSelect("BUYER")}
-              className="flex h-14 items-center justify-center rounded-lg bg-black text-white transition-colors hover:bg-zinc-800 dark:bg-zinc-50 dark:text-black dark:hover:bg-zinc-200 text-lg font-medium"
+              className="flex h-14 items-center justify-center rounded-lg bg-black text-white transition-colors hover:bg-zinc-800 text-lg font-medium"
             >
               I&apos;m a Buyer
             </button>
             <button
               onClick={() => handleRoleSelect("SELLER")}
-              className="flex h-14 items-center justify-center rounded-lg border-2 border-black text-black transition-colors hover:bg-zinc-100 dark:border-zinc-50 dark:text-zinc-50 dark:hover:bg-zinc-900 text-lg font-medium"
+              className="flex h-14 items-center justify-center rounded-lg border-2 border-black text-black transition-colors hover:bg-zinc-100 text-lg font-medium"
             >
               I&apos;m a Seller
             </button>

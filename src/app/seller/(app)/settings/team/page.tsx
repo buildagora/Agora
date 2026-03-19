@@ -131,17 +131,17 @@ export default function SellerTeamSettingsPage() {
       <div className="flex flex-1 px-6 py-8">
         <div className="w-full max-w-4xl mx-auto">
           <div className="mb-6">
-            <h1 className="text-3xl font-semibold text-black dark:text-zinc-50">
+            <h1 className="text-3xl font-semibold text-black">
               Team Settings
             </h1>
-            <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">
+            <p className="text-sm text-zinc-600 mt-1">
               Manage team members and send invitations
             </p>
           </div>
 
           {error && (
-            <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded">
-              <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded">
+              <p className="text-sm text-red-600">{error}</p>
             </div>
           )}
 
@@ -149,7 +149,7 @@ export default function SellerTeamSettingsPage() {
           {isAdmin && (
             <Card className="mb-6">
               <CardHeader>
-                <h2 className="text-xl font-semibold text-black dark:text-zinc-50">
+                <h2 className="text-xl font-semibold text-black">
                   Send Invitation
                 </h2>
               </CardHeader>
@@ -179,25 +179,25 @@ export default function SellerTeamSettingsPage() {
           {/* Team Members */}
           <Card className="mb-6">
             <CardHeader>
-              <h2 className="text-xl font-semibold text-black dark:text-zinc-50">
+              <h2 className="text-xl font-semibold text-black">
                 Team Members
               </h2>
             </CardHeader>
             <CardContent>
               {loading ? (
-                <p className="text-zinc-600 dark:text-zinc-400 text-center py-4">Loading...</p>
+                <p className="text-zinc-600 text-center py-4">Loading...</p>
               ) : members.length === 0 ? (
-                <p className="text-zinc-600 dark:text-zinc-400 text-center py-4">No team members yet</p>
+                <p className="text-zinc-600 text-center py-4">No team members yet</p>
               ) : (
                 <div className="space-y-3">
                   {members.map((member) => (
                     <div
                       key={member.id}
-                      className="flex items-center justify-between p-3 border border-zinc-200 dark:border-zinc-800 rounded-lg"
+                      className="flex items-center justify-between p-3 border border-zinc-200 rounded-lg"
                     >
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
-                          <span className="font-medium text-black dark:text-zinc-50">
+                          <span className="font-medium text-black">
                             {member.fullName || member.companyName || member.email}
                           </span>
                           <Badge variant="default">
@@ -207,7 +207,7 @@ export default function SellerTeamSettingsPage() {
                             {member.status}
                           </Badge>
                         </div>
-                        <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">
+                        <p className="text-sm text-zinc-600 mt-1">
                           {member.email}
                         </p>
                       </div>
@@ -221,27 +221,27 @@ export default function SellerTeamSettingsPage() {
           {/* Pending Invites */}
           <Card>
             <CardHeader>
-              <h2 className="text-xl font-semibold text-black dark:text-zinc-50">
+              <h2 className="text-xl font-semibold text-black">
                 Pending Invitations
               </h2>
             </CardHeader>
             <CardContent>
               {loading ? (
-                <p className="text-zinc-600 dark:text-zinc-400 text-center py-4">Loading...</p>
+                <p className="text-zinc-600 text-center py-4">Loading...</p>
               ) : pendingInvites.length === 0 ? (
-                <p className="text-zinc-600 dark:text-zinc-400 text-center py-4">No pending invitations</p>
+                <p className="text-zinc-600 text-center py-4">No pending invitations</p>
               ) : (
                 <div className="space-y-3">
                   {pendingInvites.map((invite) => (
                     <div
                       key={invite.id}
-                      className="flex items-center justify-between p-3 border border-zinc-200 dark:border-zinc-800 rounded-lg"
+                      className="flex items-center justify-between p-3 border border-zinc-200 rounded-lg"
                     >
                       <div className="flex-1">
-                        <div className="font-medium text-black dark:text-zinc-50">
+                        <div className="font-medium text-black">
                           {invite.email}
                         </div>
-                        <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">
+                        <p className="text-sm text-zinc-600 mt-1">
                           Invited by {invite.invitedByName} • Expires {new Date(invite.expiresAt).toLocaleDateString()}
                         </p>
                       </div>

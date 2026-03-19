@@ -121,10 +121,10 @@ export default function FindMaterialsPage() {
           <div className="mb-8">
             <div className="flex items-start justify-between mb-2">
               <div>
-                <h1 className="text-3xl font-semibold text-black dark:text-zinc-50 mb-2">
+                <h1 className="text-3xl font-semibold text-black mb-2">
                   Supplier Discovery
                 </h1>
-                <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                <p className="text-sm text-zinc-600">
                   Discover suppliers in your area. Browse options without creating a request.
                 </p>
               </div>
@@ -139,7 +139,7 @@ export default function FindMaterialsPage() {
           {/* Search Form Card */}
           <Card>
             <CardHeader>
-              <h2 className="text-xl font-semibold text-black dark:text-zinc-50">
+              <h2 className="text-xl font-semibold text-black">
                 What are you looking for?
               </h2>
             </CardHeader>
@@ -153,13 +153,13 @@ export default function FindMaterialsPage() {
               />
 
               <div>
-                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                <label className="block text-sm font-medium text-zinc-700 mb-1">
                   Category <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-black dark:text-zinc-50 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-zinc-50 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-zinc-300 rounded-lg bg-white text-black focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
                 >
                   <option value="">Select a category</option>
                   {MATERIAL_CATEGORIES.map((cat) => (
@@ -180,13 +180,13 @@ export default function FindMaterialsPage() {
                 />
 
                 <div>
-                  <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                  <label className="block text-sm font-medium text-zinc-700 mb-1">
                     Urgency (optional)
                   </label>
                   <select
                     value={urgency}
                     onChange={(e) => setUrgency(e.target.value as "low" | "medium" | "high")}
-                    className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-black dark:text-zinc-50 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-zinc-50 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-zinc-300 rounded-lg bg-white text-black focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
                   >
                     <option value="low">Low</option>
                     <option value="medium">Medium</option>
@@ -210,7 +210,7 @@ export default function FindMaterialsPage() {
           {/* Results */}
           {suppliers.length > 0 && (
             <div>
-              <h2 className="text-xl font-semibold text-black dark:text-zinc-50 mb-4">
+              <h2 className="text-xl font-semibold text-black mb-4">
                 Found {suppliers.length} {suppliers.length === 1 ? "supplier" : "suppliers"}
               </h2>
 
@@ -218,19 +218,19 @@ export default function FindMaterialsPage() {
                 {suppliers.map((supplier) => {
                   const supplierType = getSupplierType(supplier);
                   return (
-                    <Card key={supplier.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors">
+                    <Card key={supplier.id} className="hover:bg-zinc-50 transition-colors">
                       <CardContent className="p-5">
                         <div className="flex items-start justify-between gap-4">
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-2">
-                              <h3 className="font-semibold text-black dark:text-zinc-50">
+                              <h3 className="font-semibold text-black">
                                 {supplier.companyName}
                               </h3>
                               <Badge variant="info">
                                 {getSupplierTypeLabel(supplierType)}
                               </Badge>
                             </div>
-                            <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-3">
+                            <p className="text-sm text-zinc-600 mb-3">
                               {supplier.email}
                             </p>
                             {supplier.categoriesServed && supplier.categoriesServed.length > 0 && (
@@ -241,7 +241,7 @@ export default function FindMaterialsPage() {
                                   </Badge>
                                 ))}
                                 {supplier.categoriesServed.length > 5 && (
-                                  <span className="text-xs text-zinc-500 dark:text-zinc-500 self-center">
+                                  <span className="text-xs text-zinc-500 self-center">
                                     +{supplier.categoriesServed.length - 5} more
                                   </span>
                                 )}
@@ -273,7 +273,7 @@ export default function FindMaterialsPage() {
             <Card>
               <CardContent className="p-12">
                 <div className="text-center">
-                  <p className="text-zinc-600 dark:text-zinc-400">
+                  <p className="text-zinc-600">
                     Enter a category and click "Find Suppliers" to discover options in your area.
                   </p>
                 </div>

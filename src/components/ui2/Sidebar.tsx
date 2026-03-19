@@ -8,7 +8,7 @@ interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {
 export default function Sidebar({ className = "", children, ...props }: SidebarProps) {
   return (
     <aside
-      className={`w-64 bg-white dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 h-full flex flex-col ${className}`}
+      className={`w-64 bg-white border-r border-zinc-200 h-full flex flex-col ${className}`}
       {...props}
     >
       {children}
@@ -22,7 +22,7 @@ interface SidebarHeaderProps extends React.HTMLAttributes<HTMLDivElement> {
 
 export function SidebarHeader({ className = "", children, ...props }: SidebarHeaderProps) {
   return (
-    <div className={`px-4 py-3 border-b border-zinc-200 dark:border-zinc-800 ${className}`} {...props}>
+    <div className={`px-4 py-3 border-b border-zinc-200 ${className}`} {...props}>
       {children}
     </div>
   );
@@ -58,8 +58,8 @@ export function SidebarItem({
       href={href}
       className={`block px-4 py-2.5 text-sm font-medium transition-colors ${
         active
-          ? "bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100 border-r-2 border-zinc-600 dark:border-zinc-400"
-          : "text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-50"
+          ? "bg-zinc-100 text-zinc-900 border-r-2 border-zinc-600"
+          : "text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900"
       } ${className}`}
       {...props}
     >

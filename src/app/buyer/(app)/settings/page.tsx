@@ -105,29 +105,29 @@ export default function BuyerSettingsPage() {
   return (
     <div className="flex flex-1 overflow-y-auto">
       <div className="w-full max-w-[1000px] mx-auto px-6 py-8">
-        <h1 className="text-3xl font-bold text-black dark:text-zinc-50 mb-8">Settings</h1>
+        <h1 className="text-3xl font-bold text-black mb-8">Settings</h1>
 
         <div className="space-y-6">
           {/* Section A: Account */}
           <Card>
             <CardHeader>
-              <h2 className="text-xl font-semibold text-black dark:text-zinc-50">Account</h2>
+              <h2 className="text-xl font-semibold text-black">Account</h2>
             </CardHeader>
             <CardContent className="px-6 py-4">
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                  <label className="block text-sm font-medium text-zinc-700 mb-1">
                     Email
                   </label>
-                  <div className="text-base text-black dark:text-zinc-50">
+                  <div className="text-base text-black">
                     {user.email}
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                  <label className="block text-sm font-medium text-zinc-700 mb-1">
                     Role
                   </label>
-                  <div className="text-base text-black dark:text-zinc-50">
+                  <div className="text-base text-black">
                     Buyer
                   </div>
                 </div>
@@ -147,7 +147,7 @@ export default function BuyerSettingsPage() {
           {/* Section B: Company / Profile */}
           <Card>
             <CardHeader>
-              <h2 className="text-xl font-semibold text-black dark:text-zinc-50">Company / Profile</h2>
+              <h2 className="text-xl font-semibold text-black">Company / Profile</h2>
             </CardHeader>
             <CardContent className="px-6 py-4">
               <div className="space-y-4">
@@ -171,15 +171,15 @@ export default function BuyerSettingsPage() {
                   placeholder="Enter phone number"
                 />
                 {saveError && (
-                  <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded">
-                    <p className="text-sm text-red-600 dark:text-red-400">
+                  <div className="p-3 bg-red-50 border border-red-200 rounded">
+                    <p className="text-sm text-red-600">
                       {saveError}
                     </p>
                   </div>
                 )}
                 {saveSuccess && (
-                  <div className="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded">
-                    <p className="text-sm text-green-600 dark:text-green-400">
+                  <div className="p-3 bg-green-50 border border-green-200 rounded">
+                    <p className="text-sm text-green-600">
                       Profile updated successfully
                     </p>
                   </div>

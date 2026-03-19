@@ -23,9 +23,9 @@ export default function Tooltip({ content, children }: TooltipProps) {
       >
         {children}
         {isVisible && (
-          <div className="absolute z-50 px-2 py-1 text-xs text-white bg-zinc-900 dark:bg-zinc-100 dark:text-zinc-900 rounded shadow-lg whitespace-nowrap bottom-full left-1/2 transform -translate-x-1/2 mb-2">
+          <div className="absolute z-50 px-2 py-1 text-xs text-white bg-zinc-900 rounded shadow-lg whitespace-nowrap bottom-full left-1/2 transform -translate-x-1/2 mb-2">
             {content}
-            <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-zinc-900 dark:border-t-zinc-100"></div>
+            <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-zinc-900"></div>
           </div>
         )}
       </div>
@@ -40,7 +40,7 @@ export default function Tooltip({ content, children }: TooltipProps) {
       onMouseLeave={() => setIsVisible(false)}
     >
       <svg
-        className="w-4 h-4 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 cursor-help"
+        className="w-4 h-4 text-zinc-400 hover:text-zinc-600 cursor-help"
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"
@@ -53,9 +53,9 @@ export default function Tooltip({ content, children }: TooltipProps) {
         />
       </svg>
       {isVisible && (
-        <div className="absolute z-50 px-2 py-1 text-xs text-white bg-zinc-900 dark:bg-zinc-100 dark:text-zinc-900 rounded shadow-lg whitespace-nowrap bottom-full left-1/2 transform -translate-x-1/2 mb-2 max-w-xs">
+        <div className="absolute z-50 px-2 py-1 text-xs text-white bg-zinc-900 rounded shadow-lg whitespace-nowrap bottom-full left-1/2 transform -translate-x-1/2 mb-2 max-w-xs">
           {content}
-          <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-zinc-900 dark:border-t-zinc-100"></div>
+          <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-zinc-900"></div>
         </div>
       )}
     </div>

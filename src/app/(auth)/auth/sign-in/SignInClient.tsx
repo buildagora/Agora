@@ -285,24 +285,24 @@ export default function SignInClient() {
               <div className="flex items-center justify-center mb-2">
                 <AgoraLogo variant="auth" />
               </div>
-              <p className="text-sm text-slate-500 dark:text-slate-400">
+              <p className="text-sm text-slate-500">
                 Your Digital Sales Representative
               </p>
             </div>
-            <h2 className="text-xl font-semibold text-black dark:text-zinc-50 text-center">
+            <h2 className="text-xl font-semibold text-black text-center">
               Sign In
             </h2>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="flex flex-col gap-6">
               {error && (
-                <div className="p-4 border border-red-300 dark:border-red-700 rounded-lg bg-red-50 dark:bg-red-900/20">
-                  <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+                <div className="p-4 border border-red-300 rounded-lg bg-red-50">
+                  <p className="text-sm text-red-600">{error}</p>
                 </div>
               )}
 
               <div>
-                <label className="block text-sm font-medium text-black dark:text-zinc-50 mb-2">
+                <label className="block text-sm font-medium text-black mb-2">
                   Email
                 </label>
                 <Input
@@ -320,7 +320,7 @@ export default function SignInClient() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-black dark:text-zinc-50 mb-2">
+                <label className="block text-sm font-medium text-black mb-2">
                   Password
                 </label>
                 <Input
@@ -350,11 +350,11 @@ export default function SignInClient() {
             </form>
 
             <div className="mt-6 text-center">
-              <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-2">
+              <p className="text-sm text-zinc-600 mb-2">
                 Don&apos;t have an account?{" "}
                 <Link
                   href="/auth/sign-up"
-                  className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 font-medium transition-colors"
+                  className="text-slate-600 hover:text-slate-900 font-medium transition-colors"
                 >
                   Create account
                 </Link>

@@ -144,21 +144,21 @@ export default function SellerCompleteProfilePage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-white dark:bg-black">
+    <div className="flex min-h-screen flex-col bg-white">
       <Header />
 
       <main className="flex flex-1 items-center justify-center px-6 py-16">
         <div className="w-full max-w-md">
-          <h1 className="text-3xl font-semibold text-black dark:text-zinc-50 mb-2 text-center">
+          <h1 className="text-3xl font-semibold text-black mb-2 text-center">
             Complete Your Profile
           </h1>
-          <p className="text-zinc-600 dark:text-zinc-400 mb-6 text-center">
+          <p className="text-zinc-600 mb-6 text-center">
             Select the categories you serve to receive matching RFQ notifications.
           </p>
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-6">
             <div>
-              <label className="block text-sm font-medium text-black dark:text-zinc-50 mb-2">
+              <label className="block text-sm font-medium text-black mb-2">
                 Company Name *
               </label>
               <input
@@ -169,24 +169,24 @@ export default function SellerCompleteProfilePage() {
                   if (error) setError("");
                 }}
                 placeholder="Enter your company name"
-                className="w-full px-4 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-black dark:text-zinc-50 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-zinc-50"
+                className="w-full px-4 py-2 border border-zinc-300 rounded-lg bg-white text-black focus:outline-none focus:ring-2 focus:ring-black"
                 required
               />
               {error && error.includes("Company name") && (
-                <p className="mt-1 text-sm text-red-600 dark:text-red-400">{error}</p>
+                <p className="mt-1 text-sm text-red-600">{error}</p>
               )}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-black dark:text-zinc-50 mb-2">
+              <label className="block text-sm font-medium text-black mb-2">
                 Categories you serve *
               </label>
-              <div className="border border-zinc-300 dark:border-zinc-700 rounded-lg p-4 max-h-64 overflow-y-auto bg-white dark:bg-zinc-900">
+              <div className="border border-zinc-300 rounded-lg p-4 max-h-64 overflow-y-auto bg-white">
                 <div className="flex flex-col gap-2">
                   {CATEGORY_OPTIONS.map((category) => (
                     <label
                       key={category.id}
-                      className="flex items-center gap-2 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800 p-2 rounded"
+                      className="flex items-center gap-2 cursor-pointer hover:bg-zinc-50 p-2 rounded"
                     >
                       <input
                         type="checkbox"
@@ -204,22 +204,22 @@ export default function SellerCompleteProfilePage() {
                             setError("");
                           }
                         }}
-                        className="w-4 h-4 text-black border-zinc-300 dark:border-zinc-700 rounded focus:ring-black dark:focus:ring-zinc-50"
+                        className="w-4 h-4 text-black border-zinc-300 rounded focus:ring-black"
                       />
-                      <span className="text-sm text-black dark:text-zinc-50">{category.label}</span>
+                      <span className="text-sm text-black">{category.label}</span>
                     </label>
                   ))}
                 </div>
               </div>
               {error && (
-                <p className="mt-1 text-sm text-red-600 dark:text-red-400">{error}</p>
+                <p className="mt-1 text-sm text-red-600">{error}</p>
               )}
             </div>
 
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full h-14 rounded-lg bg-black text-white transition-colors hover:bg-zinc-800 dark:bg-zinc-50 dark:text-black dark:hover:bg-zinc-200 text-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full h-14 rounded-lg bg-black text-white transition-colors hover:bg-zinc-800 text-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSubmitting ? "Saving..." : "Save Categories"}
             </button>

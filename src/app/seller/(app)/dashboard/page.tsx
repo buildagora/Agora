@@ -296,10 +296,10 @@ function SellerDashboardPageInner() {
           <div className="mb-6">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-3xl font-semibold text-black dark:text-zinc-50">
+                <h1 className="text-3xl font-semibold text-black">
                   Dashboard
                 </h1>
-                <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">
+                <p className="text-sm text-zinc-600 mt-1">
                   Active requests and conversations with buyers
                 </p>
               </div>
@@ -320,9 +320,9 @@ function SellerDashboardPageInner() {
 
           {/* Success Banner */}
           {showSuccessBanner && (
-            <Card className="mb-6 border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20">
+            <Card className="mb-6 border-green-200 bg-green-50">
               <CardContent className="p-4">
-                <p className="text-green-800 dark:text-green-200 font-medium">
+                <p className="text-green-800 font-medium">
                   {searchParams.get("success") === "profile_completed"
                     ? "Profile completed! You'll now receive RFQ notifications for your selected categories."
                     : "Quote sent successfully!"}
@@ -336,25 +336,25 @@ function SellerDashboardPageInner() {
           {/* KPI Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <Link href="/seller/messages">
-              <Card className="hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors cursor-pointer h-full">
+              <Card className="hover:bg-zinc-50 transition-colors cursor-pointer h-full">
                 <CardContent className="p-6">
-                  <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-1">
+                  <p className="text-sm text-zinc-600 mb-1">
                     Active Conversations
                   </p>
-                  <p className="text-3xl font-bold text-black dark:text-zinc-50">
+                  <p className="text-3xl font-bold text-black">
                     {activeConversationsCount}
                   </p>
-                  <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-2">
+                  <p className="text-xs text-zinc-500 mt-2">
                     Buyer conversations
                   </p>
                 </CardContent>
               </Card>
             </Link>
             <Link href="/seller/messages">
-              <Card className="hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors cursor-pointer h-full">
+              <Card className="hover:bg-zinc-50 transition-colors cursor-pointer h-full">
                 <CardContent className="p-6">
                   <div className="flex items-center gap-2">
-                    <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-1">
+                    <p className="text-sm text-zinc-600 mb-1">
                       Awaiting Reply
                     </p>
                     {awaitingReplyCount > 0 && (
@@ -363,10 +363,10 @@ function SellerDashboardPageInner() {
                       </Badge>
                     )}
                   </div>
-                  <p className="text-3xl font-bold text-black dark:text-zinc-50">
+                  <p className="text-3xl font-bold text-black">
                     {awaitingReplyCount}
                   </p>
-                  <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-2">
+                  <p className="text-xs text-zinc-500 mt-2">
                     Unread messages
                   </p>
                 </CardContent>
@@ -374,13 +374,13 @@ function SellerDashboardPageInner() {
             </Link>
             <Card>
               <CardContent className="p-6">
-                <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-1">
+                <p className="text-sm text-zinc-600 mb-1">
                   Open Bids
                 </p>
-                <p className="text-3xl font-bold text-black dark:text-zinc-50">
+                <p className="text-3xl font-bold text-black">
                   {openBidsCount}
                 </p>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-2">
+                <p className="text-xs text-zinc-500 mt-2">
                   Won: {wonBidsCount}
                 </p>
               </CardContent>
@@ -389,16 +389,16 @@ function SellerDashboardPageInner() {
 
           {/* Conversations needing attention / Recent activity */}
           <div className="mb-6">
-            <h2 className="text-lg font-semibold text-black dark:text-zinc-50 mb-4">
+            <h2 className="text-lg font-semibold text-black mb-4">
               Conversations
             </h2>
             {conversationsNeedingAttention.length === 0 ? (
               <Card>
                 <CardContent className="p-8 text-center">
-                  <p className="text-zinc-600 dark:text-zinc-400">
+                  <p className="text-zinc-600">
                     No conversations yet
                   </p>
-                  <p className="text-sm text-zinc-500 dark:text-zinc-500 mt-1">
+                  <p className="text-sm text-zinc-500 mt-1">
                     When buyers send requests or message you, they will appear here
                   </p>
                   <Link href="/seller/messages" className="inline-block mt-4">
@@ -416,12 +416,12 @@ function SellerDashboardPageInner() {
                     href={`/seller/messages?conversationId=${conv.id}`}
                     className="block"
                   >
-                    <Card className="hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors cursor-pointer">
+                    <Card className="hover:bg-zinc-50 transition-colors cursor-pointer">
                       <CardContent className="p-4">
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap mb-1">
-                              <span className="font-semibold text-black dark:text-zinc-50">
+                              <span className="font-semibold text-black">
                                 {conv.buyerName}
                               </span>
                               {conv.unreadCount > 0 && (
@@ -430,17 +430,17 @@ function SellerDashboardPageInner() {
                                 </Badge>
                               )}
                             </div>
-                            <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-1">
+                            <p className="text-xs text-zinc-500 mb-1">
                               {conv.contextLabel}
                             </p>
-                            <p className="text-sm text-zinc-600 dark:text-zinc-400 truncate">
+                            <p className="text-sm text-zinc-600 truncate">
                               {conv.lastMessagePreview}
                             </p>
-                            <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-1">
+                            <p className="text-xs text-zinc-400 mt-1">
                               {formatConversationTime(conv.lastMessageAt)}
                             </p>
                           </div>
-                          <span className="text-zinc-400 dark:text-zinc-500 shrink-0">→</span>
+                          <span className="text-zinc-400 shrink-0">→</span>
                         </div>
                       </CardContent>
                     </Card>
@@ -466,7 +466,7 @@ function SellerDashboardPageInner() {
               {filteredBids.length === 0 ? (
                 <Card>
                   <CardContent className="p-8 text-center">
-                    <p className="text-zinc-600 dark:text-zinc-400">
+                    <p className="text-zinc-600">
                       No {activeTab.toLowerCase()} bids
                     </p>
                   </CardContent>
@@ -480,12 +480,12 @@ function SellerDashboardPageInner() {
                     const statusVariant =
                       bid.status === "WON" ? "success" : bid.status === "SUBMITTED" ? "info" : "default";
                     return (
-                      <Card key={bid.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors">
+                      <Card key={bid.id} className="hover:bg-zinc-50 transition-colors">
                         <CardContent className="p-4">
                           <div className="flex items-start justify-between">
                             <Link href={`/seller/rfqs/${bid.rfqId}`} className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-2 flex-wrap">
-                                <span className="font-semibold text-black dark:text-zinc-50">
+                                <span className="font-semibold text-black">
                                   {rfq ? rfq.rfqNumber : "Unknown RFQ"}
                                 </span>
                                 <Badge variant={statusVariant}>{bid.status}</Badge>
@@ -495,10 +495,10 @@ function SellerDashboardPageInner() {
                                   </Badge>
                                 )}
                               </div>
-                              <h3 className="text-lg font-medium text-black dark:text-zinc-50 mb-2">
+                              <h3 className="text-lg font-medium text-black mb-2">
                                 {rfq ? rfq.title : "RFQ not found"}
                               </h3>
-                              <div className="flex items-center gap-3 text-sm text-zinc-600 dark:text-zinc-400 flex-wrap">
+                              <div className="flex items-center gap-3 text-sm text-zinc-600 flex-wrap">
                                 <span>{bid.lineItems.length} line item(s)</span>
                                 {total > 0 && (
                                   <>

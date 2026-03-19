@@ -7,9 +7,9 @@ import AgoraLogo from "@/components/brand/AgoraLogo";
 
 export default function BuyersPage() {
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
+    <div className="min-h-screen bg-zinc-50">
       {/* Navigation */}
-      <nav className="relative z-50 w-full border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+      <nav className="relative z-50 w-full border-b border-zinc-200 bg-white">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between">
             <AgoraLogo variant="auth" />
@@ -24,16 +24,16 @@ export default function BuyersPage() {
 
       <main>
         {/* Hero Section */}
-        <section className="bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800">
+        <section className="bg-white border-b border-zinc-200">
           <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
-            <h1 className="text-4xl sm:text-5xl font-bold text-zinc-900 dark:text-zinc-50 mb-4">
+            <h1 className="text-4xl sm:text-5xl font-bold text-zinc-900 mb-4">
               Transform the Way You Source Materials with Agora
             </h1>
-            <p className="text-xl sm:text-2xl text-zinc-600 dark:text-zinc-400 mb-8">
+            <p className="text-xl sm:text-2xl text-zinc-600 mb-8">
               Simplify and speed up your material procurement process—whether you need something fast from one supplier or want the best deal through competitive bidding.
             </p>
             
-            <div className="space-y-4 text-zinc-700 dark:text-zinc-300 leading-relaxed">
+            <div className="space-y-4 text-zinc-700 leading-relaxed">
               <p>
                 As a contractor, you know the drill: call multiple suppliers, wait for callbacks from outside sales reps, juggle quotes across spreadsheets, and hope you're getting the best price. It's time-consuming, inefficient, and leaves money on the table.
               </p>
@@ -51,13 +51,13 @@ export default function BuyersPage() {
               {/* Feature 1: Direct Orders */}
               <Card className="h-full">
                 <CardContent className="p-6">
-                  <h2 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50 mb-4">
+                  <h2 className="text-2xl font-semibold text-zinc-900 mb-4">
                     Direct Orders to a Supplier
                   </h2>
-                  <p className="text-zinc-600 dark:text-zinc-400 leading-relaxed mb-4">
+                  <p className="text-zinc-600 leading-relaxed mb-4">
                     Send an order directly to a trusted supplier you know and work with regularly. Perfect for repeat orders, urgent needs, or when you already have a preferred supplier.
                   </p>
-                  <ul className="space-y-2 text-sm text-zinc-600 dark:text-zinc-400">
+                  <ul className="space-y-2 text-sm text-zinc-600">
                     <li className="flex items-start">
                       <span className="mr-2">⚡</span>
                       <span>Instant contact—no waiting for callbacks</span>
@@ -77,19 +77,19 @@ export default function BuyersPage() {
               {/* Feature 2: Broadcast RFQs */}
               <Card className="h-full">
                 <CardContent className="p-6">
-                  <h2 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50 mb-4">
+                  <h2 className="text-2xl font-semibold text-zinc-900 mb-4">
                     Broadcast RFQs (Reverse Auctions)
                   </h2>
-                  <p className="text-zinc-600 dark:text-zinc-400 leading-relaxed mb-4">
+                  <p className="text-zinc-600 leading-relaxed mb-4">
                     Broadcast your material request to all suppliers in a category. They submit competitive bids in a reverse auction format, giving you the power to choose the best overall quote.
                   </p>
                   
                   {/* Reverse Auction Callout */}
-                  <div className="mt-4 p-4 bg-zinc-100 dark:bg-zinc-800 rounded-lg border border-zinc-200 dark:border-zinc-700">
-                    <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50 mb-2">
+                  <div className="mt-4 p-4 bg-zinc-100 rounded-lg border border-zinc-200">
+                    <h3 className="text-sm font-semibold text-zinc-900 mb-2">
                       Reverse Auction Explained
                     </h3>
-                    <p className="text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed">
+                    <p className="text-sm text-zinc-700 leading-relaxed">
                       We broadcast your material request to all relevant suppliers. They submit competitive bids in a reverse auction—prices can go down as suppliers compete. You pick the best overall quote (price + availability + delivery).
                     </p>
                   </div>
@@ -99,13 +99,13 @@ export default function BuyersPage() {
               {/* Feature 3: Supplier Directory */}
               <Card className="h-full">
                 <CardContent className="p-6">
-                  <h2 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50 mb-4">
+                  <h2 className="text-2xl font-semibold text-zinc-900 mb-4">
                     All Your Suppliers in One Place
                   </h2>
-                  <p className="text-zinc-600 dark:text-zinc-400 leading-relaxed mb-4">
+                  <p className="text-zinc-600 leading-relaxed mb-4">
                     Soon, Agora will have a comprehensive directory of suppliers in every category. If you need something, you can find it on Agora—no more endless calls, no more hunting for suppliers.
                   </p>
-                  <ul className="space-y-2 text-sm text-zinc-600 dark:text-zinc-400">
+                  <ul className="space-y-2 text-sm text-zinc-600">
                     <li className="flex items-start">
                       <span className="mr-2">📋</span>
                       <span>Comprehensive supplier directory (coming soon)</span>
@@ -126,12 +126,12 @@ export default function BuyersPage() {
         </section>
 
         {/* Bottom CTA */}
-        <section className="bg-zinc-900 dark:bg-zinc-950 border-t border-zinc-200 dark:border-zinc-800">
+        <section className="bg-zinc-900 border-t border-zinc-200">
           <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-16 sm:py-20 text-center">
-            <h2 className="text-3xl sm:text-4xl font-bold text-white dark:text-zinc-50 mb-4">
+            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
               Ready to Simplify Your Sourcing?
             </h2>
-            <p className="text-xl text-zinc-300 dark:text-zinc-400 mb-8">
+            <p className="text-xl text-zinc-300 mb-8">
               Join Agora and connect with suppliers instantly. Upgrade your procurement game today.
             </p>
             <Link href="/auth/sign-up/buyer">
@@ -144,13 +144,13 @@ export default function BuyersPage() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-white dark:bg-zinc-900 border-t border-zinc-200 dark:border-zinc-800">
+      <footer className="bg-white border-t border-zinc-200">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-            <Link href="/" className="text-sm text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-50 transition-colors">
+            <Link href="/" className="text-sm text-zinc-600 hover:text-zinc-900 transition-colors">
               ← Back to Home
             </Link>
-            <div className="text-sm text-zinc-500 dark:text-zinc-500">
+            <div className="text-sm text-zinc-500">
               © {new Date().getFullYear()} Agora. All rights reserved.
             </div>
           </div>

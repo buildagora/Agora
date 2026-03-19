@@ -57,7 +57,7 @@ export default async function SellerOrderPage({
           <Card>
             <CardContent className="p-6">
               <h1 className="text-2xl font-semibold mb-4">Order Not Found</h1>
-              <p className="text-zinc-600 dark:text-zinc-400">
+              <p className="text-zinc-600">
                 The order you're looking for doesn't exist or you don't have access to it.
               </p>
               <Link
@@ -94,7 +94,7 @@ export default async function SellerOrderPage({
           <Card>
             <CardContent className="p-6">
               <h1 className="text-2xl font-semibold mb-4">Order Not Found</h1>
-              <p className="text-zinc-600 dark:text-zinc-400">
+              <p className="text-zinc-600">
                 The order you're looking for doesn't exist or you don't have access to it.
               </p>
               <Link
@@ -148,11 +148,11 @@ export default async function SellerOrderPage({
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h1 className="text-3xl font-semibold text-black dark:text-zinc-50">
+                <h1 className="text-3xl font-semibold text-black">
                   Order {orderId.substring(0, 8)}
                 </h1>
                 {rfq && (
-                  <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">
+                  <p className="text-sm text-zinc-600 mt-1">
                     RFQ: {rfq.rfqNumber} - {rfq.title}
                   </p>
                 )}
@@ -178,23 +178,23 @@ export default async function SellerOrderPage({
                 <h2 className="text-lg font-semibold mb-3">Order Details</h2>
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
-                    <span className="text-zinc-600 dark:text-zinc-400">Order ID:</span>
+                    <span className="text-zinc-600">Order ID:</span>
                     <span className="ml-2 font-mono">{orderId}</span>
                   </div>
                   <div>
-                    <span className="text-zinc-600 dark:text-zinc-400">Status:</span>
+                    <span className="text-zinc-600">Status:</span>
                     <span className="ml-2">{status}</span>
                   </div>
                   <div>
-                    <span className="text-zinc-600 dark:text-zinc-400">Subtotal:</span>
+                    <span className="text-zinc-600">Subtotal:</span>
                     <span className="ml-2">${dbOrder.subtotal.toFixed(2)}</span>
                   </div>
                   <div>
-                    <span className="text-zinc-600 dark:text-zinc-400">Taxes:</span>
+                    <span className="text-zinc-600">Taxes:</span>
                     <span className="ml-2">${(dbOrder.taxes || 0).toFixed(2)}</span>
                   </div>
                   <div className="col-span-2">
-                    <span className="text-zinc-600 dark:text-zinc-400">Total:</span>
+                    <span className="text-zinc-600">Total:</span>
                     <span className="ml-2 font-semibold text-lg">
                       ${dbOrder.total.toFixed(2)}
                     </span>
@@ -206,9 +206,9 @@ export default async function SellerOrderPage({
               {lineItems.length > 0 && (
                 <div>
                   <h2 className="text-lg font-semibold mb-3">Line Items</h2>
-                  <div className="border border-zinc-200 dark:border-zinc-800 rounded-lg overflow-hidden">
+                  <div className="border border-zinc-200 rounded-lg overflow-hidden">
                     <table className="w-full">
-                      <thead className="bg-zinc-50 dark:bg-zinc-900">
+                      <thead className="bg-zinc-50">
                         <tr>
                           <th className="px-4 py-2 text-left text-sm font-semibold">Description</th>
                           <th className="px-4 py-2 text-right text-sm font-semibold">Quantity</th>
@@ -219,7 +219,7 @@ export default async function SellerOrderPage({
                         {lineItems.map((item: any, idx: number) => (
                           <tr
                             key={idx}
-                            className="border-t border-zinc-200 dark:border-zinc-800"
+                            className="border-t border-zinc-200"
                           >
                             <td className="px-4 py-2">{item.description || "-"}</td>
                             <td className="px-4 py-2 text-right">{item.quantity || "-"}</td>
@@ -238,12 +238,12 @@ export default async function SellerOrderPage({
                   <h2 className="text-lg font-semibold mb-3">Fulfillment</h2>
                   <div className="text-sm space-y-1">
                     <div>
-                      <span className="text-zinc-600 dark:text-zinc-400">Type:</span>
+                      <span className="text-zinc-600">Type:</span>
                       <span className="ml-2 capitalize">{dbOrder.fulfillmentType}</span>
                     </div>
                     {dbOrder.requestedDate && (
                       <div>
-                        <span className="text-zinc-600 dark:text-zinc-400">Requested Date:</span>
+                        <span className="text-zinc-600">Requested Date:</span>
                         <span className="ml-2">
                           {new Date(dbOrder.requestedDate).toLocaleDateString()}
                         </span>
@@ -251,7 +251,7 @@ export default async function SellerOrderPage({
                     )}
                     {dbOrder.location && (
                       <div>
-                        <span className="text-zinc-600 dark:text-zinc-400">Location:</span>
+                        <span className="text-zinc-600">Location:</span>
                         <span className="ml-2">{dbOrder.location}</span>
                       </div>
                     )}

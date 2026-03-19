@@ -19,10 +19,10 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({
   const baseStyles = "font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2";
   
   const variantStyles = {
-    primary: "bg-slate-600 text-white hover:bg-slate-700 focus:ring-slate-600 dark:bg-slate-400 dark:text-slate-900 dark:hover:bg-slate-300",
-    secondary: "bg-zinc-100 text-black hover:bg-zinc-200 focus:ring-zinc-500 dark:bg-zinc-800 dark:text-zinc-50 dark:hover:bg-zinc-700",
-    outline: "border-2 border-slate-600 text-slate-700 hover:bg-slate-50 focus:ring-slate-600 dark:border-slate-400 dark:text-slate-300 dark:hover:bg-slate-900",
-    ghost: "text-black hover:bg-zinc-100 focus:ring-zinc-500 dark:text-zinc-50 dark:hover:bg-zinc-800",
+    primary: "bg-slate-600 text-white hover:bg-slate-700 focus:ring-slate-600",
+    secondary: "bg-zinc-100 text-black hover:bg-zinc-200 focus:ring-zinc-500",
+    outline: "border-2 border-slate-600 text-slate-700 hover:bg-slate-50 focus:ring-slate-600",
+    ghost: "text-black hover:bg-zinc-100 focus:ring-zinc-500",
   };
   
   const sizeStyles = {

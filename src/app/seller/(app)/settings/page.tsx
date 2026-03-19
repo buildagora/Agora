@@ -20,10 +20,10 @@ export default function SellerSettingsPage() {
       <div className="flex flex-1 px-6 py-8">
         <div className="w-full max-w-4xl mx-auto">
           <div className="mb-6">
-            <h1 className="text-3xl font-semibold text-black dark:text-zinc-50">
+            <h1 className="text-3xl font-semibold text-black">
               Supplier Settings
             </h1>
-            <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">
+            <p className="text-sm text-zinc-600 mt-1">
               Manage your supplier account and team
             </p>
           </div>
@@ -32,12 +32,12 @@ export default function SellerSettingsPage() {
 
           <Card className="mb-6">
             <CardHeader>
-              <h2 className="text-xl font-semibold text-black dark:text-zinc-50">
+              <h2 className="text-xl font-semibold text-black">
                 Team Management
               </h2>
             </CardHeader>
             <CardContent>
-              <p className="text-zinc-600 dark:text-zinc-400 mb-4">
+              <p className="text-zinc-600 mb-4">
                 Invite team members to collaborate on your supplier account. Team members can view and respond to buyer messages.
               </p>
               <Button

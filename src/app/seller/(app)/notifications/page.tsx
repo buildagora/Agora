@@ -45,21 +45,21 @@ export default function SellerNotificationsPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-white dark:bg-black">
+    <div className="flex min-h-screen flex-col bg-white">
       <Header />
 
       {/* Main content */}
       <main className="flex flex-1 px-6 py-8 max-w-4xl mx-auto w-full">
         <div className="w-full">
           <div className="mb-6">
-            <h1 className="text-3xl font-semibold text-black dark:text-zinc-50">
+            <h1 className="text-3xl font-semibold text-black">
               Notifications
             </h1>
           </div>
 
           {notifications.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-zinc-600 dark:text-zinc-400">
+              <p className="text-zinc-600">
                 No notifications yet.
               </p>
             </div>
@@ -71,14 +71,14 @@ export default function SellerNotificationsPage() {
                   onClick={() => handleNotificationClick(notification)}
                   className={`p-4 border rounded-lg cursor-pointer transition-colors ${
                     notification.isRead
-                      ? "border-zinc-200 dark:border-zinc-800 bg-white dark:bg-black"
-                      : "border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900"
+                      ? "border-zinc-200 bg-white"
+                      : "border-zinc-300 bg-zinc-50"
                   }`}
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-semibold text-black dark:text-zinc-50">
+                        <h3 className="font-semibold text-black">
                           {notification.title}
                         </h3>
                         {!notification.isRead && (
@@ -86,18 +86,18 @@ export default function SellerNotificationsPage() {
                         )}
                       </div>
                       {notification.body && (
-                        <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-2">
+                        <p className="text-sm text-zinc-600 mb-2">
                           {notification.body}
                         </p>
                       )}
-                      <p className="text-xs text-zinc-500 dark:text-zinc-500">
+                      <p className="text-xs text-zinc-500">
                         {formatDate(notification.createdAt)}
                       </p>
                       {notification.ctaLabel && notification.ctaHref && (
                         <Link
                           href={notification.ctaHref}
                           onClick={(e) => e.stopPropagation()}
-                          className="mt-2 inline-block text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                          className="mt-2 inline-block text-sm text-blue-600 hover:underline"
                         >
                           {notification.ctaLabel} →
                         </Link>

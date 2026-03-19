@@ -34,7 +34,7 @@ interface TabsListProps extends React.HTMLAttributes<HTMLDivElement> {
 export function TabsList({ className = "", children, activeTab, setActiveTab, ...props }: TabsListProps) {
   return (
     <div
-      className={`flex space-x-1 border-b border-zinc-200 dark:border-zinc-800 ${className}`}
+      className={`flex space-x-1 border-b border-zinc-200 ${className}`}
       {...props}
     >
       {React.Children.map(children, (child) => {
@@ -69,8 +69,8 @@ export function TabsTrigger({
       onClick={() => setActiveTab?.(value)}
       className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
         isActive
-          ? "border-slate-600 text-slate-900 dark:border-slate-400 dark:text-slate-100"
-          : "border-transparent text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200"
+          ? "border-slate-600 text-slate-900"
+          : "border-transparent text-zinc-600 hover:text-zinc-900"
       } ${className}`}
       {...props}
     >

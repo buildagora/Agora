@@ -92,23 +92,23 @@ function SignUpPageInner() {
   return (
     <div className="flex flex-1 items-center justify-center px-6 py-16">
         <div className="w-full max-w-md">
-          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-8 shadow-sm">
-            <h1 className="text-2xl font-semibold text-black dark:text-zinc-50 mb-2 text-center">
+          <div className="bg-white border border-zinc-200 rounded-lg p-8 shadow-sm">
+            <h1 className="text-2xl font-semibold text-black mb-2 text-center">
               Create your account
             </h1>
-            <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-8 text-center">
+            <p className="text-sm text-zinc-600 mb-8 text-center">
               Enter your email and password to get started
             </p>
 
             {error && (
-              <div className="mb-6 p-4 border border-red-300 dark:border-red-700 rounded-lg bg-red-50 dark:bg-red-900/20">
-                <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+              <div className="mb-6 p-4 border border-red-300 rounded-lg bg-red-50">
+                <p className="text-sm text-red-600">{error}</p>
               </div>
             )}
 
             <form onSubmit={handleSubmit} className="mb-6">
               <div className="mb-4">
-                <label className="block text-sm font-medium text-black dark:text-zinc-50 mb-2">
+                <label className="block text-sm font-medium text-black mb-2">
                   {getEmailLabel()}
                 </label>
                 <input
@@ -119,13 +119,13 @@ function SignUpPageInner() {
                     setError("");
                   }}
                   placeholder={getEmailPlaceholder()}
-                  className="w-full px-4 py-3 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-black dark:text-zinc-50 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-zinc-50"
+                  className="w-full px-4 py-3 border border-zinc-300 rounded-lg bg-white text-black focus:outline-none focus:ring-2 focus:ring-black"
                   required
                   autoComplete="email"
                 />
               </div>
               <div className="mb-4">
-                <label className="block text-sm font-medium text-black dark:text-zinc-50 mb-2">
+                <label className="block text-sm font-medium text-black mb-2">
                   Password
                 </label>
                 <div className="relative">
@@ -144,14 +144,14 @@ function SignUpPageInner() {
                       }
                     }}
                     placeholder="Password"
-                    className="w-full px-4 py-3 pr-12 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-black dark:text-zinc-50 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-zinc-50"
+                    className="w-full px-4 py-3 pr-12 border border-zinc-300 rounded-lg bg-white text-black focus:outline-none focus:ring-2 focus:ring-black"
                     required
                     autoComplete="new-password"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 focus:outline-none"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-700 focus:outline-none"
                     aria-label={showPassword ? "Hide password" : "Show password"}
                   >
                     {showPassword ? (
@@ -168,7 +168,7 @@ function SignUpPageInner() {
                 </div>
               </div>
               <div className="mb-4">
-                <label className="block text-sm font-medium text-black dark:text-zinc-50 mb-2">
+                <label className="block text-sm font-medium text-black mb-2">
                   Confirm password
                 </label>
                 <div className="relative">
@@ -193,10 +193,10 @@ function SignUpPageInner() {
                       }
                     }}
                     placeholder="Confirm password"
-                    className={`w-full px-4 py-3 pr-12 border rounded-lg bg-white dark:bg-zinc-900 text-black dark:text-zinc-50 focus:outline-none focus:ring-2 ${
+                    className={`w-full px-4 py-3 pr-12 border rounded-lg bg-white text-black focus:outline-none focus:ring-2 ${
                       passwordMismatchError
-                        ? "border-red-300 dark:border-red-700 focus:ring-red-500"
-                        : "border-zinc-300 dark:border-zinc-700 focus:ring-black dark:focus:ring-zinc-50"
+                        ? "border-red-300 focus:ring-red-500"
+                        : "border-zinc-300 focus:ring-black"
                     }`}
                     required
                     autoComplete="new-password"
@@ -204,7 +204,7 @@ function SignUpPageInner() {
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 focus:outline-none"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-700 focus:outline-none"
                     aria-label={showConfirmPassword ? "Hide password" : "Show password"}
                   >
                     {showConfirmPassword ? (
@@ -220,13 +220,13 @@ function SignUpPageInner() {
                   </button>
                 </div>
                 {passwordMismatchError && (
-                  <p className="mt-1 text-sm text-red-600 dark:text-red-400">{passwordMismatchError}</p>
+                  <p className="mt-1 text-sm text-red-600">{passwordMismatchError}</p>
                 )}
               </div>
               <button
                 type="submit"
                 disabled={isProcessing || !email.trim() || !password || !confirmPassword || password !== confirmPassword}
-                className="w-full h-12 rounded-lg bg-black text-white transition-colors hover:bg-zinc-800 dark:bg-zinc-50 dark:text-black dark:hover:bg-zinc-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full h-12 rounded-lg bg-black text-white transition-colors hover:bg-zinc-800 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isProcessing ? "Loading..." : "Continue"}
               </button>
@@ -235,7 +235,7 @@ function SignUpPageInner() {
             <div className="text-center mt-6">
               <Link
                 href="/auth/sign-in"
-                className="text-sm text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors"
+                className="text-sm text-zinc-600 hover:text-zinc-900 transition-colors"
               >
                 Already have an account? Sign in
               </Link>

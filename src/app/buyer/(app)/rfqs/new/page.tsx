@@ -765,10 +765,10 @@ function CreateRFQPageInner() {
         <div className="w-full max-w-6xl mx-auto space-y-6">
           {/* Page Header */}
           <div className="mb-8">
-            <h1 className="text-3xl font-semibold text-black dark:text-zinc-50 mb-2">
+            <h1 className="text-3xl font-semibold text-black mb-2">
               Create RFQ
             </h1>
-            <p className="text-sm text-zinc-600 dark:text-zinc-400">
+            <p className="text-sm text-zinc-600">
               Request pricing from suppliers in minutes
             </p>
           </div>
@@ -783,12 +783,12 @@ function CreateRFQPageInner() {
 
           {/* Validation Errors */}
           {validationErrors.length > 0 && (
-            <Card className="border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20">
+            <Card className="border-red-200 bg-red-50">
               <CardContent className="p-4">
-                <h3 className="text-sm font-semibold text-red-800 dark:text-red-200 mb-2">
+                <h3 className="text-sm font-semibold text-red-800 mb-2">
                   Cannot post request. Missing required fields:
                 </h3>
-                <ul className="list-disc list-inside text-sm text-red-700 dark:text-red-300 space-y-1">
+                <ul className="list-disc list-inside text-sm text-red-700 space-y-1">
                   {validationErrors.map((field, index) => (
                     <li key={index}>{field}</li>
                   ))}
@@ -799,9 +799,9 @@ function CreateRFQPageInner() {
 
           {/* Draft Notice */}
           {isEditingDraft && (
-            <Card className="border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20">
+            <Card className="border-blue-200 bg-blue-50">
               <CardContent className="p-4">
-                <p className="text-sm text-blue-800 dark:text-blue-200">
+                <p className="text-sm text-blue-800">
                   You are editing a draft. Save your changes or submit when ready.
                 </p>
               </CardContent>
@@ -816,14 +816,14 @@ function CreateRFQPageInner() {
               <form onSubmit={handleSubmit} className="space-y-12">
                 {/* RFQ Details Section */}
                 <div className="space-y-6">
-                  <h2 className="text-xl font-semibold text-black dark:text-zinc-50">
+                  <h2 className="text-xl font-semibold text-black">
                     RFQ Details
                   </h2>
                   <div className="space-y-6">
               <div>
                 <label
                   htmlFor="title"
-                  className="block text-sm font-medium text-black dark:text-zinc-50 mb-2"
+                  className="block text-sm font-medium text-black mb-2"
                 >
                   Title *
                 </label>
@@ -832,7 +832,7 @@ function CreateRFQPageInner() {
                   id="jobName"
                   value={jobName}
                   onChange={(e) => setJobName(e.target.value)}
-                  className="w-full px-4 py-2.5 border border-zinc-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-900 text-black dark:text-zinc-50 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-zinc-50"
+                  className="w-full px-4 py-2.5 border border-zinc-200 rounded-lg bg-white text-black focus:outline-none focus:ring-2 focus:ring-black"
                   placeholder="e.g., 123 Main St Roof Replacement"
                 />
               </div>
@@ -840,7 +840,7 @@ function CreateRFQPageInner() {
               <div>
                 <label
                   htmlFor="category"
-                  className="block text-sm font-medium text-black dark:text-zinc-50 mb-2"
+                  className="block text-sm font-medium text-black mb-2"
                 >
                   Category *
                 </label>
@@ -855,10 +855,10 @@ function CreateRFQPageInner() {
                     }
                   }}
                   onBlur={() => setTouched((prev) => ({ ...prev, category: true }))}
-                  className={`w-full px-4 py-2.5 border rounded-lg bg-white dark:bg-zinc-900 text-black dark:text-zinc-50 focus:outline-none focus:ring-2 ${
+                  className={`w-full px-4 py-2.5 border rounded-lg bg-white text-black focus:outline-none focus:ring-2 ${
                     shouldShowCategoryError()
                       ? "border-red-500 focus:ring-red-500"
-                      : "border-zinc-200 dark:border-zinc-800 focus:ring-black dark:focus:ring-zinc-50"
+                      : "border-zinc-200 focus:ring-black"
                   }`}
                   required
                 >
@@ -870,7 +870,7 @@ function CreateRFQPageInner() {
                   ))}
                 </select>
                 {shouldShowCategoryError() && (
-                  <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                  <p className="mt-1 text-sm text-red-600">
                     Category is required
                   </p>
                 )}
@@ -879,7 +879,7 @@ function CreateRFQPageInner() {
               <div>
                 <label
                   htmlFor="notes"
-                  className="block text-sm font-medium text-black dark:text-zinc-50 mb-2"
+                  className="block text-sm font-medium text-black mb-2"
                 >
                   Notes
                 </label>
@@ -888,7 +888,7 @@ function CreateRFQPageInner() {
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   rows={4}
-                  className="w-full px-4 py-2.5 border border-zinc-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-900 text-black dark:text-zinc-50 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-zinc-50"
+                  className="w-full px-4 py-2.5 border border-zinc-200 rounded-lg bg-white text-black focus:outline-none focus:ring-2 focus:ring-black"
                   placeholder="Project details, delivery timing, preferred brands, or special instructions..."
                 />
               </div>
@@ -899,11 +899,11 @@ function CreateRFQPageInner() {
                   id="substitutionsAllowed"
                   checked={substitutionsAllowed}
                   onChange={(e) => setSubstitutionsAllowed(e.target.checked)}
-                  className="w-4 h-4 border border-zinc-300 dark:border-zinc-700 rounded bg-white dark:bg-zinc-900 text-black dark:text-zinc-50 focus:ring-2 focus:ring-black dark:focus:ring-zinc-50"
+                  className="w-4 h-4 border border-zinc-300 rounded bg-white text-black focus:ring-2 focus:ring-black"
                 />
                   <label
                     htmlFor="substitutionsAllowed"
-                    className="text-sm font-medium text-black dark:text-zinc-50"
+                    className="text-sm font-medium text-black"
                   >
                     Allow substitutions for all items
                   </label>
@@ -914,7 +914,7 @@ function CreateRFQPageInner() {
                 {/* Line Items Section */}
                 <div data-line-items-section className="space-y-6">
                   <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-semibold text-black dark:text-zinc-50">
+                    <h2 className="text-xl font-semibold text-black">
                       Line Items
                     </h2>
                     <Button
@@ -926,7 +926,7 @@ function CreateRFQPageInner() {
                       Add Line Item
                     </Button>
                   </div>
-                  <p className="text-sm text-zinc-600 dark:text-zinc-400 -mt-4">
+                  <p className="text-sm text-zinc-600 -mt-4">
                     Add each material you want priced.
                   </p>
 
@@ -939,12 +939,12 @@ function CreateRFQPageInner() {
                           key={index} 
                           className={`p-5 rounded-lg border ${
                             hasError 
-                              ? "border-red-300 dark:border-red-700 bg-red-50/50 dark:bg-red-900/10" 
-                              : "border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900"
+                              ? "border-red-300 bg-red-50/50" 
+                              : "border-zinc-200 bg-white"
                           } space-y-4`}
                         >
                             <div>
-                              <label className="block text-sm font-medium text-black dark:text-zinc-50 mb-2">
+                              <label className="block text-sm font-medium text-black mb-2">
                                 Description *
                               </label>
                               <input
@@ -960,17 +960,17 @@ function CreateRFQPageInner() {
                                     return { ...prev, lineItems: newLineItems };
                                   });
                                 }}
-                                className={`w-full px-4 py-2.5 border rounded-lg bg-white dark:bg-zinc-900 text-black dark:text-zinc-50 focus:outline-none focus:ring-2 ${
+                                className={`w-full px-4 py-2.5 border rounded-lg bg-white text-black focus:outline-none focus:ring-2 ${
                                   hasError
                                     ? "border-red-500 focus:ring-red-500"
-                                    : "border-zinc-200 dark:border-zinc-800 focus:ring-black dark:focus:ring-zinc-50"
+                                    : "border-zinc-200 focus:ring-black"
                                 }`}
                                 placeholder="e.g., Architectural Asphalt Shingles"
                               />
                             </div>
                             <div className="flex gap-3 items-end">
                               <div className="flex-1">
-                                <label className="block text-sm font-medium text-black dark:text-zinc-50 mb-2">
+                                <label className="block text-sm font-medium text-black mb-2">
                                   Unit *
                                 </label>
                                 <select
@@ -985,10 +985,10 @@ function CreateRFQPageInner() {
                                       return { ...prev, lineItems: newLineItems };
                                     });
                                   }}
-                                  className={`w-full px-4 py-2.5 border rounded-lg bg-white dark:bg-zinc-900 text-black dark:text-zinc-50 focus:outline-none focus:ring-2 ${
+                                  className={`w-full px-4 py-2.5 border rounded-lg bg-white text-black focus:outline-none focus:ring-2 ${
                                     hasError
                                       ? "border-red-500 focus:ring-red-500"
-                                      : "border-zinc-200 dark:border-zinc-800 focus:ring-black dark:focus:ring-zinc-50"
+                                      : "border-zinc-200 focus:ring-black"
                                   }`}
                                 >
                                   {UNIT_OPTIONS.map((unit) => (
@@ -999,7 +999,7 @@ function CreateRFQPageInner() {
                                 </select>
                               </div>
                               <div className="w-32">
-                                <label className="block text-sm font-medium text-black dark:text-zinc-50 mb-2">
+                                <label className="block text-sm font-medium text-black mb-2">
                                   Quantity *
                                 </label>
                                 <input
@@ -1020,10 +1020,10 @@ function CreateRFQPageInner() {
                                     });
                                   }}
                                   min="0"
-                                  className={`w-full px-4 py-2.5 border rounded-lg bg-white dark:bg-zinc-900 text-black dark:text-zinc-50 focus:outline-none focus:ring-2 ${
+                                  className={`w-full px-4 py-2.5 border rounded-lg bg-white text-black focus:outline-none focus:ring-2 ${
                                     hasError
                                       ? "border-red-500 focus:ring-red-500"
-                                      : "border-zinc-200 dark:border-zinc-800 focus:ring-black dark:focus:ring-zinc-50"
+                                      : "border-zinc-200 focus:ring-black"
                                   }`}
                                   placeholder="0"
                                 />
@@ -1032,7 +1032,7 @@ function CreateRFQPageInner() {
                                 <button
                                   type="button"
                                   onClick={() => removeLineItem(index)}
-                                  className="mb-0.5 px-3 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                  className="mb-0.5 px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                                   aria-label="Remove line item"
                                 >
                                   🗑️
@@ -1040,7 +1040,7 @@ function CreateRFQPageInner() {
                               )}
                             </div>
                           {error && (
-                            <p className="text-sm text-red-600 dark:text-red-400">
+                            <p className="text-sm text-red-600">
                               {error}
                             </p>
                           )}
@@ -1049,7 +1049,7 @@ function CreateRFQPageInner() {
                     })}
                   </div>
                   {getLineItemsError() && (
-                    <p className="text-sm text-red-600 dark:text-red-400">
+                    <p className="text-sm text-red-600">
                       {getLineItemsError()}
                     </p>
                   )}
@@ -1057,7 +1057,7 @@ function CreateRFQPageInner() {
 
                 {/* Required Terms Section */}
                 <div className="space-y-6">
-                  <h2 className="text-xl font-semibold text-black dark:text-zinc-50">
+                  <h2 className="text-xl font-semibold text-black">
                     Required Terms
                   </h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1065,11 +1065,11 @@ function CreateRFQPageInner() {
                       <div>
                         <label
                           htmlFor="fulfillmentType"
-                          className="block text-sm font-medium text-black dark:text-zinc-50 mb-2"
+                          className="block text-sm font-medium text-black mb-2"
                         >
                           Fulfillment Type *
                         </label>
-                        <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-3">
+                        <p className="text-xs text-zinc-500 mb-3">
                           Choose pickup or delivery
                         </p>
                         <select
@@ -1078,7 +1078,7 @@ function CreateRFQPageInner() {
                           onChange={(e) =>
                             setFulfillmentType(e.target.value as FulfillmentType)
                           }
-                          className="w-full px-4 py-2.5 border border-zinc-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-900 text-black dark:text-zinc-50 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-zinc-50"
+                          className="w-full px-4 py-2.5 border border-zinc-200 rounded-lg bg-white text-black focus:outline-none focus:ring-2 focus:ring-black"
                         >
                           <option value="PICKUP">PICKUP</option>
                           <option value="DELIVERY">DELIVERY</option>
@@ -1088,11 +1088,11 @@ function CreateRFQPageInner() {
                       <div>
                         <label
                           htmlFor="requestedDate"
-                          className="block text-sm font-medium text-black dark:text-zinc-50 mb-2"
+                          className="block text-sm font-medium text-black mb-2"
                         >
                           {fulfillmentType === "PICKUP" ? "Pickup Date" : "Requested Delivery Date"} *
                         </label>
-                        <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-3">
+                        <p className="text-xs text-zinc-500 mb-3">
                           When you need the materials
                         </p>
                         <input
@@ -1101,14 +1101,14 @@ function CreateRFQPageInner() {
                           value={requestedDate}
                           onChange={(e) => setRequestedDate(e.target.value)}
                           onBlur={() => setTouched((prev) => ({ ...prev, requestedDate: true }))}
-                          className={`w-full px-4 py-2.5 border rounded-lg bg-white dark:bg-zinc-900 text-black dark:text-zinc-50 focus:outline-none focus:ring-2 ${
+                          className={`w-full px-4 py-2.5 border rounded-lg bg-white text-black focus:outline-none focus:ring-2 ${
                             getRequestedDateError()
                               ? "border-red-500 focus:ring-red-500"
-                              : "border-zinc-200 dark:border-zinc-800 focus:ring-black dark:focus:ring-zinc-50"
+                              : "border-zinc-200 focus:ring-black"
                           }`}
                         />
                         {getRequestedDateError() && (
-                          <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                          <p className="mt-1 text-sm text-red-600">
                             {getRequestedDateError()}
                           </p>
                         )}
@@ -1119,11 +1119,11 @@ function CreateRFQPageInner() {
                           <div>
                             <label
                               htmlFor="deliveryPreference"
-                              className="block text-sm font-medium text-black dark:text-zinc-50 mb-2"
+                              className="block text-sm font-medium text-black mb-2"
                             >
                               Delivery Preference
                             </label>
-                            <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-3">
+                            <p className="text-xs text-zinc-500 mb-3">
                               Preferred delivery time
                             </p>
                             <select
@@ -1132,7 +1132,7 @@ function CreateRFQPageInner() {
                               onChange={(e) =>
                                 setDeliveryPreference(e.target.value as "MORNING" | "ANYTIME")
                               }
-                              className="w-full px-4 py-2.5 border border-zinc-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-900 text-black dark:text-zinc-50 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-zinc-50"
+                              className="w-full px-4 py-2.5 border border-zinc-200 rounded-lg bg-white text-black focus:outline-none focus:ring-2 focus:ring-black"
                             >
                               <option value="MORNING">MORNING</option>
                               <option value="ANYTIME">ANYTIME</option>
@@ -1142,11 +1142,11 @@ function CreateRFQPageInner() {
                           <div>
                             <label
                               htmlFor="deliveryInstructions"
-                              className="block text-sm font-medium text-black dark:text-zinc-50 mb-2"
+                              className="block text-sm font-medium text-black mb-2"
                             >
                               Special Delivery Instructions
                             </label>
-                            <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-3">
+                            <p className="text-xs text-zinc-500 mb-3">
                               Optional delivery notes
                             </p>
                             <textarea
@@ -1154,7 +1154,7 @@ function CreateRFQPageInner() {
                               value={deliveryInstructions}
                               onChange={(e) => setDeliveryInstructions(e.target.value)}
                               rows={3}
-                              className="w-full px-4 py-2.5 border border-zinc-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-900 text-black dark:text-zinc-50 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-zinc-50"
+                              className="w-full px-4 py-2.5 border border-zinc-200 rounded-lg bg-white text-black focus:outline-none focus:ring-2 focus:ring-black"
                               placeholder="e.g., Use side entrance, call before delivery..."
                             />
                           </div>
@@ -1162,11 +1162,11 @@ function CreateRFQPageInner() {
                           <div className="md:col-span-2">
                             <label
                               htmlFor="location"
-                              className="block text-sm font-medium text-black dark:text-zinc-50 mb-2"
+                              className="block text-sm font-medium text-black mb-2"
                             >
                               Delivery Address *
                             </label>
-                            <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-3">
+                            <p className="text-xs text-zinc-500 mb-3">
                               Full address with street number, city, state, and ZIP
                             </p>
                             <input
@@ -1175,15 +1175,15 @@ function CreateRFQPageInner() {
                               value={location}
                               onChange={(e) => setLocation(e.target.value)}
                               onBlur={() => setTouched((prev) => ({ ...prev, location: true }))}
-                              className={`w-full px-4 py-2.5 border rounded-lg bg-white dark:bg-zinc-900 text-black dark:text-zinc-50 focus:outline-none focus:ring-2 ${
+                              className={`w-full px-4 py-2.5 border rounded-lg bg-white text-black focus:outline-none focus:ring-2 ${
                                 getLocationError()
                                   ? "border-red-500 focus:ring-red-500"
-                                  : "border-zinc-200 dark:border-zinc-800 focus:ring-black dark:focus:ring-zinc-50"
+                                  : "border-zinc-200 focus:ring-black"
                               }`}
                               placeholder="204 Beirne Ave NW, Huntsville, AL 35801"
                             />
                             {getLocationError() && (
-                              <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                              <p className="mt-1 text-sm text-red-600">
                                 {getLocationError()}
                               </p>
                             )}
@@ -1195,7 +1195,7 @@ function CreateRFQPageInner() {
 
                 {/* Send To Section */}
                 <div className="space-y-6">
-                  <h2 className="text-xl font-semibold text-black dark:text-zinc-50">
+                  <h2 className="text-xl font-semibold text-black">
                     Send To
                   </h2>
                   <div className="space-y-4">
@@ -1209,13 +1209,13 @@ function CreateRFQPageInner() {
                             setSendMode("broadcast");
                             setSelectedPreferredSupplierIds([]);
                           }}
-                          className="w-4 h-4 text-black border-zinc-300 dark:border-zinc-700 focus:ring-black dark:focus:ring-zinc-50"
+                          className="w-4 h-4 text-black border-zinc-300 focus:ring-black"
                         />
                         <div>
-                          <span className="text-sm font-medium text-black dark:text-zinc-50">
+                          <span className="text-sm font-medium text-black">
                             Reverse Auction (send to everyone in category)
                           </span>
-                          <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5">
+                          <p className="text-xs text-zinc-600 mt-0.5">
                             Broadcast to all suppliers who serve this category
                           </p>
                         </div>
@@ -1228,13 +1228,13 @@ function CreateRFQPageInner() {
                           value="preferred"
                           checked={sendMode === "preferred"}
                           onChange={(e) => setSendMode("preferred")}
-                          className="w-4 h-4 text-black border-zinc-300 dark:border-zinc-700 focus:ring-black dark:focus:ring-zinc-50"
+                          className="w-4 h-4 text-black border-zinc-300 focus:ring-black"
                         />
                         <div>
-                          <span className="text-sm font-medium text-black dark:text-zinc-50">
+                          <span className="text-sm font-medium text-black">
                             Preferred suppliers
                           </span>
-                          <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5">
+                          <p className="text-xs text-zinc-600 mt-0.5">
                             Direct invite to your preferred suppliers only
                           </p>
                         </div>
@@ -1242,34 +1242,34 @@ function CreateRFQPageInner() {
                     </div>
 
                     {sendMode === "preferred" && (
-                      <div className="mt-6 pt-6 border-t border-zinc-200 dark:border-zinc-800">
+                      <div className="mt-6 pt-6 border-t border-zinc-200">
                         {isLoadingPreferredSuppliers ? (
-                          <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                          <p className="text-sm text-zinc-600">
                             Loading preferred suppliers...
                           </p>
                         ) : preferredOptions.length === 0 ? (
-                          <div className="text-sm text-zinc-600 dark:text-zinc-400 space-y-2">
+                          <div className="text-sm text-zinc-600 space-y-2">
                             <p>No preferred suppliers set for this category.</p>
                             <Link
                               href="/buyer/settings/preferred-suppliers"
-                              className="text-black dark:text-zinc-50 underline hover:no-underline"
+                              className="text-black underline hover:no-underline"
                             >
                               Set preferred suppliers →
                             </Link>
                           </div>
                         ) : (
                           <div className="space-y-2">
-                            <label className="block text-sm font-medium text-black dark:text-zinc-50 mb-2">
+                            <label className="block text-sm font-medium text-black mb-2">
                               Select suppliers ({selectedPreferredSupplierIds.length} selected)
                             </label>
-                            <div className="border border-zinc-200 dark:border-zinc-800 rounded-lg p-4 max-h-64 overflow-y-auto bg-white dark:bg-zinc-900">
+                            <div className="border border-zinc-200 rounded-lg p-4 max-h-64 overflow-y-auto bg-white">
                               <div className="flex flex-col gap-2">
                                 {preferredOptions.map((supplier) => {
                                   const displayName = supplier.companyName || supplier.fullName || supplier.email || supplier.id;
                                   return (
                                     <label
                                       key={supplier.id}
-                                      className="flex items-center gap-2 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800 p-2 rounded"
+                                      className="flex items-center gap-2 cursor-pointer hover:bg-zinc-50 p-2 rounded"
                                     >
                                       <input
                                         type="checkbox"
@@ -1281,9 +1281,9 @@ function CreateRFQPageInner() {
                                             setSelectedPreferredSupplierIds(selectedPreferredSupplierIds.filter(id => id !== supplier.id));
                                           }
                                         }}
-                                        className="w-4 h-4 text-black border-zinc-300 dark:border-zinc-700 rounded focus:ring-black dark:focus:ring-zinc-50"
+                                        className="w-4 h-4 text-black border-zinc-300 rounded focus:ring-black"
                                       />
-                                      <span className="text-sm text-black dark:text-zinc-50">
+                                      <span className="text-sm text-black">
                                         {displayName}
                                       </span>
                                     </label>
@@ -1292,7 +1292,7 @@ function CreateRFQPageInner() {
                               </div>
                             </div>
                             {selectedPreferredSupplierIds.length === 0 && submitted && (
-                              <p className="text-sm text-red-600 dark:text-red-400 mt-1">
+                              <p className="text-sm text-red-600 mt-1">
                                 Please select at least one supplier
                               </p>
                             )}
@@ -1319,7 +1319,7 @@ function CreateRFQPageInner() {
           </div>
 
           {/* Bottom Action Bar */}
-          <div className="flex gap-4 pt-8 mt-8 border-t border-zinc-200 dark:border-zinc-800">
+          <div className="flex gap-4 pt-8 mt-8 border-t border-zinc-200">
             <Link href="/buyer/dashboard">
               <Button variant="outline" size="md">
                 Cancel
@@ -1331,17 +1331,17 @@ function CreateRFQPageInner() {
       
       {/* Review Confirmation Modal */}
       {showReviewModal && (
-        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
             <div className="p-6">
-              <h2 className="text-2xl font-semibold text-black dark:text-zinc-50 mb-4">
+              <h2 className="text-2xl font-semibold text-black mb-4">
                 Review & Submit RFQ
               </h2>
               
               <div className="space-y-4 mb-6">
                 <div>
-                  <h3 className="text-sm font-semibold text-black dark:text-zinc-50 mb-2">RFQ Details</h3>
-                  <div className="space-y-1 text-sm text-zinc-600 dark:text-zinc-400">
+                  <h3 className="text-sm font-semibold text-black mb-2">RFQ Details</h3>
+                  <div className="space-y-1 text-sm text-zinc-600">
                     <p><span className="font-medium">Title:</span> {jobName || "Not provided"}</p>
                     <p><span className="font-medium">Category:</span> {categoryId ? categoryIdToLabel[categoryId] : "Not selected"}</p>
                     {notes && <p><span className="font-medium">Notes:</span> {notes}</p>}
@@ -1349,16 +1349,16 @@ function CreateRFQPageInner() {
                   </div>
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-black dark:text-zinc-50 mb-2">Line Items ({lineItems.length})</h3>
-                  <div className="space-y-2 text-sm text-zinc-600 dark:text-zinc-400">
+                  <h3 className="text-sm font-semibold text-black mb-2">Line Items ({lineItems.length})</h3>
+                  <div className="space-y-2 text-sm text-zinc-600">
                     {lineItems.map((item, idx) => (
                       <p key={idx}>{item.description} - {item.quantity} {item.unit}</p>
                     ))}
                   </div>
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-black dark:text-zinc-50 mb-2">Terms</h3>
-                  <div className="space-y-1 text-sm text-zinc-600 dark:text-zinc-400">
+                  <h3 className="text-sm font-semibold text-black mb-2">Terms</h3>
+                  <div className="space-y-1 text-sm text-zinc-600">
                     <p><span className="font-medium">Fulfillment:</span> {fulfillmentType}</p>
                     <p><span className="font-medium">Date:</span> {requestedDate ? new Date(requestedDate).toLocaleDateString() : "Not set"}</p>
                     {fulfillmentType === "DELIVERY" && location && (
@@ -1391,18 +1391,18 @@ function CreateRFQPageInner() {
 
       {/* Clarification Modal - Only show if there are missing fields */}
       {showClarificationModal && missingFields.length > 0 && (
-        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
             <div className="p-6">
-              <h2 className="text-2xl font-semibold text-black dark:text-zinc-50 mb-4">
+              <h2 className="text-2xl font-semibold text-black mb-4">
                 Complete Required Fields
               </h2>
-              <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-6">
+              <p className="text-sm text-zinc-600 mb-6">
                 Please complete the following quote-critical fields before posting:
               </p>
 
               <div className="mb-6">
-                <ul className="list-disc list-inside text-sm text-zinc-700 dark:text-zinc-300 space-y-2 mb-6">
+                <ul className="list-disc list-inside text-sm text-zinc-700 space-y-2 mb-6">
                   {missingFields.map((field, index) => (
                     <li key={index}>{field}</li>
                   ))}
@@ -1417,7 +1417,7 @@ function CreateRFQPageInner() {
                     setShowClarificationModal(false);
                     setMissingFields([]);
                   }}
-                  className="px-6 py-3 border border-zinc-300 dark:border-zinc-700 rounded-lg font-medium hover:bg-zinc-100 dark:hover:bg-zinc-900 text-black dark:text-zinc-50 transition-colors"
+                  className="px-6 py-3 border border-zinc-300 rounded-lg font-medium hover:bg-zinc-100 text-black transition-colors"
                 >
                   Cancel
                 </button>
@@ -1472,7 +1472,7 @@ function CreateRFQPageInner() {
                       }
                     }
                   }}
-                  className="px-6 py-3 bg-black dark:bg-zinc-50 text-white dark:text-black rounded-lg font-medium hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors"
+                  className="px-6 py-3 bg-black text-white rounded-lg font-medium hover:bg-zinc-800 transition-colors"
                 >
                   Go to Missing Fields
                 </button>
@@ -1495,7 +1495,7 @@ export default function CreateRFQPage() {
   return (
     <Suspense fallback={
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-zinc-600 dark:text-zinc-400">Loading...</p>
+        <p className="text-zinc-600">Loading...</p>
       </div>
     }>
       <CreateRFQPageInner />

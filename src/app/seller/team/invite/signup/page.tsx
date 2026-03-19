@@ -118,7 +118,7 @@ function InviteSignupPageInner() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-zinc-900">
+      <div className="min-h-screen flex items-center justify-center bg-zinc-50">
         <div className="text-zinc-500">Loading...</div>
       </div>
     );
@@ -126,16 +126,16 @@ function InviteSignupPageInner() {
 
   if (error && !token) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-zinc-900 px-6">
+      <div className="min-h-screen flex items-center justify-center bg-zinc-50 px-6">
         <Card className="w-full max-w-md">
           <CardHeader>
             <AgoraLogo variant="auth" />
-            <h1 className="text-2xl font-semibold text-black dark:text-zinc-50 mt-4">
+            <h1 className="text-2xl font-semibold text-black mt-4">
               Invalid Invitation
             </h1>
           </CardHeader>
           <CardContent>
-            <p className="text-zinc-600 dark:text-zinc-400 mb-4">{error}</p>
+            <p className="text-zinc-600 mb-4">{error}</p>
             <Button variant="primary" onClick={() => router.push("/")}>
               Go to Home
             </Button>
@@ -146,18 +146,18 @@ function InviteSignupPageInner() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-zinc-900 px-6">
+    <div className="min-h-screen flex items-center justify-center bg-zinc-50 px-6">
       <Card className="w-full max-w-md">
         <CardHeader>
           <AgoraLogo variant="auth" />
-          <h1 className="text-2xl font-semibold text-black dark:text-zinc-50 mt-4">
+          <h1 className="text-2xl font-semibold text-black mt-4">
             Join {supplierName} on Agora
           </h1>
         </CardHeader>
         <CardContent>
           {error && (
-            <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded">
-              <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded">
+              <p className="text-sm text-red-600">{error}</p>
             </div>
           )}
 
@@ -184,7 +184,7 @@ function InviteSignupPageInner() {
               value={inviteEmail}
               readOnly
               disabled
-              className="bg-zinc-50 dark:bg-zinc-800 cursor-not-allowed"
+              className="bg-zinc-50 cursor-not-allowed"
             />
 
             <Input
@@ -231,7 +231,7 @@ function InviteSignupPageInner() {
             </Button>
           </form>
 
-          <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-4 text-center">
+          <p className="text-xs text-zinc-500 mt-4 text-center">
             By creating an account, you agree to the{" "}
             <a href="/legal/terms" target="_blank" className="underline">
               End User Service Agreement
@@ -247,7 +247,7 @@ function InviteSignupPageInner() {
 export default function InviteSignupPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-zinc-900">
+      <div className="min-h-screen flex items-center justify-center bg-zinc-50">
         <div className="text-zinc-500">Loading...</div>
       </div>
     }>

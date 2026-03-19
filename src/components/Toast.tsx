@@ -33,23 +33,23 @@ export function ToastContainer({ toasts, onRemove }: ToastContainerProps) {
         // Premium styling with better visual hierarchy
         const containerClasses = `min-w-[320px] max-w-md rounded-lg shadow-lg border backdrop-blur-sm ${
           isSuccess
-            ? "bg-white dark:bg-zinc-900 border-green-200 dark:border-green-800/50 shadow-green-100/20 dark:shadow-green-900/10"
+            ? "bg-white border-green-200 shadow-green-100/20"
             : isError
-            ? "bg-white dark:bg-zinc-900 border-red-200 dark:border-red-800/50 shadow-red-100/20 dark:shadow-red-900/10"
-            : "bg-white dark:bg-zinc-900 border-blue-200 dark:border-blue-800/50 shadow-blue-100/20 dark:shadow-blue-900/10"
+            ? "bg-white border-red-200 shadow-red-100/20"
+            : "bg-white border-blue-200 shadow-blue-100/20"
         }`;
 
         const textColorClasses = isSuccess
-          ? "text-green-900 dark:text-green-100"
+          ? "text-green-900"
           : isError
-          ? "text-red-900 dark:text-red-100"
-          : "text-blue-900 dark:text-blue-100";
+          ? "text-red-900"
+          : "text-blue-900";
 
         const iconColorClasses = isSuccess
-          ? "text-green-600 dark:text-green-400"
+          ? "text-green-600"
           : isError
-          ? "text-red-600 dark:text-red-400"
-          : "text-blue-600 dark:text-blue-400";
+          ? "text-red-600"
+          : "text-blue-600";
 
         return (
           <div key={toast.id} className={containerClasses}>

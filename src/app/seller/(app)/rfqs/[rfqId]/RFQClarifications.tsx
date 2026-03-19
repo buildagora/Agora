@@ -114,7 +114,7 @@ export default function RFQClarifications({ rfqId }: RFQClarificationsProps) {
     return (
       <Card>
         <CardContent className="p-6">
-          <p className="text-sm text-zinc-600 dark:text-zinc-400">Loading clarifications...</p>
+          <p className="text-sm text-zinc-600">Loading clarifications...</p>
         </CardContent>
       </Card>
     );
@@ -124,19 +124,19 @@ export default function RFQClarifications({ rfqId }: RFQClarificationsProps) {
     <Card>
       <CardContent className="p-6">
         <div className="mb-4">
-          <h3 className="text-lg font-semibold text-black dark:text-zinc-50">
+          <h3 className="text-lg font-semibold text-black">
             Clarifications
           </h3>
-          <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">
+          <p className="text-sm text-zinc-600 mt-1">
             Ask the buyer questions about this RFQ
           </p>
         </div>
 
         {/* Messages List */}
-        <div className="mb-4 max-h-96 overflow-y-auto border border-zinc-200 dark:border-zinc-800 rounded-lg p-4 space-y-3">
+        <div className="mb-4 max-h-96 overflow-y-auto border border-zinc-200 rounded-lg p-4 space-y-3">
           {messages.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-sm text-zinc-500 dark:text-zinc-400">
+              <p className="text-sm text-zinc-500">
                 No messages yet. Ask the buyer a question to get started.
               </p>
             </div>
@@ -151,8 +151,8 @@ export default function RFQClarifications({ rfqId }: RFQClarificationsProps) {
                   <div
                     className={`max-w-[80%] rounded-lg p-3 ${
                       isSupplier
-                        ? "bg-black dark:bg-zinc-50 text-white dark:text-black"
-                        : "bg-zinc-100 dark:bg-zinc-800 text-black dark:text-zinc-50"
+                        ? "bg-black text-white"
+                        : "bg-zinc-100 text-black"
                     }`}
                   >
                     <div className="flex items-center gap-2 mb-1">
@@ -179,7 +179,7 @@ export default function RFQClarifications({ rfqId }: RFQClarificationsProps) {
             onChange={(e) => setMessageBody(e.target.value)}
             placeholder="Ask the buyer a question about this RFQ..."
             rows={3}
-            className="w-full px-4 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-black dark:text-zinc-50 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-zinc-50 resize-none"
+            className="w-full px-4 py-2 border border-zinc-300 rounded-lg bg-white text-black focus:outline-none focus:ring-2 focus:ring-black resize-none"
             disabled={sending}
           />
           <div className="flex justify-end">

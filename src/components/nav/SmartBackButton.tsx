@@ -20,7 +20,7 @@ interface SmartBackButtonProps {
 export default function SmartBackButton({
   fallback = "/seller/dashboard",
   label = "← Back",
-  className = "text-sm text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-zinc-50 bg-transparent border-none cursor-pointer p-0",
+  className = "text-sm text-zinc-600 hover:text-black bg-transparent border-none cursor-pointer p-0",
 }: SmartBackButtonProps) {
   const router = useRouter();
 

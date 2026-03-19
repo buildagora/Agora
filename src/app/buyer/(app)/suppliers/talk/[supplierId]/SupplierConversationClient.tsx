@@ -388,15 +388,15 @@ export default function SupplierConversationClient({
   }
 
   return (
-    <div className="flex h-full overflow-hidden bg-zinc-50 dark:bg-zinc-950">
+    <div className="flex h-full overflow-hidden bg-zinc-50">
       {/* Sidebar (md+) */}
-      <aside className="hidden md:flex w-[320px] border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex-col">
-        <div className="px-4 py-3 border-b border-zinc-200 dark:border-zinc-800">
+      <aside className="hidden md:flex w-[320px] border-r border-zinc-200 bg-white flex-col">
+        <div className="px-4 py-3 border-b border-zinc-200">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+            <h2 className="text-sm font-semibold text-zinc-900">
               {materialRequestId ? "Request Conversations" : "Messages"}
             </h2>
-            <span className="text-xs text-zinc-500 dark:text-zinc-400">
+            <span className="text-xs text-zinc-500">
               {conversations.length}
             </span>
           </div>
@@ -404,7 +404,7 @@ export default function SupplierConversationClient({
 
         <div className="p-2 overflow-y-auto">
           {conversations.length === 0 ? (
-            <div className="text-sm text-zinc-500 dark:text-zinc-400 p-6 text-center">
+            <div className="text-sm text-zinc-500 p-6 text-center">
               No conversations yet
             </div>
           ) : (
@@ -434,21 +434,21 @@ export default function SupplierConversationClient({
                   className={[
                     "w-full text-left rounded-xl px-3 py-3 mb-1 transition-colors cursor-pointer",
                     active
-                      ? "bg-zinc-100 dark:bg-zinc-800"
-                      : "hover:bg-zinc-50 dark:hover:bg-zinc-950",
-                    "focus:outline-none focus:ring-2 focus:ring-zinc-900/10 dark:focus:ring-zinc-50/10",
+                      ? "bg-zinc-100"
+                      : "hover:bg-zinc-50",
+                    "focus:outline-none focus:ring-2 focus:ring-zinc-900/10",
                   ].join(" ")}
                 >
                   <div className="flex items-start gap-3">
-                    <div className="w-9 h-9 rounded-full bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center flex-shrink-0">
-                      <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-200">
+                    <div className="w-9 h-9 rounded-full bg-zinc-200 flex items-center justify-center flex-shrink-0">
+                      <span className="text-sm font-semibold text-zinc-700">
                         {conv.supplierName?.charAt(0)?.toUpperCase() || "S"}
                       </span>
                     </div>
 
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <div className="text-sm font-medium text-zinc-900 dark:text-zinc-50 truncate flex-1">
+                        <div className="text-sm font-medium text-zinc-900 truncate flex-1">
                           {conv.supplierName}
                         </div>
                         <button
@@ -458,14 +458,14 @@ export default function SupplierConversationClient({
                             handleDeleteConversation(conv.id);
                           }}
                           disabled={deletingConversationId === conv.id}
-                          className="flex-shrink-0 p-1 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded transition-colors"
+                          className="flex-shrink-0 p-1 hover:bg-zinc-200 rounded transition-colors"
                           title="Delete conversation"
                         >
                           {deletingConversationId === conv.id ? (
-                            <span className="text-xs text-zinc-400 dark:text-zinc-500">...</span>
+                            <span className="text-xs text-zinc-400">...</span>
                           ) : (
                             <svg
-                              className="w-4 h-4 text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300"
+                              className="w-4 h-4 text-zinc-400 hover:text-zinc-600"
                               fill="none"
                               stroke="currentColor"
                               viewBox="0 0 24 24"
@@ -479,29 +479,29 @@ export default function SupplierConversationClient({
                             </svg>
                           )}
                         </button>
-                        <div className="text-xs text-zinc-500 dark:text-zinc-400 flex-shrink-0">
+                        <div className="text-xs text-zinc-500 flex-shrink-0">
                           {formatTime(conv.lastMessageAt)}
                         </div>
                       </div>
 
                       {/* RFQ context or "General conversation" label */}
                       {isRFQConversation ? (
-                        <div className="text-xs font-medium text-zinc-700 dark:text-zinc-300 mt-1 truncate">
+                        <div className="text-xs font-medium text-zinc-700 mt-1 truncate">
                           {conv.rfqNumber}
                           {conv.rfqTitle && (
-                            <span className="text-zinc-500 dark:text-zinc-500 ml-1">
+                            <span className="text-zinc-500 ml-1">
                               • {conv.rfqTitle.length > 30 ? conv.rfqTitle.substring(0, 30) + "..." : conv.rfqTitle}
                             </span>
                           )}
                         </div>
                       ) : (
-                        <div className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+                        <div className="text-xs text-zinc-500 mt-1">
                           General conversation
                         </div>
                       )}
 
                       <div className="flex items-center gap-2 mt-1">
-                        <div className="text-xs text-zinc-600 dark:text-zinc-400 truncate flex-1">
+                        <div className="text-xs text-zinc-600 truncate flex-1">
                           {clampPreview(conv.lastMessagePreview, 90)}
                         </div>
                         {unread > 0 && (
@@ -522,7 +522,7 @@ export default function SupplierConversationClient({
       {/* Main conversation */}
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         {/* Header */}
-        <header className="border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 sm:px-6 py-4">
+        <header className="border-b border-zinc-200 bg-white px-4 sm:px-6 py-4">
           <div className="flex items-center gap-3">
             <button
               onClick={() => {
@@ -532,11 +532,11 @@ export default function SupplierConversationClient({
                   router.push("/buyer/suppliers/talk");
                 }
               }}
-              className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+              className="p-2 hover:bg-zinc-100 rounded-lg transition-colors"
               aria-label={materialRequestId ? "Back to material request" : "Back to messages"}
             >
               <svg
-                className="w-5 h-5 text-zinc-700 dark:text-zinc-300"
+                className="w-5 h-5 text-zinc-700"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -546,10 +546,10 @@ export default function SupplierConversationClient({
             </button>
 
             <div className="min-w-0 flex-1">
-              <h1 className="text-lg sm:text-xl font-semibold text-zinc-900 dark:text-zinc-50 truncate">
+              <h1 className="text-lg sm:text-xl font-semibold text-zinc-900 truncate">
                 {supplier.name}
               </h1>
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-zinc-600 dark:text-zinc-400">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-zinc-600">
                 {supplier.email ? <span className="truncate">{supplier.email}</span> : null}
                 {supplier.phone ? <span className="truncate">{supplier.phone}</span> : null}
               </div>
@@ -557,12 +557,12 @@ export default function SupplierConversationClient({
                 <div className="mt-2 flex items-center gap-2">
                   <a
                     href={`/buyer/rfqs/${rfqId}`}
-                    className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline"
+                    className="text-sm font-medium text-blue-600 hover:underline"
                   >
                     {rfqNumber}
                   </a>
                   {rfqTitle && (
-                    <span className="text-sm text-zinc-500 dark:text-zinc-400">
+                    <span className="text-sm text-zinc-500">
                       • {rfqTitle}
                     </span>
                   )}
@@ -575,11 +575,11 @@ export default function SupplierConversationClient({
         {/* Messages */}
         <main
           ref={messagesContainerRef}
-          className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 bg-zinc-50 dark:bg-zinc-950"
+          className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 bg-zinc-50"
         >
           {messages.length === 0 ? (
             <div className="text-center py-16">
-              <p className="text-zinc-600 dark:text-zinc-400">
+              <p className="text-zinc-600">
                 No messages yet. Start the conversation!
               </p>
             </div>
@@ -589,7 +589,7 @@ export default function SupplierConversationClient({
                 if (row.type === "day") {
                   return (
                     <div key={row.key} className="flex justify-center py-2">
-                      <div className="text-xs px-3 py-1 rounded-full bg-white/70 dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400">
+                      <div className="text-xs px-3 py-1 rounded-full bg-white/70 border border-zinc-200 text-zinc-600">
                         {row.label}
                       </div>
                     </div>
@@ -603,10 +603,10 @@ export default function SupplierConversationClient({
                 if (isAgora) {
                   return (
                     <div key={row.key} className="flex justify-center py-1">
-                      <div className="max-w-[720px] px-3 py-2 rounded-full text-xs sm:text-sm bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300">
+                      <div className="max-w-[720px] px-3 py-2 rounded-full text-xs sm:text-sm bg-zinc-100 border border-zinc-200 text-zinc-700">
                         <span className="font-semibold mr-2">Agora</span>
                         <span className="whitespace-pre-wrap">{message.body}</span>
-                        <span className="ml-2 text-[11px] text-zinc-500 dark:text-zinc-400">
+                        <span className="ml-2 text-[11px] text-zinc-500">
                           · {formatTime(message.createdAt)}
                         </span>
                       </div>
@@ -622,7 +622,7 @@ export default function SupplierConversationClient({
                     <div className={`max-w-[78%] sm:max-w-[70%]`}>
                       {/* optional name for supplier-side */}
                       {!isBuyer && message.senderDisplayName ? (
-                        <div className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 px-1">
+                        <div className="text-xs text-zinc-500 mb-1 px-1">
                           {message.senderDisplayName}
                         </div>
                       ) : null}
@@ -632,7 +632,7 @@ export default function SupplierConversationClient({
                           "rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap relative",
                           isBuyer
                             ? "bg-zinc-900 text-white"
-                            : "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-50 border border-zinc-200 dark:border-zinc-800",
+                            : "bg-white text-zinc-900 border border-zinc-200",
                         ].join(" ")}
                       >
                         {message.body}
@@ -641,7 +641,7 @@ export default function SupplierConversationClient({
                       <div
                         className={[
                           "flex items-center gap-2 text-[11px] mt-1 px-1",
-                          isBuyer ? "text-zinc-500 dark:text-zinc-400 justify-end" : "text-zinc-500 dark:text-zinc-400",
+                          isBuyer ? "text-zinc-500 justify-end" : "text-zinc-500",
                         ].join(" ")}
                       >
                         <span>{formatTime(message.createdAt)}</span>
@@ -649,7 +649,7 @@ export default function SupplierConversationClient({
                           <button
                             onClick={() => handleDeleteMessage(message.id)}
                             disabled={deletingMessageId === message.id}
-                            className="transition-colors text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300"
+                            className="transition-colors text-zinc-400 hover:text-zinc-600"
                             title="Delete message"
                           >
                             {deletingMessageId === message.id ? "..." : "Delete"}
@@ -667,7 +667,7 @@ export default function SupplierConversationClient({
         </main>
 
         {/* Composer */}
-        <div className="border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 sm:px-6 py-3">
+        <div className="border-t border-zinc-200 bg-white px-4 sm:px-6 py-3">
           <div className="flex items-end gap-2">
             <textarea
               value={messageText}
@@ -679,7 +679,7 @@ export default function SupplierConversationClient({
                 }
               }}
               placeholder="Type a message…"
-              className="flex-1 resize-none min-h-[44px] max-h-[160px] px-4 py-3 border border-zinc-300 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-900/10 dark:focus:ring-zinc-50/10"
+              className="flex-1 resize-none min-h-[44px] max-h-[160px] px-4 py-3 border border-zinc-300 rounded-xl bg-white text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/10"
               disabled={sending}
               rows={1}
             />
@@ -694,7 +694,7 @@ export default function SupplierConversationClient({
             </Button>
           </div>
 
-          <div className="mt-2 text-[11px] text-zinc-500 dark:text-zinc-400">
+          <div className="mt-2 text-[11px] text-zinc-500">
             Enter to send · Shift+Enter for a new line
           </div>
         </div>

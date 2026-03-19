@@ -46,7 +46,7 @@ export default function Sheet({ open, onOpenChange, children }: SheetProps) {
         aria-hidden="true"
       />
       {/* Sheet panel */}
-      <div className="fixed inset-y-0 left-0 w-64 bg-white dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 z-50 md:hidden flex flex-col shadow-xl">
+      <div className="fixed inset-y-0 left-0 w-64 bg-white border-r border-zinc-200 z-50 md:hidden flex flex-col shadow-xl">
         {children}
       </div>
     </>

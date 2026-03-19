@@ -6,9 +6,9 @@ import Button from "@/components/ui2/Button";
 
 export default function TermsPage() {
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
+    <div className="min-h-screen bg-zinc-50">
       {/* Navigation */}
-      <nav className="relative z-50 w-full border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+      <nav className="relative z-50 w-full border-b border-zinc-200 bg-white">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between">
             <AgoraLogo variant="auth" />
@@ -23,14 +23,14 @@ export default function TermsPage() {
 
       <main>
         <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-16">
-          <h1 className="text-3xl sm:text-4xl font-bold text-zinc-900 dark:text-zinc-50 mb-2">
+          <h1 className="text-3xl sm:text-4xl font-bold text-zinc-900 mb-2">
             AGORA END USER SERVICE AGREEMENT (BETA)
           </h1>
-          <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-12">
+          <p className="text-sm text-zinc-600 mb-12">
             Effective Date: January 1, 2026
           </p>
 
-          <div className="prose prose-zinc dark:prose-invert max-w-none space-y-6 text-zinc-700 dark:text-zinc-300 leading-relaxed">
+          <div className="prose prose-zinc max-w-none space-y-6 text-zinc-700 leading-relaxed">
             <p>
               Welcome to Agora.
             </p>
@@ -42,7 +42,7 @@ export default function TermsPage() {
             </p>
 
             <section>
-              <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50 mt-8 mb-4">
+              <h2 className="text-xl font-semibold text-zinc-900 mt-8 mb-4">
                 1. Beta Disclosure
               </h2>
               <p>
@@ -63,7 +63,7 @@ export default function TermsPage() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50 mt-8 mb-4">
+              <h2 className="text-xl font-semibold text-zinc-900 mt-8 mb-4">
                 2. Nature of the Platform
               </h2>
               <p>
@@ -85,7 +85,7 @@ export default function TermsPage() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50 mt-8 mb-4">
+              <h2 className="text-xl font-semibold text-zinc-900 mt-8 mb-4">
                 3. No Warranty
               </h2>
               <p className="font-semibold">
@@ -97,7 +97,7 @@ export default function TermsPage() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50 mt-8 mb-4">
+              <h2 className="text-xl font-semibold text-zinc-900 mt-8 mb-4">
                 4. Limitation of Liability
               </h2>
               <p>
@@ -109,7 +109,7 @@ export default function TermsPage() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50 mt-8 mb-4">
+              <h2 className="text-xl font-semibold text-zinc-900 mt-8 mb-4">
                 5. User Responsibilities
               </h2>
               <p>
@@ -118,7 +118,7 @@ export default function TermsPage() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50 mt-8 mb-4">
+              <h2 className="text-xl font-semibold text-zinc-900 mt-8 mb-4">
                 6. Transactions
               </h2>
               <p>
@@ -127,7 +127,7 @@ export default function TermsPage() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50 mt-8 mb-4">
+              <h2 className="text-xl font-semibold text-zinc-900 mt-8 mb-4">
                 7. Data &amp; Communications
               </h2>
               <p>
@@ -136,7 +136,7 @@ export default function TermsPage() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50 mt-8 mb-4">
+              <h2 className="text-xl font-semibold text-zinc-900 mt-8 mb-4">
                 8. Suspension
               </h2>
               <p>
@@ -145,7 +145,7 @@ export default function TermsPage() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50 mt-8 mb-4">
+              <h2 className="text-xl font-semibold text-zinc-900 mt-8 mb-4">
                 9. Intellectual Property
               </h2>
               <p>
@@ -154,7 +154,7 @@ export default function TermsPage() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50 mt-8 mb-4">
+              <h2 className="text-xl font-semibold text-zinc-900 mt-8 mb-4">
                 10. Modifications
               </h2>
               <p>
@@ -163,7 +163,7 @@ export default function TermsPage() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50 mt-8 mb-4">
+              <h2 className="text-xl font-semibold text-zinc-900 mt-8 mb-4">
                 11. Governing Law
               </h2>
               <p>
@@ -175,7 +175,7 @@ export default function TermsPage() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50 mt-8 mb-4">
+              <h2 className="text-xl font-semibold text-zinc-900 mt-8 mb-4">
                 12. Contact
               </h2>
               <p>
@@ -187,10 +187,10 @@ export default function TermsPage() {
             </section>
           </div>
 
-          <div className="mt-12 pt-8 border-t border-zinc-200 dark:border-zinc-800">
+          <div className="mt-12 pt-8 border-t border-zinc-200">
             <Link
               href="/"
-              className="text-sm text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-50 transition-colors"
+              className="text-sm text-zinc-600 hover:text-zinc-900 transition-colors"
             >
               ← Back to Home
             </Link>

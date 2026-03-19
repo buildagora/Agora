@@ -230,7 +230,7 @@ export default function BuyerNotificationsPage() {
     <div className="flex flex-1 px-6 py-8">
         <div className="w-full max-w-4xl mx-auto">
           <div className="mb-6">
-            <h1 className="text-3xl font-semibold text-black dark:text-zinc-50">
+            <h1 className="text-3xl font-semibold text-black">
               Notifications
             </h1>
           </div>
@@ -238,7 +238,7 @@ export default function BuyerNotificationsPage() {
           {notifications.length === 0 ? (
             <Card>
               <CardContent className="p-6 text-center">
-                <p className="text-zinc-600 dark:text-zinc-400">
+                <p className="text-zinc-600">
                   No notifications yet.
                 </p>
               </CardContent>
@@ -251,20 +251,20 @@ export default function BuyerNotificationsPage() {
                   return (
                     <Card
                       key={display.id}
-                      className="border-zinc-200 dark:border-zinc-800 bg-white dark:bg-black opacity-60"
+                      className="border-zinc-200 bg-white opacity-60"
                     >
                       <CardContent className="p-4">
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
-                              <h3 className="font-semibold text-black dark:text-zinc-50">
+                              <h3 className="font-semibold text-black">
                                 {display.primaryText}
                               </h3>
                               {display.isUnread && (
                                 <span className="w-2 h-2 rounded-full bg-blue-500"></span>
                               )}
                             </div>
-                            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                            <p className="text-xs text-zinc-500">
                               {display.secondaryText}
                             </p>
                           </div>
@@ -284,22 +284,22 @@ export default function BuyerNotificationsPage() {
                     <Card
                       className={`cursor-pointer transition-colors ${
                         display.isUnread
-                          ? "border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900"
-                          : "border-zinc-200 dark:border-zinc-800 bg-white dark:bg-black"
+                          ? "border-zinc-300 bg-zinc-50"
+                          : "border-zinc-200 bg-white"
                       }`}
                     >
                       <CardContent className="p-4">
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
-                              <h3 className="font-semibold text-black dark:text-zinc-50">
+                              <h3 className="font-semibold text-black">
                                 {display.primaryText}
                               </h3>
                               {display.isUnread && (
                                 <span className="w-2 h-2 rounded-full bg-blue-500"></span>
                               )}
                             </div>
-                            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                            <p className="text-xs text-zinc-500">
                               {display.secondaryText}
                             </p>
                           </div>

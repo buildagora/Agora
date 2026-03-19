@@ -35,7 +35,7 @@ export default function BuyerShell({ children }: BuyerShellProps) {
   };
 
   return (
-    <div className="flex min-h-dvh bg-white dark:bg-zinc-900 overflow-x-hidden">
+    <div className="flex min-h-dvh bg-white overflow-x-hidden">
       {/* Desktop Sidebar - hidden on mobile */}
       <div className="hidden md:flex">
         <BuyerSidebar />
@@ -53,7 +53,7 @@ export default function BuyerShell({ children }: BuyerShellProps) {
               {/* Mobile hamburger button */}
               <button
                 onClick={() => setMobileMenuOpen(true)}
-                className="md:hidden p-2 -ml-2 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-50"
+                className="md:hidden p-2 -ml-2 text-zinc-600 hover:text-zinc-900"
                 aria-label="Open menu"
               >
                 <svg
@@ -83,7 +83,7 @@ export default function BuyerShell({ children }: BuyerShellProps) {
                 Sign out
               </Button>
               <Link href="/profile" aria-label="View profile">
-                <div className="w-8 h-8 rounded-full bg-zinc-200 dark:bg-zinc-700 hover:bg-zinc-300 dark:hover:bg-zinc-600 transition-colors cursor-pointer"></div>
+                <div className="w-8 h-8 rounded-full bg-zinc-200 hover:bg-zinc-300 transition-colors cursor-pointer"></div>
               </Link>
             </div>
           </div>

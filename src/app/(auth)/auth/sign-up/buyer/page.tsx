@@ -263,14 +263,14 @@ function BuyerSignUpPageInner() {
         <div className="w-full max-w-2xl">
           <Card>
             <CardHeader>
-              <h1 className="text-2xl font-semibold text-black dark:text-zinc-50 text-center">
+              <h1 className="text-2xl font-semibold text-black text-center">
                 Create Buyer Account
               </h1>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="flex flex-col gap-6">
                 <div>
-                  <h2 className="text-lg font-semibold text-black dark:text-zinc-50 mb-4">Account Information</h2>
+                  <h2 className="text-lg font-semibold text-black mb-4">Account Information</h2>
                   <div className="space-y-4">
                     <Input
                       label="Company Name *"
@@ -292,7 +292,7 @@ function BuyerSignUpPageInner() {
                 </div>
 
                 <div>
-                  <h2 className="text-lg font-semibold text-black dark:text-zinc-50 mb-4">Contact Details</h2>
+                  <h2 className="text-lg font-semibold text-black mb-4">Contact Details</h2>
                   <div className="space-y-4">
                     <Input
                       label={`${getEmailLabel()} *`}
@@ -316,7 +316,7 @@ function BuyerSignUpPageInner() {
                 </div>
 
                 <div>
-                  <h2 className="text-lg font-semibold text-black dark:text-zinc-50 mb-4">Security</h2>
+                  <h2 className="text-lg font-semibold text-black mb-4">Security</h2>
                   <Input
                     label="Password *"
                     type="password"
@@ -329,8 +329,8 @@ function BuyerSignUpPageInner() {
                 </div>
 
                 {errors.submit && (
-                  <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded">
-                    <p className="text-sm text-red-600 dark:text-red-400">
+                  <div className="p-3 bg-red-50 border border-red-200 rounded">
+                    <p className="text-sm text-red-600">
                       {errors.submit}
                     </p>
                   </div>
@@ -342,16 +342,16 @@ function BuyerSignUpPageInner() {
                       type="checkbox"
                       checked={formData.agreedToTerms}
                       onChange={(e) => handleChange("agreedToTerms", e.target.checked)}
-                      className="mt-1 w-4 h-4 rounded border-zinc-300 dark:border-zinc-700 text-slate-600 focus:ring-2 focus:ring-slate-600 dark:focus:ring-slate-400"
+                      className="mt-1 w-4 h-4 rounded border-zinc-300 text-slate-600 focus:ring-2 focus:ring-slate-600"
                       required
                     />
-                    <span className="text-sm text-zinc-700 dark:text-zinc-300">
+                    <span className="text-sm text-zinc-700">
                       I agree to the{" "}
                       <Link
                         href="/legal/terms"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 underline"
+                        className="text-slate-600 hover:text-slate-900 underline"
                         onClick={(e) => e.stopPropagation()}
                       >
                         Agora End User Service Agreement
@@ -360,7 +360,7 @@ function BuyerSignUpPageInner() {
                     </span>
                   </label>
                   {errors.agreedToTerms && (
-                    <p className="text-sm text-red-600 dark:text-red-400">
+                    <p className="text-sm text-red-600">
                       {errors.agreedToTerms}
                     </p>
                   )}
@@ -380,7 +380,7 @@ function BuyerSignUpPageInner() {
               <div className="mt-6 text-center">
                 <Link
                   href="/auth/sign-in"
-                  className="text-sm text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors"
+                  className="text-sm text-zinc-600 hover:text-zinc-900 transition-colors"
                 >
                   Already have an account? Sign In
                 </Link>

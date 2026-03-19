@@ -85,15 +85,15 @@ export default async function SellerMessagesPage({
       <AppShell role="seller" active="messages">
         <div className="flex flex-1 flex-col px-6 py-8 max-w-6xl mx-auto w-full">
           <div className="mb-6">
-            <h1 className="text-3xl font-semibold text-black dark:text-zinc-50">
+            <h1 className="text-3xl font-semibold text-black">
               Messages
             </h1>
-            <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">
+            <p className="text-sm text-zinc-600 mt-1">
               Active conversations with buyers
             </p>
           </div>
           <div className="text-center py-12">
-            <p className="text-zinc-600 dark:text-zinc-400">
+            <p className="text-zinc-600">
               Your supplier account is pending verification or not linked. Please contact support.
             </p>
           </div>
@@ -210,11 +210,11 @@ export default async function SellerMessagesPage({
   return (
     <AppShell role="seller" active="messages" mainClassName="overflow-hidden min-h-0 flex flex-col">
       <div className="flex flex-col flex-1 h-full min-h-0 overflow-hidden">
-        <div className="flex-shrink-0 px-6 py-4 border-b border-zinc-200 dark:border-zinc-800">
-          <h1 className="text-3xl font-semibold text-black dark:text-zinc-50">
+        <div className="flex-shrink-0 px-6 py-4 border-b border-zinc-200">
+          <h1 className="text-3xl font-semibold text-black">
             Messages
           </h1>
-          <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">
+          <p className="text-sm text-zinc-600 mt-1">
             Active conversations with buyers
           </p>
         </div>

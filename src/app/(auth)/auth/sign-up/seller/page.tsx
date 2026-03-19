@@ -199,21 +199,21 @@ function SellerSignUpPageInner() {
         <div className="w-full max-w-2xl">
           <Card>
             <CardHeader>
-              <h1 className="text-2xl font-semibold text-black dark:text-zinc-50 text-center">
+              <h1 className="text-2xl font-semibold text-black text-center">
                 Supplier Access Is Invite-Only During Beta
               </h1>
             </CardHeader>
             <CardContent>
               <div className="flex flex-col gap-6 text-center">
-                <p className="text-zinc-600 dark:text-zinc-400">
+                <p className="text-zinc-600">
                   Supplier accounts are currently created by invitation only so we can verify supplier identity and attach each account to the correct company profile.
                 </p>
 
-                <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 p-5 text-left">
-                  <p className="text-sm font-medium text-black dark:text-zinc-50 mb-2">
+                <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-5 text-left">
+                  <p className="text-sm font-medium text-black mb-2">
                     How supplier onboarding works during beta
                   </p>
-                  <ul className="text-sm text-zinc-600 dark:text-zinc-400 space-y-2 list-disc pl-5">
+                  <ul className="text-sm text-zinc-600 space-y-2 list-disc pl-5">
                     <li>Buyers can still create accounts publicly.</li>
                     <li>Suppliers join Agora through an invite or claim link.</li>
                     <li>Our team can also onboard suppliers manually.</li>

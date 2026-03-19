@@ -26,10 +26,10 @@ export default function Stepper({ steps, currentStep }: StepperProps) {
               <div
                 className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-colors ${
                   isCompleted
-                    ? "bg-black dark:bg-zinc-50 text-white dark:text-black"
+                    ? "bg-black text-white"
                     : isActive
-                    ? "bg-black dark:bg-zinc-50 text-white dark:text-black ring-2 ring-black dark:ring-zinc-50"
-                    : "bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400"
+                    ? "bg-black text-white ring-2 ring-black"
+                    : "bg-zinc-200 text-zinc-600"
                 }`}
               >
                 {isCompleted ? (
@@ -56,8 +56,8 @@ export default function Stepper({ steps, currentStep }: StepperProps) {
                 <span
                   className={
                     isActive || isCompleted
-                      ? "text-black dark:text-zinc-50"
-                      : "text-zinc-500 dark:text-zinc-400"
+                      ? "text-black"
+                      : "text-zinc-500"
                   }
                 >
                   {step}
@@ -70,8 +70,8 @@ export default function Stepper({ steps, currentStep }: StepperProps) {
               <div
                 className={`flex-1 h-px mx-2 transition-colors ${
                   isCompleted
-                    ? "bg-zinc-300 dark:bg-zinc-600"
-                    : "bg-zinc-200 dark:bg-zinc-800"
+                    ? "bg-zinc-300"
+                    : "bg-zinc-200"
                 }`}
               />
             )}

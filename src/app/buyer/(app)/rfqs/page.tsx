@@ -423,8 +423,8 @@ function BuyerRFQsPageInner() {
     <>
       {/* Non-blocking error banner (does not intercept clicks) */}
       {showErrorBanner && (
-        <div className="px-6 py-2 bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-800">
-          <p className="text-sm text-amber-800 dark:text-amber-200 text-center">
+        <div className="px-6 py-2 bg-amber-50 border-b border-amber-200">
+          <p className="text-sm text-amber-800 text-center">
             Some background requests failed. App should still work.
           </p>
         </div>
@@ -432,8 +432,8 @@ function BuyerRFQsPageInner() {
 
       {/* Non-blocking loading indicator (does not intercept clicks) */}
       {isInitialLoading && (
-        <div className="px-6 py-2 bg-blue-50 dark:bg-blue-900/20 border-b border-blue-200 dark:border-blue-800">
-          <p className="text-sm text-blue-800 dark:text-blue-200 text-center">
+        <div className="px-6 py-2 bg-blue-50 border-b border-blue-200">
+          <p className="text-sm text-blue-800 text-center">
             Loading...
           </p>
         </div>
@@ -446,10 +446,10 @@ function BuyerRFQsPageInner() {
           <div className="mb-8">
             <div className="flex items-start justify-between mb-2">
               <div>
-                <h1 className="text-3xl font-semibold text-black dark:text-zinc-50 mb-2">
+                <h1 className="text-3xl font-semibold text-black mb-2">
                   Material Requests
                 </h1>
-                <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                <p className="text-sm text-zinc-600">
                   Manage your material requests and track supplier responses
                 </p>
               </div>
@@ -465,9 +465,9 @@ function BuyerRFQsPageInner() {
 
           {/* Success Banner */}
           {showSuccessBanner && (
-            <Card className="mb-6 border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20">
+            <Card className="mb-6 border-green-200 bg-green-50">
               <CardContent className="p-4">
-                <p className="text-green-800 dark:text-green-200 font-medium">
+                <p className="text-green-800 font-medium">
                   Request submitted successfully!
                 </p>
               </CardContent>
@@ -492,7 +492,7 @@ function BuyerRFQsPageInner() {
           {/* RFQ List */}
           {filteredRFQs.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-zinc-600 dark:text-zinc-400">
+              <p className="text-zinc-600">
                 No {activeTab.toLowerCase()} RFQs found.
               </p>
             </div>
@@ -530,7 +530,7 @@ function BuyerRFQsPageInner() {
                   "default";
 
                 return (
-                  <Card key={rfqId} className="group hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors">
+                  <Card key={rfqId} className="group hover:bg-zinc-50 transition-colors">
                     <CardContent className="p-5">
                       <div className="flex items-start justify-between gap-4">
                         <Link 
@@ -550,7 +550,7 @@ function BuyerRFQsPageInner() {
                           className="flex-1 min-w-0"
                         >
                           <div className="flex items-center gap-2 mb-2">
-                            <span className="font-semibold text-black dark:text-zinc-50">
+                            <span className="font-semibold text-black">
                               {rfq.rfqNumber}
                             </span>
                             <UnreadBidBadge rfqId={rfqId} />
@@ -567,18 +567,18 @@ function BuyerRFQsPageInner() {
                             )}
                           </div>
                           {/* V1 FIX: Job Name / PO as primary, RFQ ID as secondary */}
-                          <h3 className="font-medium text-black dark:text-zinc-50 mb-1">
+                          <h3 className="font-medium text-black mb-1">
                             {rfq.jobNameOrPo || rfq.title || "Untitled Request"}
                           </h3>
                           {rfq.jobNameOrPo && rfq.title && rfq.title !== rfq.jobNameOrPo && (
-                            <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-1">
+                            <p className="text-sm text-zinc-500 mb-1">
                               {rfq.title}
                             </p>
                           )}
-                          <p className="text-xs text-zinc-400 dark:text-zinc-500 mb-2">
+                          <p className="text-xs text-zinc-400 mb-2">
                             {rfq.rfqNumber}
                           </p>
-                          <div className="flex items-center gap-4 text-sm text-zinc-600 dark:text-zinc-400">
+                          <div className="flex items-center gap-4 text-sm text-zinc-600">
                             <span>{(rfq.lineItems?.length || 0)} item{(rfq.lineItems?.length || 0) !== 1 ? "s" : ""}</span>
                             {/* Removed totalBids - will be loaded from database API when available */}
                             <span>{formatDate(rfq.createdAt)}</span>
@@ -591,7 +591,7 @@ function BuyerRFQsPageInner() {
                           <button
                             type="button"
                             onClick={(e) => handleDeleteClick(e, rfqId)}
-                            className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-zinc-500 hover:text-red-600 dark:text-zinc-400 dark:hover:text-red-400"
+                            className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-zinc-500 hover:text-red-600"
                             title="Delete"
                           >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -95,17 +95,17 @@ export default function CategoriesSection({ className }: CategoriesSectionProps)
   return (
     <Card className={className}>
       <CardHeader>
-        <h2 className="text-xl font-semibold text-black dark:text-zinc-50">
+        <h2 className="text-xl font-semibold text-black">
           Categories Served
         </h2>
       </CardHeader>
       <CardContent>
-        <p className="text-zinc-600 dark:text-zinc-400 mb-4 text-sm">
+        <p className="text-zinc-600 mb-4 text-sm">
           Select the material categories your organization serves. You'll receive RFQ notifications for all selected categories.
         </p>
 
         {isLoading ? (
-          <div className="text-zinc-600 dark:text-zinc-400">Loading categories...</div>
+          <div className="text-zinc-600">Loading categories...</div>
         ) : (
           <>
             <div className="space-y-2 mb-6">
@@ -114,15 +114,15 @@ export default function CategoriesSection({ className }: CategoriesSectionProps)
                 return (
                   <label
                     key={option.id}
-                    className="flex items-center space-x-3 p-3 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900 cursor-pointer transition-colors"
+                    className="flex items-center space-x-3 p-3 rounded-lg border border-zinc-200 hover:bg-zinc-50 cursor-pointer transition-colors"
                   >
                     <input
                       type="checkbox"
                       checked={isSelected}
                       onChange={() => handleCategoryToggle(option.id)}
-                      className="w-4 h-4 text-orange-600 border-zinc-300 rounded focus:ring-orange-500 dark:border-zinc-700 dark:bg-zinc-800"
+                      className="w-4 h-4 text-orange-600 border-zinc-300 rounded focus:ring-orange-500"
                     />
-                    <span className="text-sm font-medium text-black dark:text-zinc-50">
+                    <span className="text-sm font-medium text-black">
                       {option.label}
                     </span>
                   </label>
@@ -131,14 +131,14 @@ export default function CategoriesSection({ className }: CategoriesSectionProps)
             </div>
 
             {error && (
-              <div className="mb-4 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
-                <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+              <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200">
+                <p className="text-sm text-red-600">{error}</p>
               </div>
             )}
 
             {success && (
-              <div className="mb-4 p-3 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
-                <p className="text-sm text-green-600 dark:text-green-400">
+              <div className="mb-4 p-3 rounded-lg bg-green-50 border border-green-200">
+                <p className="text-sm text-green-600">
                   Categories saved successfully
                 </p>
               </div>

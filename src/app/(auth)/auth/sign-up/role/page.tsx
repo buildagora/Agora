@@ -36,10 +36,10 @@ function SignUpRoleInner() {
     <div className="flex flex-1 items-center justify-center px-6 py-16">
       <div className="w-full max-w-2xl">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-semibold text-black dark:text-zinc-50 mb-2">
+          <h1 className="text-3xl font-semibold text-black mb-2">
             Create your account
           </h1>
-          <p className="text-lg text-zinc-600 dark:text-zinc-400">
+          <p className="text-lg text-zinc-600">
             Are you a buyer or a seller?
           </p>
         </div>
@@ -48,10 +48,10 @@ function SignUpRoleInner() {
           <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => handleRoleSelect("buyer")}>
             <CardContent className="p-8 text-center">
               <div className="text-4xl mb-4">🏗️</div>
-              <h2 className="text-xl font-semibold text-black dark:text-zinc-50 mb-2">
+              <h2 className="text-xl font-semibold text-black mb-2">
                 I&apos;m a Buyer
               </h2>
-              <p className="text-sm text-zinc-600 dark:text-zinc-400">
+              <p className="text-sm text-zinc-600">
                 Request materials and get competitive quotes from suppliers
               </p>
             </CardContent>
@@ -60,10 +60,10 @@ function SignUpRoleInner() {
           <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => handleRoleSelect("seller")}>
             <CardContent className="p-8 text-center">
               <div className="text-4xl mb-4">🏪</div>
-              <h2 className="text-xl font-semibold text-black dark:text-zinc-50 mb-2">
+              <h2 className="text-xl font-semibold text-black mb-2">
                 I&apos;m a Seller
               </h2>
-              <p className="text-sm text-zinc-600 dark:text-zinc-400">
+              <p className="text-sm text-zinc-600">
                 Submit bids and win orders from buyers in your area
               </p>
             </CardContent>
@@ -73,7 +73,7 @@ function SignUpRoleInner() {
         <div className="text-center">
           <Link
             href="/auth/sign-in"
-            className="text-sm text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors"
+            className="text-sm text-zinc-600 hover:text-zinc-900 transition-colors"
           >
             Already have an account? Sign in
           </Link>
@@ -85,7 +85,7 @@ function SignUpRoleInner() {
 
 export default function SignUpRolePage() {
   return (
-    <Suspense fallback={<div className="flex flex-1 items-center justify-center"><p className="text-zinc-600 dark:text-zinc-400">Loading...</p></div>}>
+    <Suspense fallback={<div className="flex flex-1 items-center justify-center"><p className="text-zinc-600">Loading...</p></div>}>
       <SignUpRoleInner />
     </Suspense>
   );

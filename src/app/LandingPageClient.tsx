@@ -83,7 +83,7 @@ export default function LandingPageClient() {
               <Button
                 variant="outline"
                 size="md"
-                className="bg-white text-slate-700 border-slate-600 hover:bg-slate-50 dark:bg-white dark:text-slate-700 dark:border-slate-600 dark:hover:bg-slate-50"
+                className="bg-white text-slate-700 border-slate-600 hover:bg-slate-50"
               >
                 Sign In
               </Button>

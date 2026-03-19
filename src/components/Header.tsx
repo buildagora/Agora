@@ -59,7 +59,7 @@ export default function Header() {
   const logoVariant = isBuyer ? "buyer" : isSeller ? "seller" : "auth";
 
   return (
-    <header className="border-b border-zinc-200 dark:border-zinc-800 px-6 py-4">
+    <header className="border-b border-zinc-200 px-6 py-4">
       <div className="flex items-center justify-between">
         <AgoraLogo variant={logoVariant} />
         <div className="flex items-center gap-3">
@@ -70,13 +70,13 @@ export default function Header() {
                 <>
                   <Link
                     href={getDashboardRoute(user)}
-                    className="px-4 py-2 text-sm border border-zinc-300 dark:border-zinc-700 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-900 text-black dark:text-zinc-50 font-medium"
+                    className="px-4 py-2 text-sm border border-zinc-300 rounded-lg hover:bg-zinc-100 text-black font-medium"
                   >
                     Dashboard
                   </Link>
                   <Link
                     href={isBuyer ? "/buyer/messages" : "/seller/messages"}
-                    className="relative px-4 py-2 text-sm border border-zinc-300 dark:border-zinc-700 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-900 text-black dark:text-zinc-50 font-medium"
+                    className="relative px-4 py-2 text-sm border border-zinc-300 rounded-lg hover:bg-zinc-100 text-black font-medium"
                   >
                     Messages
                     {unreadCount > 0 && (
@@ -88,7 +88,7 @@ export default function Header() {
                   {isSeller && (
                     <Link
                       href="/seller/feed"
-                      className="px-4 py-2 text-sm border border-zinc-300 dark:border-zinc-700 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-900 text-black dark:text-zinc-50 font-medium"
+                      className="px-4 py-2 text-sm border border-zinc-300 rounded-lg hover:bg-zinc-100 text-black font-medium"
                     >
                       Live Feed
                     </Link>
