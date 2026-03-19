@@ -223,6 +223,14 @@ export default function LandingPageClient() {
           </div>
         </section>
       </main>
+      <footer className="border-t border-zinc-200 bg-white">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-6 flex items-center justify-center gap-2 text-sm text-zinc-600">
+          <span>Need help?</span>
+          <Link href="/support" className="font-medium text-zinc-900 hover:underline">
+            Support
+          </Link>
+        </div>
+      </footer>
     </div>
   );
 }

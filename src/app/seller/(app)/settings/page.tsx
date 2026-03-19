@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import Card, { CardContent, CardHeader } from "@/components/ui2/Card";
 import Button from "@/components/ui2/Button";
 import AppShell from "@/components/ui2/AppShell";
@@ -46,6 +47,38 @@ export default function SellerSettingsPage() {
               >
                 Manage Team
               </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="mb-6">
+            <CardHeader>
+              <h2 className="text-xl font-semibold text-black">
+                Support
+              </h2>
+            </CardHeader>
+            <CardContent>
+              <p className="text-zinc-600 mb-4">
+                Questions or need help using Agora? Reach out directly.
+              </p>
+              <div className="space-y-2 text-sm">
+                <p className="text-zinc-700">
+                  Email:{" "}
+                  <a href="mailto:buildagora@gmail.com" className="font-medium text-zinc-900 hover:underline">
+                    buildagora@gmail.com
+                  </a>
+                </p>
+                <p className="text-zinc-700">
+                  Phone:{" "}
+                  <a href="tel:+12567015929" className="font-medium text-zinc-900 hover:underline">
+                    (256) 701-5929
+                  </a>
+                </p>
+              </div>
+              <div className="pt-4">
+                <Link href="/support" className="text-sm font-medium text-zinc-900 hover:underline">
+                  View support page
+                </Link>
+              </div>
             </CardContent>
           </Card>
         </div>
