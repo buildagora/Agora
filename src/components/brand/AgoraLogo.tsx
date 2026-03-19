@@ -36,6 +36,10 @@ export default function AgoraLogo({
   };
 
   const homeRoute = getHomeRoute();
+  const wordmarkClass =
+    variant === "auth"
+      ? "text-[22px] font-bold leading-none text-[#111]"
+      : "text-[22px] font-bold leading-none text-[#111] dark:text-zinc-50";
 
   // Icon size matches the standard brand lockup
   const iconSize = 28;
@@ -48,7 +52,7 @@ export default function AgoraLogo({
         className="flex-shrink-0 text-[#2F3B4A]"
       />
       {/* "Agora" wordmark */}
-      <span className="text-[22px] font-bold leading-none text-[#111] dark:text-zinc-50">
+      <span className={wordmarkClass}>
         Agora
       </span>
     </div>

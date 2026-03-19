@@ -7,6 +7,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect } from "react";
 import AgoraLogo from "@/components/brand/AgoraLogo";
 import Button from "@/components/ui2/Button";
 import { trackEvent } from "@/lib/analytics/client";
@@ -48,6 +49,17 @@ export default function LandingPageClient() {
   const pathname = usePathname();
   const page = pathname || "/";
 
+  useEffect(() => {
+    const prevBodyBg = document.body.style.backgroundColor;
+    const prevHtmlBg = document.documentElement.style.backgroundColor;
+    document.body.style.backgroundColor = "#ffffff";
+    document.documentElement.style.backgroundColor = "#ffffff";
+    return () => {
+      document.body.style.backgroundColor = prevBodyBg;
+      document.documentElement.style.backgroundColor = prevHtmlBg;
+    };
+  }, []);
+
   const trackNavbarSignInClick = () => {
     trackEvent(ANALYTICS_EVENTS.landing_cta_clicked, {
       location: "navbar",
@@ -71,9 +83,7 @@ export default function LandingPageClient() {
               <Button
                 variant="outline"
                 size="md"
-                onClick={() => {
-                  console.log("CLICK FIRED");
-                }}
+                className="bg-white text-slate-700 border-slate-600 hover:bg-slate-50 dark:bg-white dark:text-slate-700 dark:border-slate-600 dark:hover:bg-slate-50"
               >
                 Sign In
               </Button>
@@ -84,11 +94,11 @@ export default function LandingPageClient() {
 
       <main>
         {/* Hero */}
-        <section className="max-w-3xl mx-auto px-4 sm:px-6 pt-16 pb-12 text-center">
+        <section className="max-w-3xl mx-auto px-4 sm:px-6 pt-12 sm:pt-16 pb-8 sm:pb-12 text-center">
           <h1 className="text-4xl sm:text-5xl font-semibold tracking-tight text-black mb-4">
             Find building materials across your network.
           </h1>
-          <p className="text-lg text-zinc-600 mb-10">
+          <p className="text-lg text-zinc-600 mb-8 sm:mb-10">
             Search across your supplier network.
           </p>
 
@@ -117,7 +127,7 @@ export default function LandingPageClient() {
         </div>
 
         {/* Supplier response preview – stacked rows */}
-        <section className="max-w-3xl mx-auto px-4 sm:px-6 pb-12">
+        <section className="max-w-3xl mx-auto px-4 sm:px-6 pb-8 sm:pb-12">
           <h2 className="text-xl font-semibold text-black mb-2">
             How supplier responses appear
           </h2>
@@ -164,7 +174,7 @@ export default function LandingPageClient() {
         </div>
 
         {/* Centered network illustration + process copy */}
-        <section className="max-w-3xl mx-auto px-4 sm:px-6 pt-0 pb-16 text-center">
+        <section className="max-w-3xl mx-auto px-4 sm:px-6 pt-0 pb-12 sm:pb-16 text-center">
           <div className="flex flex-col items-center">
             {/* YOU node (top) */}
             <div className="px-4 py-1.5 rounded-full bg-white border border-zinc-200 shadow-sm">
