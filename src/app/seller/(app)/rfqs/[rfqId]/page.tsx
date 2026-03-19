@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import SmartBackButton from "@/components/nav/SmartBackButton";
 // Removed pushNotification import - notifications will be created server-side via API
@@ -21,6 +21,8 @@ import Header from "@/components/Header";
 import Badge from "@/components/ui2/Badge";
 import Button from "@/components/ui2/Button";
 import RFQClarifications from "./RFQClarifications";
+import { trackEvent } from "@/lib/analytics/client";
+import { ANALYTICS_EVENTS } from "@/lib/analytics/events";
 
 interface LineItem {
   description: string;
@@ -90,6 +92,7 @@ export default function SellerRFQDetailPage() {
   const [existingBid, setExistingBid] = useState<Bid | null>(null);
   const [loading, setLoading] = useState(true);
   const [showBidForm, setShowBidForm] = useState(false);
+  const hasTrackedQuoteStarted = useRef(false);
   const [order, setOrder] = useState<Order | null>(null);
   const [exceptions, setExceptions] = useState<Exception[]>([]);
   const { showToast, toasts, removeToast } = useToast();
@@ -270,6 +273,13 @@ export default function SellerRFQDetailPage() {
   };
 
   const scrollToBidForm = () => {
+    if (!hasTrackedQuoteStarted.current) {
+      hasTrackedQuoteStarted.current = true;
+      trackEvent(ANALYTICS_EVENTS.quote_started, {
+        context: "seller",
+        rfq_present: true,
+      });
+    }
     setShowBidForm(true);
     setTimeout(() => {
       const formElement = document.getElementById("bid-form");

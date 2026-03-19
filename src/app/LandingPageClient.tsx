@@ -6,8 +6,11 @@
  */
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import AgoraLogo from "@/components/brand/AgoraLogo";
 import Button from "@/components/ui2/Button";
+import { trackEvent } from "@/lib/analytics/client";
+import { ANALYTICS_EVENTS } from "@/lib/analytics/events";
 
 const SUPPLIER_ROWS = [
   {
@@ -42,6 +45,21 @@ const SUPPLIER_ROWS = [
 const NETWORK_SUPPLIERS = ["ABC Supply", "SRS", "QXO", "Lansing", "Gulf Eagle"];
 
 export default function LandingPageClient() {
+  const pathname = usePathname();
+  const page = pathname || "/";
+
+  const trackNavbarSignInClick = () => {
+    trackEvent(ANALYTICS_EVENTS.landing_cta_clicked, {
+      location: "navbar",
+      page,
+      role_intent: "unknown",
+    });
+    trackEvent(ANALYTICS_EVENTS.login_clicked, {
+      location: "navbar",
+      page,
+    });
+  };
+
   return (
     <div className="bg-white min-h-screen">
       {/* Top Nav */}
@@ -49,8 +67,14 @@ export default function LandingPageClient() {
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between">
             <AgoraLogo variant="auth" />
-            <Link href="/auth/sign-in">
-              <Button variant="outline" size="md">
+            <Link href="/auth/sign-in" onClick={trackNavbarSignInClick}>
+              <Button
+                variant="outline"
+                size="md"
+                onClick={() => {
+                  console.log("CLICK FIRED");
+                }}
+              >
                 Sign In
               </Button>
             </Link>

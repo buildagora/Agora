@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { BUYER_CATEGORY_OPTIONS } from "@/lib/categoryDisplay";
 import { categoryIdToLabel } from "@/lib/categoryIds";
 import Button from "@/components/ui2/Button";
 import Card, { CardContent } from "@/components/ui2/Card";
+import { trackEvent } from "@/lib/analytics/client";
+import { ANALYTICS_EVENTS } from "@/lib/analytics/events";
 
 type NotificationItem = {
   id: string;
@@ -71,6 +73,14 @@ export default function BuyerDashboardPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
   const [activityLoading, setActivityLoading] = useState(true);
+  const hasTrackedDashboardView = useRef(false);
+
+  useEffect(() => {
+    if (hasTrackedDashboardView.current) return;
+    if (status !== "authenticated" || !user || user.role !== "BUYER") return;
+    hasTrackedDashboardView.current = true;
+    trackEvent(ANALYTICS_EVENTS.dashboard_viewed, { role: "buyer" });
+  }, [status, user]);
 
   useEffect(() => {
     if (status === "loading" || !user || user.role !== "BUYER") {

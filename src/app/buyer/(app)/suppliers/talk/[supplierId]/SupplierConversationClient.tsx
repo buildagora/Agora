@@ -3,6 +3,8 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Button from "@/components/ui2/Button";
+import { trackEvent } from "@/lib/analytics/client";
+import { ANALYTICS_EVENTS } from "@/lib/analytics/events";
 
 interface Supplier {
   id: string;
@@ -83,6 +85,7 @@ export default function SupplierConversationClient({
   const shouldAutoScrollRef = useRef(true);
   // force scroll after user sends
   const forceScrollNextRef = useRef(false);
+  const hasTrackedConversationOpenRef = useRef(false);
 
   // Sync state when props change (e.g., when navigating between conversations)
   useEffect(() => {
@@ -100,6 +103,15 @@ export default function SupplierConversationClient({
   useEffect(() => {
     if (!conversationId) return;
 
+    if (!hasTrackedConversationOpenRef.current) {
+      hasTrackedConversationOpenRef.current = true;
+      const currentConv = conversations.find((c) => c.id === conversationId);
+      trackEvent(ANALYTICS_EVENTS.conversation_opened, {
+        context: "buyer",
+        has_rfq: Boolean(currentConv?.rfqId),
+      });
+    }
+
     fetch("/api/buyer/notifications/mark-thread-read", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -114,7 +126,7 @@ export default function SupplierConversationClient({
       .catch(() => {
         // noop
       });
-  }, [conversationId]);
+  }, [conversationId, conversations]);
 
   // listen to user scroll so we don't yank them to bottom
   useEffect(() => {
@@ -271,6 +283,10 @@ export default function SupplierConversationClient({
 
       if (response.ok) {
         setMessageText("");
+        trackEvent(ANALYTICS_EVENTS.message_sent, {
+          context: "buyer",
+          channel: "conversation",
+        });
         forceScrollNextRef.current = true;
         await reloadConversationAndSidebar();
       } else {

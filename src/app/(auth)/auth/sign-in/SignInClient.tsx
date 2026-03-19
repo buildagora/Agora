@@ -9,6 +9,8 @@ import Button from "@/components/ui2/Button";
 import Card, { CardContent, CardHeader } from "@/components/ui2/Card";
 import Input from "@/components/ui2/Input";
 import AgoraLogo from "@/components/brand/AgoraLogo";
+import { trackEvent } from "@/lib/analytics/client";
+import { ANALYTICS_EVENTS } from "@/lib/analytics/events";
 
 export default function SignInClient() {
   const searchParams = useSearchParams();
@@ -52,6 +54,10 @@ export default function SignInClient() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    trackEvent(ANALYTICS_EVENTS.login_clicked, {
+      location: "section",
+      page: "/auth/sign-in",
+    });
     
     // CRITICAL: Clear all errors before starting new attempt
     clearAllErrors();

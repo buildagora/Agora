@@ -4,6 +4,8 @@ import { jsonError, withErrorHandling } from "@/lib/apiResponse";
 import { verifyAuthToken, getAuthCookieName } from "@/lib/jwt";
 import { requireCurrentUserFromRequest } from "@/lib/auth/server";
 import { sendSupplierMessageEmail, sendSupplierOnboardingEmail } from "@/lib/notifications/resend.server";
+import { trackServerEvent } from "@/lib/analytics/server";
+import { ANALYTICS_EVENTS } from "@/lib/analytics/events";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -83,18 +85,31 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   return withErrorHandling(async () => {
+    const fail = async (
+      errorCode: string,
+      status: number,
+      message: string,
+      props?: Record<string, string | number | boolean | null>
+    ) => {
+      await trackServerEvent(ANALYTICS_EVENTS.request_submission_failed, {
+        error_code: errorCode.toLowerCase(),
+        ...props,
+      });
+      return jsonError(errorCode, message, status);
+    };
+
     // Read auth cookie
     const cookieName = getAuthCookieName();
     const token = request.cookies.get(cookieName)?.value;
 
     if (!token) {
-      return jsonError("UNAUTHORIZED", "Authentication required", 401);
+      return fail("UNAUTHORIZED", 401, "Authentication required");
     }
 
     // Verify JWT token
     const payload = await verifyAuthToken(token);
     if (!payload) {
-      return jsonError("UNAUTHORIZED", "Authentication required", 401);
+      return fail("UNAUTHORIZED", 401, "Authentication required");
     }
 
     // Load user from database
@@ -105,11 +120,11 @@ export async function POST(request: NextRequest) {
     });
 
     if (!dbUser) {
-      return jsonError("UNAUTHORIZED", "User not found", 401);
+      return fail("UNAUTHORIZED", 401, "User not found");
     }
 
     if (dbUser.role !== "BUYER") {
-      return jsonError("FORBIDDEN", "Buyer access required", 403);
+      return fail("FORBIDDEN", 403, "Buyer access required");
     }
 
     // Parse request body
@@ -117,28 +132,28 @@ export async function POST(request: NextRequest) {
     try {
       body = await request.json();
     } catch {
-      return jsonError("BAD_REQUEST", "Invalid JSON", 400);
+      return fail("BAD_REQUEST", 400, "Invalid JSON");
     }
 
     const { categoryId, requestText, sendMode, supplierIds } = body;
 
     // Validate required fields
     if (!categoryId || typeof categoryId !== "string" || !categoryId.trim()) {
-      return jsonError("BAD_REQUEST", "categoryId is required", 400);
+      return fail("BAD_REQUEST", 400, "categoryId is required");
     }
 
     if (!requestText || typeof requestText !== "string" || !requestText.trim()) {
-      return jsonError("BAD_REQUEST", "requestText is required", 400);
+      return fail("BAD_REQUEST", 400, "requestText is required");
     }
 
     if (!sendMode || (sendMode !== "NETWORK" && sendMode !== "DIRECT")) {
-      return jsonError("BAD_REQUEST", "sendMode must be NETWORK or DIRECT", 400);
+      return fail("BAD_REQUEST", 400, "sendMode must be NETWORK or DIRECT");
     }
 
     // Validate DIRECT mode requirements
     if (sendMode === "DIRECT") {
       if (!Array.isArray(supplierIds) || supplierIds.length === 0) {
-        return jsonError("BAD_REQUEST", "supplierIds array is required for DIRECT mode", 400);
+        return fail("BAD_REQUEST", 400, "supplierIds array is required for DIRECT mode");
       }
     }
 
@@ -181,14 +196,17 @@ export async function POST(request: NextRequest) {
 
       // Validate that all requested suppliers exist
       if (suppliers.length !== supplierIdsArray.length) {
-        return jsonError("BAD_REQUEST", "One or more supplier IDs are invalid", 400);
+        return fail("BAD_REQUEST", 400, "One or more supplier IDs are invalid");
       }
 
       targetSuppliers = suppliers;
     }
 
     if (targetSuppliers.length === 0) {
-      return jsonError("BAD_REQUEST", "No suppliers found for the specified criteria", 400);
+      return fail("BAD_REQUEST", 400, "No suppliers found for the specified criteria", {
+        category_id: normalizedCategoryId,
+        send_mode: sendMode.toLowerCase(),
+      });
     }
 
     // Create MaterialRequest
@@ -390,6 +408,12 @@ export async function POST(request: NextRequest) {
       categoryId: normalizedCategoryId,
       sendMode: sendMode,
       supplierCount: recipientResults.length,
+    });
+
+    await trackServerEvent(ANALYTICS_EVENTS.request_submitted, {
+      category_id: normalizedCategoryId,
+      send_mode: sendMode.toLowerCase(),
+      recipient_count: recipientResults.length,
     });
 
     return NextResponse.json({

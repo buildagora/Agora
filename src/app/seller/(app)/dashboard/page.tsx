@@ -10,7 +10,7 @@
 
 import { Suspense } from "react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import Button from "@/components/ui2/Button";
@@ -18,6 +18,8 @@ import Card, { CardContent } from "@/components/ui2/Card";
 import Badge from "@/components/ui2/Badge";
 import Tabs, { TabsList, TabsTrigger } from "@/components/ui2/Tabs";
 import AppShell from "@/components/ui2/AppShell";
+import { trackEvent } from "@/lib/analytics/client";
+import { ANALYTICS_EVENTS } from "@/lib/analytics/events";
 
 interface LineItem {
   description: string;
@@ -107,10 +109,18 @@ function SellerDashboardPageInner() {
   const [conversations, setConversations] = useState<SellerConversation[]>([]);
   const [activeTab, setActiveTab] = useState<BidStatus>("SUBMITTED");
   const [showSuccessBanner, setShowSuccessBanner] = useState(false);
+  const hasTrackedDashboardView = useRef(false);
   // Removed markedSeenTabs - seen/unseen logic disabled until API supports it
 
   // useEffect MUST be called unconditionally (before any early returns)
   // Guards are INSIDE the effect, not around it
+  useEffect(() => {
+    if (hasTrackedDashboardView.current) return;
+    if (status !== "authenticated" || !user || user.role !== "SELLER") return;
+    hasTrackedDashboardView.current = true;
+    trackEvent(ANALYTICS_EVENTS.supplier_dashboard_viewed, { role: "seller" });
+  }, [status, user]);
+
   useEffect(() => {
     // Guard: Don't run if still loading
     if (status === "loading") {

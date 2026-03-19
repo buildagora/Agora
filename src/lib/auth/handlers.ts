@@ -14,6 +14,8 @@ import bcrypt from "bcryptjs";
 import { serialize } from "cookie";
 import { generateVerificationToken, getVerificationTokenExpiration } from "./verification.server";
 import { sendVerificationEmail } from "./verificationEmail.server";
+import { trackServerEvent } from "@/lib/analytics/server";
+import { ANALYTICS_EVENTS } from "@/lib/analytics/events";
 
 /**
  * Standard error response shape
@@ -237,12 +239,25 @@ export async function signUpHandler(request: NextRequest): Promise<NextResponse<
     try {
       body = await request.json();
     } catch {
+      await trackServerEvent(ANALYTICS_EVENTS.signup_failed, {
+        role: "unknown",
+        method: "email_password",
+        error_code: "invalid_json",
+      });
       return errorResponse("BAD_REQUEST", "Invalid JSON", 400);
     }
 
     // Extract email and role for logging (before validation)
     const bodyEmail = (body as any)?.email;
     const bodyRole = (body as any)?.role;
+    const trackSignupFailure = async (errorCode: string, role?: string) => {
+      await trackServerEvent(ANALYTICS_EVENTS.signup_failed, {
+        role: role ?? "unknown",
+        method: "email_password",
+        error_code: errorCode,
+      });
+    };
+
     const agreedToTerms = (body as any)?.agreedToTerms;
     const claimSupplierId = (body as any)?.supplierId; // Optional: for claiming existing supplier org
 
@@ -257,6 +272,7 @@ export async function signUpHandler(request: NextRequest): Promise<NextResponse<
 
     // Validate agreement checkbox
     if (!agreedToTerms || agreedToTerms !== true) {
+      await trackSignupFailure("terms_not_accepted", String(bodyRole || "unknown").toLowerCase());
       return errorResponse("BAD_REQUEST", "You must agree to the End User Service Agreement to create an account", 400);
     }
 
@@ -316,6 +332,7 @@ export async function signUpHandler(request: NextRequest): Promise<NextResponse<
     // Validate input (this will validate the rest of the body)
     const validation = validateSignUpInput(body);
     if (!validation.success) {
+      await trackSignupFailure("invalid_input", String(bodyRole || "unknown").toLowerCase());
       // Return structured error with validation details
       const errorMessage = validation.error || "Invalid input";
       const details = validation.error?.includes("Zod") ? undefined : validation.error;
@@ -326,11 +343,13 @@ export async function signUpHandler(request: NextRequest): Promise<NextResponse<
     const normalizedEmail = normalizeEmail(email);
 
     if (!normalizedEmail) {
+      await trackSignupFailure("missing_email", String(bodyRole || "unknown").toLowerCase());
       return errorResponse("BAD_REQUEST", "Email is required", 400);
     }
 
     // TASK 2: Explicit role validation - ensure role is strictly BUYER or SELLER
     if (!role || (role !== "BUYER" && role !== "SELLER")) {
+      await trackSignupFailure("invalid_role", String(bodyRole || "unknown").toLowerCase());
       return errorResponse("BAD_REQUEST", "Role must be BUYER or SELLER", 400);
     }
 
@@ -347,12 +366,14 @@ export async function signUpHandler(request: NextRequest): Promise<NextResponse<
 
     // CRITICAL: Require phone for both BUYER and SELLER
     if (!phone?.trim()) {
+      await trackSignupFailure("missing_phone", role.toLowerCase());
       return errorResponse("BAD_REQUEST", "Phone is required", 400);
     }
 
     // CRITICAL: For SELLER signup, require companyName or fullName
     if (role === "SELLER") {
       if (!companyName?.trim() && !fullName?.trim()) {
+        await trackSignupFailure("missing_company_or_name", role.toLowerCase());
         return errorResponse(
           "BAD_REQUEST",
           "Company name or full name is required for seller accounts",
@@ -372,6 +393,7 @@ export async function signUpHandler(request: NextRequest): Promise<NextResponse<
             rawBodyCategoryId: (body as any)?.categoryId,
           });
         }
+        await trackSignupFailure("missing_categories", role.toLowerCase());
         return errorResponse(
           "BAD_REQUEST",
           "At least one category is required for seller accounts",
@@ -422,6 +444,7 @@ export async function signUpHandler(request: NextRequest): Promise<NextResponse<
 
     // If user exists, return 409
     if (existingUser) {
+      await trackSignupFailure("user_exists", role.toLowerCase());
       return errorResponse("user_exists", "An account already exists for that email", 409);
     }
 
@@ -601,6 +624,7 @@ export async function signUpHandler(request: NextRequest): Promise<NextResponse<
     } catch (prismaError: unknown) {
       // Handle supplier not found error (from claim flow)
       if (prismaError instanceof Error && prismaError.message.startsWith("SUPPLIER_NOT_FOUND:")) {
+        await trackSignupFailure("supplier_not_found", role.toLowerCase());
         return errorResponse(
           "NOT_FOUND",
           `Supplier not found. Please check your signup link.`,
@@ -632,6 +656,7 @@ export async function signUpHandler(request: NextRequest): Promise<NextResponse<
         if (errorCode === "P2002") {
           const target = Array.isArray(errorMeta?.target) ? errorMeta.target : [];
           if (target.includes("email")) {
+            await trackSignupFailure("user_exists", role.toLowerCase());
             return errorResponse(
               "user_exists",
               "An account already exists for that email",
@@ -658,6 +683,7 @@ export async function signUpHandler(request: NextRequest): Promise<NextResponse<
 
         // P2022: Schema mismatch
         if (errorCode === "P2022") {
+          await trackSignupFailure("db_schema_mismatch", role.toLowerCase());
           return errorResponse(
             "INTERNAL_ERROR",
             "Database schema mismatch. Please run 'npm run db:migrate:dev' to sync the database.",
@@ -672,6 +698,7 @@ export async function signUpHandler(request: NextRequest): Promise<NextResponse<
 
         // P1001, P1002, P1008: Connection errors
         if (["P1001", "P1002", "P1008"].includes(errorCode)) {
+          await trackSignupFailure("db_connection_error", role.toLowerCase());
           return errorResponse(
             "INTERNAL_ERROR",
             "Cannot connect to database. Please check DATABASE_URL.",
@@ -686,6 +713,7 @@ export async function signUpHandler(request: NextRequest): Promise<NextResponse<
 
         // Other known request errors - return 400 for validation-like errors, 500 for others
         const isValidationError = ["P2003", "P2004", "P2011", "P2012", "P2013", "P2014", "P2015", "P2016", "P2017", "P2018", "P2019", "P2020", "P2021", "P2023", "P2024", "P2025"].includes(errorCode);
+        await trackSignupFailure(isValidationError ? "invalid_data" : "create_user_failed", role.toLowerCase());
         return errorResponse(
           isValidationError ? "BAD_REQUEST" : "INTERNAL_ERROR",
           isValidationError ? "Invalid data provided" : "Failed to create user",
@@ -700,6 +728,7 @@ export async function signUpHandler(request: NextRequest): Promise<NextResponse<
 
       // Handle Prisma validation errors
       if (prismaError instanceof Prisma.PrismaClientValidationError) {
+        await trackSignupFailure("invalid_data", role.toLowerCase());
         return errorResponse(
           "BAD_REQUEST",
           "Invalid data provided. Please check all required fields.",
@@ -711,6 +740,7 @@ export async function signUpHandler(request: NextRequest): Promise<NextResponse<
       }
 
       // Unknown error
+      await trackSignupFailure("create_user_failed", role.toLowerCase());
       return errorResponse(
         "INTERNAL_ERROR",
         "Failed to create user",
@@ -834,6 +864,10 @@ export async function signUpHandler(request: NextRequest): Promise<NextResponse<
 
     // Return success (sign-up does NOT auto-login)
     // Include message about email verification requirement
+    await trackServerEvent(ANALYTICS_EVENTS.signup_completed, {
+      role: userRole.toLowerCase(),
+      method: "email_password",
+    });
     return successResponse<AuthUser>(
       {
         user: safeUser,
@@ -852,6 +886,11 @@ export async function signUpHandler(request: NextRequest): Promise<NextResponse<
       });
     }
 
+    await trackServerEvent(ANALYTICS_EVENTS.signup_failed, {
+      role: "unknown",
+      method: "email_password",
+      error_code: "internal_error",
+    });
     return errorResponse("INTERNAL_ERROR", "Signup failed", 500);
   }
 }

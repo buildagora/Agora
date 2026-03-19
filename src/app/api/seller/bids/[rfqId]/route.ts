@@ -10,6 +10,8 @@ import { jsonOk, jsonError, withErrorHandling } from "@/lib/apiResponse";
 import { requireCurrentUserFromRequest } from "@/lib/auth/server";
 import { getPrisma } from "@/lib/db.server";
 import { z } from "zod";
+import { trackServerEvent } from "@/lib/analytics/server";
+import { ANALYTICS_EVENTS } from "@/lib/analytics/events";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -260,6 +262,11 @@ export async function POST(
     }
 
     // Return created/updated bid
+    await trackServerEvent(ANALYTICS_EVENTS.quote_submitted, {
+      context: "seller",
+      rfq_present: true,
+    });
+
     return jsonOk({
       ok: true,
       bid: {

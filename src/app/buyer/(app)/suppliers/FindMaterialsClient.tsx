@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import Card, { CardContent } from "@/components/ui2/Card";
@@ -8,6 +8,8 @@ import Button from "@/components/ui2/Button";
 import { BUYER_CATEGORY_OPTIONS } from "@/lib/categoryDisplay";
 import { categoryIdToLabel } from "@/lib/categoryIds";
 import { useToast, ToastContainer } from "@/components/Toast";
+import { trackEvent } from "@/lib/analytics/client";
+import { ANALYTICS_EVENTS } from "@/lib/analytics/events";
 
 const CATEGORIES = [
   { id: "all", label: "All Categories" },
@@ -38,6 +40,9 @@ export default function FindMaterialsClient() {
   const [sendMode, setSendMode] = useState<"NETWORK" | "DIRECT">("NETWORK");
   const [selectedSupplierIds, setSelectedSupplierIds] = useState<Set<string>>(new Set());
   const [submitting, setSubmitting] = useState(false);
+  const hasTrackedRequestStarted = useRef(false);
+  const completedStepsRef = useRef<Set<string>>(new Set());
+  const hasTrackedReviewViewed = useRef(false);
 
   // Fetch suppliers when selectedCategory changes
   useEffect(() => {
@@ -82,11 +87,71 @@ export default function FindMaterialsClient() {
     setRequestText(q);
   }, [searchParams]);
 
+  const hasCategory = selectedCategory && selectedCategory !== "" && selectedCategory !== "all";
+  const recipientCount =
+    sendMode === "DIRECT" ? selectedSupplierIds.size : suppliers.length;
+
+  const trackStepCompletedOnce = (step: "category" | "details" | "suppliers" | "review") => {
+    if (completedStepsRef.current.has(step)) return;
+    completedStepsRef.current.add(step);
+    trackEvent(ANALYTICS_EVENTS.request_step_completed, {
+      step,
+      category_id: selectedCategory || null,
+      send_mode: sendMode.toLowerCase(),
+    });
+  };
+
+  useEffect(() => {
+    if (!hasCategory) return;
+    trackStepCompletedOnce("category");
+    if (!hasTrackedRequestStarted.current) {
+      hasTrackedRequestStarted.current = true;
+      trackEvent(ANALYTICS_EVENTS.request_started, {
+        category_id: selectedCategory,
+        send_mode: sendMode.toLowerCase(),
+      });
+    }
+    if (!hasTrackedReviewViewed.current) {
+      hasTrackedReviewViewed.current = true;
+      trackEvent(ANALYTICS_EVENTS.request_review_viewed, {
+        category_id: selectedCategory,
+        send_mode: sendMode.toLowerCase(),
+        recipient_count: recipientCount,
+      });
+      trackStepCompletedOnce("review");
+    }
+  }, [hasCategory, selectedCategory, sendMode, recipientCount]);
+
+  useEffect(() => {
+    if (!hasCategory || !requestText.trim()) return;
+    trackStepCompletedOnce("details");
+  }, [hasCategory, requestText]);
+
+  useEffect(() => {
+    if (!hasCategory || loading || suppliers.length === 0) return;
+    trackStepCompletedOnce("suppliers");
+  }, [hasCategory, loading, suppliers.length]);
+
   const handleCategoryChange = (newValue: string) => {
     setSelectedCategory(newValue);
     setSelectedSupplierIds(new Set());
     if (newValue === "") {
       return;
+    }
+    if (newValue !== "all") {
+      if (!hasTrackedRequestStarted.current) {
+        hasTrackedRequestStarted.current = true;
+        trackEvent(ANALYTICS_EVENTS.request_started, {
+          category_id: newValue,
+          send_mode: sendMode.toLowerCase(),
+        });
+      }
+      trackEvent(ANALYTICS_EVENTS.request_step_completed, {
+        step: "category",
+        category_id: newValue,
+        send_mode: sendMode.toLowerCase(),
+      });
+      completedStepsRef.current.add("category");
     }
     const q = requestText.trim();
     const url = q
@@ -165,7 +230,6 @@ export default function FindMaterialsClient() {
 
   const showNoSuppliers = !loading && !error && suppliers.length === 0 && selectedCategory !== "" && selectedCategory !== "all";
   const showEmptyState = selectedCategory === "" || selectedCategory === "all";
-  const hasCategory = selectedCategory && selectedCategory !== "" && selectedCategory !== "all";
 
   return (
     <>

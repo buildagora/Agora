@@ -8,6 +8,8 @@ import AppShell from "@/components/ui2/AppShell";
 import Button from "@/components/ui2/Button";
 import Card, { CardContent, CardHeader } from "@/components/ui2/Card";
 import Input from "@/components/ui2/Input";
+import { trackEvent } from "@/lib/analytics/client";
+import { ANALYTICS_EVENTS } from "@/lib/analytics/events";
 
 function BuyerSignUpPageInner() {
   const router = useRouter();
@@ -80,6 +82,11 @@ function BuyerSignUpPageInner() {
 
     // CANONICAL ENDPOINT: POST /api/auth/signup (create account)
     try {
+      trackEvent(ANALYTICS_EVENTS.signup_submitted, {
+        role: "buyer",
+        method: "email_password",
+      });
+
       const response = await fetch("/api/auth/signup", {
         method: "POST",
         headers: {

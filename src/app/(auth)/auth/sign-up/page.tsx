@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 // TODO: Replace getUserByEmail with API call
 import { getEmailLabel, getEmailPlaceholder } from "@/lib/validators";
+import { trackEvent } from "@/lib/analytics/client";
+import { ANALYTICS_EVENTS } from "@/lib/analytics/events";
 
 function SignUpPageInner() {
   const router = useRouter();
@@ -25,6 +27,10 @@ function SignUpPageInner() {
       setEmail(emailParam);
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    trackEvent(ANALYTICS_EVENTS.signup_started, { method: "email_password" });
+  }, []);
 
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -68,6 +74,11 @@ function SignUpPageInner() {
 
     // TODO: Check if email already exists via API
     // For now, skip duplicate check to avoid build error
+
+    trackEvent(ANALYTICS_EVENTS.signup_submitted, {
+      role: "unknown",
+      method: "email_password",
+    });
 
     // Route to role selection with email and password in query params
     const params = new URLSearchParams({

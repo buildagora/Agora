@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Card, { CardContent } from "@/components/ui2/Card";
 import Button from "@/components/ui2/Button";
+import { trackEvent } from "@/lib/analytics/client";
+import { ANALYTICS_EVENTS } from "@/lib/analytics/events";
 
 interface Conversation {
   id: string;
@@ -59,6 +61,7 @@ export default function SellerMessagesClient({
   const [deletingConversationId, setDeletingConversationId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const trackedOpenedConversationsRef = useRef<Set<string>>(new Set());
 
   // Sync state when props change (e.g., when server re-renders with new data)
   useEffect(() => {
@@ -76,6 +79,14 @@ export default function SellerMessagesClient({
   useEffect(() => {
     if (selectedConversationId) {
       loadMessages(selectedConversationId);
+      const selectedConversation = conversations.find((c) => c.id === selectedConversationId);
+      if (!trackedOpenedConversationsRef.current.has(selectedConversationId)) {
+        trackedOpenedConversationsRef.current.add(selectedConversationId);
+        trackEvent(ANALYTICS_EVENTS.conversation_opened, {
+          context: "seller",
+          has_rfq: Boolean(selectedConversation?.rfqId),
+        });
+      }
       // Mark notifications as read when conversation is opened
       fetch("/api/seller/notifications/mark-thread-read", {
         method: "POST",
@@ -100,7 +111,7 @@ export default function SellerMessagesClient({
     } else {
       setMessages([]);
     }
-  }, [selectedConversationId]);
+  }, [selectedConversationId, conversations]);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -136,6 +147,10 @@ export default function SellerMessagesClient({
 
       if (response.ok) {
         setMessageText("");
+        trackEvent(ANALYTICS_EVENTS.message_sent, {
+          context: "seller",
+          channel: "conversation",
+        });
         // Reload messages
         await loadMessages(selectedConversationId);
         // Reload conversations list

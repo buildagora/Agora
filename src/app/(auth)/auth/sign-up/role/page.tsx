@@ -4,12 +4,16 @@ import { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Card, { CardContent } from "@/components/ui2/Card";
+import { trackEvent } from "@/lib/analytics/client";
+import { ANALYTICS_EVENTS } from "@/lib/analytics/events";
 
 function SignUpRoleInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
   const handleRoleSelect = (role: "buyer" | "seller") => {
+    trackEvent(ANALYTICS_EVENTS.signup_role_selected, { role });
+
     // Get email and password from query params
     const email = searchParams.get("email");
     const password = searchParams.get("password");
