@@ -10,58 +10,58 @@ datasource db {
 }
 
 model User {
-  id                     String                  @id @default(cuid())
-  email                  String                  @unique
-  passwordHash            String                  // Bcrypt hashed password
-  fullName               String?
-  companyName            String?
-  phone                  String?
-  role                   String                  // BUYER or SELLER (required, no default)
-  categoriesServed       String?                 // JSON array of categories for SELLER users
-  serviceArea            String?                 // Service area (zip codes, city, radius) for SELLER users
-  agreedToTermsAt        DateTime?               // Timestamp when user agreed to End User Service Agreement
-  agreedToTermsVersion   String?                 // Version of the agreement (e.g., "v1-beta")
-  emailVerified           Boolean                 @default(false) // Email verification status
-  emailVerifiedAt        DateTime?                // Timestamp when email was verified
-  createdAt              DateTime                @default(now())
-  updatedAt              DateTime                @updatedAt
-  rfqs                   RFQ[]
-  bids                   Bid[]
-  notifications          Notification[]
-  orders                 Order[]
-  preferredSupplierRules PreferredSupplierRule[]
-  agentThreads           AgentThread[]
-  supplierConversations  SupplierConversation[]
-  supplierMembers        SupplierMember[]
-  claimRequests          SupplierClaimRequest[] @relation("ClaimRequests")
-  reviewedClaims         SupplierClaimRequest[] @relation("ReviewedClaims")
-  sentInvites            SupplierInvite[] @relation("InvitedBy")
-  acceptedInvites        SupplierInvite[] @relation("AcceptedBy")
+  id                      String                   @id @default(cuid())
+  email                   String                   @unique
+  passwordHash            String // Bcrypt hashed password
+  fullName                String?
+  companyName             String?
+  phone                   String?
+  role                    String // BUYER or SELLER (required, no default)
+  categoriesServed        String? // JSON array of categories for SELLER users
+  serviceArea             String? // Service area (zip codes, city, radius) for SELLER users
+  agreedToTermsAt         DateTime? // Timestamp when user agreed to End User Service Agreement
+  agreedToTermsVersion    String? // Version of the agreement (e.g., "v1-beta")
+  emailVerified           Boolean                  @default(false) // Email verification status
+  emailVerifiedAt         DateTime? // Timestamp when email was verified
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+  rfqs                    RFQ[]
+  bids                    Bid[]
+  notifications           Notification[]
+  orders                  Order[]
+  preferredSupplierRules  PreferredSupplierRule[]
+  agentThreads            AgentThread[]
+  supplierConversations   SupplierConversation[]
+  supplierMembers         SupplierMember[]
+  claimRequests           SupplierClaimRequest[]   @relation("ClaimRequests")
+  reviewedClaims          SupplierClaimRequest[]   @relation("ReviewedClaims")
+  sentInvites             SupplierInvite[]         @relation("InvitedBy")
+  acceptedInvites         SupplierInvite[]         @relation("AcceptedBy")
   emailVerificationTokens EmailVerificationToken[]
-  materialRequests       MaterialRequest[]
+  materialRequests        MaterialRequest[]
 }
 
 model RFQ {
-  id                String         @id @default(cuid())
-  rfqNumber         String
-  status            String         @default("OPEN")
-  createdAt         DateTime       @default(now())
-  title             String
-  notes             String         @default("")
-  category          String
-  categoryId        String?
-  buyerId           String
-  buyer             User           @relation(fields: [buyerId], references: [id], onDelete: Cascade)
-  jobNameOrPo       String?
-  visibility        String?
-  targetSupplierIds String? // JSON array
-  lineItems         String // JSON array
-  terms             String // JSON object
-  awardedBidId      String?
-  awardedAt         DateTime?
-  bids              Bid[]
-  messages          Message[]
-  notifications     Notification[]
+  id                    String                 @id @default(cuid())
+  rfqNumber             String
+  status                String                 @default("OPEN")
+  createdAt             DateTime               @default(now())
+  title                 String
+  notes                 String                 @default("")
+  category              String
+  categoryId            String?
+  buyerId               String
+  buyer                 User                   @relation(fields: [buyerId], references: [id], onDelete: Cascade)
+  jobNameOrPo           String?
+  visibility            String?
+  targetSupplierIds     String? // JSON array
+  lineItems             String // JSON array
+  terms                 String // JSON object
+  awardedBidId          String?
+  awardedAt             DateTime?
+  bids                  Bid[]
+  messages              Message[]
+  notifications         Notification[]
   supplierConversations SupplierConversation[]
 }
 
@@ -133,33 +133,33 @@ model Order {
 }
 
 model PreferredSupplierRule {
-  id        String   @id @default(cuid())
-  buyerId   String
-  buyer     User     @relation(fields: [buyerId], references: [id], onDelete: Cascade)
-  category  String   // Legacy field (kept for backward compatibility)
-  categoryId String?  // Canonical categoryId (preferred)
-  sellerIds String   // JSON array
-  enabled   Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
+  id         String   @id @default(cuid())
+  buyerId    String
+  buyer      User     @relation(fields: [buyerId], references: [id], onDelete: Cascade)
+  category   String // Legacy field (kept for backward compatibility)
+  categoryId String? // Canonical categoryId (preferred)
+  sellerIds  String // JSON array
+  enabled    Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
   @@unique([buyerId, categoryId])
   @@index([buyerId, categoryId])
 }
 
 model AgentThread {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  title       String?
+  title    String?
   // JSON strings (match existing pattern in your schema)
-  messages    String   @default("[]")  // JSON array
-  draft       String   @default("{}")  // JSON object
-  meta        String?                  // JSON object (optional)
+  messages String  @default("[]") // JSON array
+  draft    String  @default("{}") // JSON object
+  meta     String? // JSON object (optional)
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([userId])
 }
@@ -168,7 +168,7 @@ model EmailEvent {
   id                String   @id @default(cuid())
   to                String
   subject           String
-  status            String   // SENT | FAILED | OUTBOX
+  status            String // SENT | FAILED | OUTBOX
   providerMessageId String?
   error             String?
   rfqId             String?
@@ -220,62 +220,62 @@ enum ContactSource {
 
 // Supplier model (exists in DB but missing from schema)
 model Supplier {
-  id                String   @id @default(cuid())
-  name              String
-  category          String
-  street            String
-  city              String
-  state             String
-  zip               String
-  phone             String?
-  email             String?
-  onboarded         Boolean  @default(false)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  
+  id        String   @id @default(cuid())
+  name      String
+  category  String
+  street    String
+  city      String
+  state     String
+  zip       String
+  phone     String?
+  email     String?
+  onboarded Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relations
-  categoryLinks     SupplierCategoryLink[]
-  conversations     SupplierConversation[]
-  members           SupplierMember[]
-  invites           SupplierInvite[]
-  contacts          SupplierContact[]
-  claimRequests     SupplierClaimRequest[]
+  categoryLinks             SupplierCategoryLink[]
+  conversations             SupplierConversation[]
+  members                   SupplierMember[]
+  invites                   SupplierInvite[]
+  contacts                  SupplierContact[]
+  claimRequests             SupplierClaimRequest[]
   materialRequestRecipients MaterialRequestRecipient[]
-  
+
   @@index([category])
   @@index([city, state])
 }
 
 model SupplierCategoryLink {
-  id          String   @id @default(cuid())
-  supplierId  String
-  supplier    Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
-  categoryId  String
-  createdAt   DateTime @default(now())
-  
+  id         String   @id @default(cuid())
+  supplierId String
+  supplier   Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  categoryId String
+  createdAt  DateTime @default(now())
+
   @@unique([supplierId, categoryId])
   @@index([supplierId])
   @@index([categoryId])
 }
 
 model SupplierConversation {
-  id                 String   @id @default(cuid())
-  buyerId            String
-  buyer              User     @relation(fields: [buyerId], references: [id], onDelete: Cascade)
-  supplierId         String
-  supplier           Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
-  rfqId              String?  // RFQ this conversation is about (null = general conversation)
-  rfq                RFQ?     @relation(fields: [rfqId], references: [id], onDelete: SetNull)
-  materialRequestId  String?  // Material request this conversation is about (null = general or RFQ conversation)
-  materialRequest    MaterialRequest? @relation(fields: [materialRequestId], references: [id], onDelete: SetNull)
-  title              String?
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-  hiddenForBuyerAt   DateTime?
-  hiddenForSupplierAt DateTime?
-  messages           SupplierMessage[]
+  id                        String                     @id @default(cuid())
+  buyerId                   String
+  buyer                     User                       @relation(fields: [buyerId], references: [id], onDelete: Cascade)
+  supplierId                String
+  supplier                  Supplier                   @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  rfqId                     String? // RFQ this conversation is about (null = general conversation)
+  rfq                       RFQ?                       @relation(fields: [rfqId], references: [id], onDelete: SetNull)
+  materialRequestId         String? // Material request this conversation is about (null = general or RFQ conversation)
+  materialRequest           MaterialRequest?           @relation(fields: [materialRequestId], references: [id], onDelete: SetNull)
+  title                     String?
+  createdAt                 DateTime                   @default(now())
+  updatedAt                 DateTime                   @updatedAt
+  hiddenForBuyerAt          DateTime?
+  hiddenForSupplierAt       DateTime?
+  messages                  SupplierMessage[]
   materialRequestRecipients MaterialRequestRecipient[]
-  
+
   @@unique([buyerId, supplierId, rfqId, materialRequestId])
   @@index([buyerId, updatedAt])
   @@index([supplierId, updatedAt])
@@ -286,17 +286,17 @@ model SupplierConversation {
 }
 
 model SupplierMessage {
-  id                   String              @id @default(cuid())
+  id                   String               @id @default(cuid())
   conversationId       String
   conversation         SupplierConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  senderType           String              // BUYER | SUPPLIER | AGORA
+  senderType           String // BUYER | SUPPLIER | AGORA
   senderDisplayName    String?
   body                 String
-  createdAt            DateTime            @default(now())
-  updatedAt            DateTime            @default(now()) @updatedAt
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @default(now()) @updatedAt
   deletedForBuyerAt    DateTime?
-  deletedForSupplierAt  DateTime?
-  
+  deletedForSupplierAt DateTime?
+
   @@index([conversationId, createdAt])
   @@index([conversationId, deletedForBuyerAt, createdAt])
   @@index([conversationId, deletedForSupplierAt, createdAt])
@@ -304,36 +304,36 @@ model SupplierMessage {
 
 // New models for supplier membership and verification
 model SupplierMember {
-  id              String                @id @default(cuid())
-  supplierId      String
-  supplier        Supplier              @relation(fields: [supplierId], references: [id], onDelete: Cascade)
-  userId          String
-  user            User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  role            SupplierMemberRole    @default(MEMBER)
-  status          SupplierMemberStatus  @default(PENDING)
-  createdAt       DateTime              @default(now())
-  verifiedAt      DateTime?
-  
+  id         String               @id @default(cuid())
+  supplierId String
+  supplier   Supplier             @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role       SupplierMemberRole   @default(MEMBER)
+  status     SupplierMemberStatus @default(PENDING)
+  createdAt  DateTime             @default(now())
+  verifiedAt DateTime?
+
   @@unique([supplierId, userId])
   @@index([userId])
   @@index([supplierId])
 }
 
 model SupplierClaimRequest {
-  id                String                    @id @default(cuid())
-  supplierId        String
-  supplier          Supplier                  @relation(fields: [supplierId], references: [id], onDelete: Cascade)
-  userId            String
-  user              User                      @relation("ClaimRequests", fields: [userId], references: [id], onDelete: Cascade)
-  requestedEmail    String?
-  method            SupplierVerificationMethod
-  status            ClaimStatus               @default(PENDING)
-  reviewNote        String?
-  reviewedByUserId  String?
-  reviewedBy        User?                     @relation("ReviewedClaims", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
-  createdAt         DateTime                  @default(now())
-  reviewedAt        DateTime?
-  
+  id               String                     @id @default(cuid())
+  supplierId       String
+  supplier         Supplier                   @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  userId           String
+  user             User                       @relation("ClaimRequests", fields: [userId], references: [id], onDelete: Cascade)
+  requestedEmail   String?
+  method           SupplierVerificationMethod
+  status           ClaimStatus                @default(PENDING)
+  reviewNote       String?
+  reviewedByUserId String?
+  reviewedBy       User?                      @relation("ReviewedClaims", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
+  createdAt        DateTime                   @default(now())
+  reviewedAt       DateTime?
+
   @@index([status])
   @@index([supplierId])
 }
@@ -346,37 +346,37 @@ enum SupplierInviteStatus {
 }
 
 model SupplierInvite {
-  id              String              @id @default(cuid())
-  supplierId      String
-  supplier        Supplier            @relation(fields: [supplierId], references: [id], onDelete: Cascade)
-  email           String              // Store lowercase
-  tokenHash       String              @unique
-  invitedByUserId String
-  invitedBy       User                @relation("InvitedBy", fields: [invitedByUserId], references: [id], onDelete: Cascade)
-  status          SupplierInviteStatus @default(PENDING)
-  expiresAt       DateTime
-  acceptedAt      DateTime?
+  id               String               @id @default(cuid())
+  supplierId       String
+  supplier         Supplier             @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  email            String // Store lowercase
+  tokenHash        String               @unique
+  invitedByUserId  String
+  invitedBy        User                 @relation("InvitedBy", fields: [invitedByUserId], references: [id], onDelete: Cascade)
+  status           SupplierInviteStatus @default(PENDING)
+  expiresAt        DateTime
+  acceptedAt       DateTime?
   acceptedByUserId String?
-  acceptedBy      User?               @relation("AcceptedBy", fields: [acceptedByUserId], references: [id], onDelete: SetNull)
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
-  
+  acceptedBy       User?                @relation("AcceptedBy", fields: [acceptedByUserId], references: [id], onDelete: SetNull)
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+
   @@index([supplierId])
   @@index([email])
   @@index([status])
 }
 
 model SupplierContact {
-  id          String              @id @default(cuid())
-  supplierId  String
-  supplier    Supplier            @relation(fields: [supplierId], references: [id], onDelete: Cascade)
-  name        String?
-  email       String?
-  phone       String?
-  type        SupplierContactType
-  source      ContactSource        @default(SEEDED)
-  createdAt   DateTime            @default(now())
-  
+  id         String              @id @default(cuid())
+  supplierId String
+  supplier   Supplier            @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  name       String?
+  email      String?
+  phone      String?
+  type       SupplierContactType
+  source     ContactSource       @default(SEEDED)
+  createdAt  DateTime            @default(now())
+
   @@index([supplierId])
 }
 
@@ -387,28 +387,28 @@ model EmailVerificationToken {
   tokenHash String   @unique
   expiresAt DateTime
   createdAt DateTime @default(now())
-  
+
   @@index([userId])
   @@index([tokenHash])
   @@index([expiresAt])
 }
 
 model MaterialRequest {
-  id             String                     @id @default(cuid())
-  buyerId        String
-  buyer          User                       @relation(fields: [buyerId], references: [id], onDelete: Cascade)
-  categoryId     String
-  requestText    String
-  sendMode       String                     // NETWORK | DIRECT
-  supplierIdsJson String?                   // Optional JSON array for direct sends
-  status         String                     @default("OPEN") // OPEN | CLOSED | FULFILLED | CANCELLED
-  closedAt       DateTime?
-  fulfilledAt    DateTime?
-  createdAt      DateTime                   @default(now())
-  updatedAt      DateTime                   @updatedAt
-  recipients     MaterialRequestRecipient[]
-  conversations  SupplierConversation[]
-  
+  id              String                     @id @default(cuid())
+  buyerId         String
+  buyer           User                       @relation(fields: [buyerId], references: [id], onDelete: Cascade)
+  categoryId      String
+  requestText     String
+  sendMode        String // NETWORK | DIRECT
+  supplierIdsJson String? // Optional JSON array for direct sends
+  status          String                     @default("OPEN") // OPEN | CLOSED | FULFILLED | CANCELLED
+  closedAt        DateTime?
+  fulfilledAt     DateTime?
+  createdAt       DateTime                   @default(now())
+  updatedAt       DateTime                   @updatedAt
+  recipients      MaterialRequestRecipient[]
+  conversations   SupplierConversation[]
+
   @@index([buyerId])
   @@index([categoryId])
   @@index([createdAt])
@@ -416,20 +416,20 @@ model MaterialRequest {
 }
 
 model MaterialRequestRecipient {
-  id                String            @id @default(cuid())
+  id                String               @id @default(cuid())
   materialRequestId String
-  materialRequest   MaterialRequest  @relation(fields: [materialRequestId], references: [id], onDelete: Cascade)
+  materialRequest   MaterialRequest      @relation(fields: [materialRequestId], references: [id], onDelete: Cascade)
   supplierId        String
-  supplier          Supplier          @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  supplier          Supplier             @relation(fields: [supplierId], references: [id], onDelete: Cascade)
   conversationId    String
   conversation      SupplierConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  status            String            @default("SENT") // SENT | VIEWED | REPLIED | DECLINED | OUT_OF_STOCK | NO_RESPONSE
-  sentAt            DateTime          @default(now())
+  status            String               @default("SENT") // SENT | VIEWED | REPLIED | DECLINED | OUT_OF_STOCK | NO_RESPONSE
+  sentAt            DateTime             @default(now())
   viewedAt          DateTime?
   respondedAt       DateTime?
-  statusUpdatedAt   DateTime          @default(now()) @updatedAt
-  createdAt         DateTime          @default(now())
-  
+  statusUpdatedAt   DateTime             @default(now()) @updatedAt
+  createdAt         DateTime             @default(now())
+
   @@unique([materialRequestId, supplierId])
   @@index([materialRequestId])
   @@index([supplierId])
@@ -437,3 +437,24 @@ model MaterialRequestRecipient {
   @@index([status])
 }
 
+model AnalyticsEvent {
+  id         String   @id @default(cuid())
+  name       String
+  visitorId  String
+  sessionId  String
+  source     String?
+  medium     String?
+  campaign   String?
+  path       String?
+  properties String?
+  userId     String?
+  role       String?
+  isInternal Boolean? @default(false)
+  createdAt  DateTime @default(now())
+
+  @@index([name])
+  @@index([visitorId])
+  @@index([sessionId])
+  @@index([createdAt])
+  @@index([name, createdAt])
+}

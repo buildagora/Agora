@@ -7,7 +7,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import AgoraLogo from "@/components/brand/AgoraLogo";
 import Button from "@/components/ui2/Button";
 import { trackEvent } from "@/lib/analytics/client";
@@ -48,6 +48,16 @@ const NETWORK_SUPPLIERS = ["ABC Supply", "SRS", "QXO", "Lansing", "Gulf Eagle"];
 export default function LandingPageClient() {
   const pathname = usePathname();
   const page = pathname || "/";
+  const landingViewedRef = useRef(false);
+
+  useEffect(() => {
+    if (landingViewedRef.current) return;
+    landingViewedRef.current = true;
+    trackEvent(ANALYTICS_EVENTS.landing_viewed, {
+      page,
+      location: "landing",
+    });
+  }, [page]);
 
   useEffect(() => {
     const prevBodyBg = document.body.style.backgroundColor;

@@ -1,4 +1,5 @@
 export const ANALYTICS_EVENTS = {
+  landing_viewed: "landing_viewed",
   landing_cta_clicked: "landing_cta_clicked",
   login_clicked: "login_clicked",
   signup_started: "signup_started",
