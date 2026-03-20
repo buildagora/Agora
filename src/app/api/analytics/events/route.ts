@@ -21,6 +21,40 @@ function optionalNullableString(value: unknown): string | null | undefined {
   return undefined;
 }
 
+/** Normalize a header value for storage: trim; empty → null. */
+function normalizeGeoHeader(value: string | null): string | null {
+  if (value === null) return null;
+  const t = value.trim();
+  return t.length > 0 ? t : null;
+}
+
+/**
+ * First non-empty normalized header (headers are case-insensitive in the Fetch API).
+ * Vercel: x-vercel-ip-*; Cloudflare: cf-ipcountry; CloudFront: cloudfront-viewer-*.
+ */
+function pickFirstGeoHeader(request: NextRequest, names: readonly string[]): string | null {
+  for (const name of names) {
+    const v = normalizeGeoHeader(request.headers.get(name));
+    if (v !== null) return v;
+  }
+  return null;
+}
+
+function coarseGeoFromRequest(request: NextRequest): {
+  country: string | null;
+  region: string | null;
+  city: string | null;
+} {
+  return {
+    country: pickFirstGeoHeader(request, ["x-vercel-ip-country", "cf-ipcountry"]),
+    region: pickFirstGeoHeader(request, [
+      "x-vercel-ip-country-region",
+      "cloudfront-viewer-country-region",
+    ]),
+    city: pickFirstGeoHeader(request, ["x-vercel-ip-city", "cloudfront-viewer-city"]),
+  };
+}
+
 export async function POST(request: NextRequest) {
   return withErrorHandling(async () => {
     requireServerEnv();
@@ -86,6 +120,8 @@ export async function POST(request: NextRequest) {
       propertiesJson = JSON.stringify(b.properties);
     }
 
+    const geo = coarseGeoFromRequest(request);
+
     const prisma = getPrisma();
     await prisma.analyticsEvent.create({
       data: {
@@ -97,6 +133,9 @@ export async function POST(request: NextRequest) {
         campaign: campaignOpt === undefined ? null : campaignOpt,
         path: pathOpt === undefined ? null : pathOpt,
         properties: propertiesJson,
+        country: geo.country,
+        region: geo.region,
+        city: geo.city,
       },
     });
 

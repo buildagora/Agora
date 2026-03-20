@@ -447,6 +447,9 @@ model AnalyticsEvent {
   campaign   String?
   path       String?
   properties String?
+  country    String?
+  region     String?
+  city       String?
   userId     String?
   role       String?
   isInternal Boolean? @default(false)
@@ -457,4 +460,8 @@ model AnalyticsEvent {
   @@index([sessionId])
   @@index([createdAt])
   @@index([name, createdAt])
+  @@index([country])
+  @@index([region])
+  @@index([city])
+  @@index([city, createdAt])
 }
