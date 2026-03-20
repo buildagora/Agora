@@ -1,17 +1,19 @@
 "use client";
 
 /**
- * Landing Page – Search-first, non-functional product demo.
- * Illustrates how supplier responses work across a network.
+ * Landing Page – search-first discovery (public). Results are read-only; requests require an account.
  */
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import AgoraLogo from "@/components/brand/AgoraLogo";
 import Button from "@/components/ui2/Button";
+import Card, { CardContent } from "@/components/ui2/Card";
 import { trackEvent } from "@/lib/analytics/client";
 import { ANALYTICS_EVENTS } from "@/lib/analytics/events";
+import { BUYER_CATEGORY_OPTIONS } from "@/lib/categoryDisplay";
+import { categoryIdToLabel } from "@/lib/categoryIds";
 
 const SUPPLIER_ROWS = [
   {
@@ -45,10 +47,26 @@ const SUPPLIER_ROWS = [
 
 const NETWORK_SUPPLIERS = ["ABC Supply", "SRS", "QXO", "Lansing", "Gulf Eagle"];
 
+interface DiscoverySupplier {
+  id: string;
+  name: string;
+  categories: string[];
+}
+
 export default function LandingPageClient() {
   const pathname = usePathname();
   const page = pathname || "/";
   const landingViewedRef = useRef(false);
+
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [queryText, setQueryText] = useState("");
+  const [validationError, setValidationError] = useState<string | null>(null);
+  const [hasSearched, setHasSearched] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [discoveryError, setDiscoveryError] = useState<string | null>(null);
+  const [suppliers, setSuppliers] = useState<DiscoverySupplier[]>([]);
+  const [lastSearchCategory, setLastSearchCategory] = useState("");
+  const [lastSearchQuery, setLastSearchQuery] = useState("");
 
   useEffect(() => {
     if (landingViewedRef.current) return;
@@ -82,6 +100,81 @@ export default function LandingPageClient() {
     });
   };
 
+  const signupHrefFromSearch =
+    lastSearchCategory && lastSearchQuery
+      ? `/auth/sign-up?categoryId=${encodeURIComponent(lastSearchCategory)}&q=${encodeURIComponent(lastSearchQuery)}`
+      : "/auth/sign-up";
+
+  const trackDiscoverySignupClick = () => {
+    trackEvent(ANALYTICS_EVENTS.landing_discovery_signup_clicked, {
+      location: "discovery_results",
+      page,
+      category_id: lastSearchCategory || null,
+    });
+  };
+
+  const handleSearchMaterials = () => {
+    setValidationError(null);
+    setDiscoveryError(null);
+
+    if (!selectedCategory) {
+      setValidationError("Please select a category.");
+      return;
+    }
+    const q = queryText.trim();
+    if (!q) {
+      setValidationError("Please enter what you’re looking for.");
+      return;
+    }
+
+    setHasSearched(true);
+    setLoading(true);
+    setSuppliers([]);
+    setLastSearchCategory(selectedCategory);
+    setLastSearchQuery(q);
+
+    trackEvent(ANALYTICS_EVENTS.landing_search_started, {
+      location: "landing",
+      page,
+      category_id: selectedCategory,
+      query_length: q.length,
+    });
+
+    const url = `/api/public/suppliers/discovery?categoryId=${encodeURIComponent(selectedCategory)}`;
+
+    fetch(url, { cache: "no-store" })
+      .then(async (res) => {
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          const msg =
+            typeof data?.message === "string"
+              ? data.message
+              : typeof data?.error === "string"
+                ? data.error
+                : "Could not load suppliers. Please try again.";
+          throw new Error(msg);
+        }
+        if (data.ok && Array.isArray(data.suppliers)) {
+          return data.suppliers as DiscoverySupplier[];
+        }
+        return [];
+      })
+      .then((list) => {
+        setSuppliers(list);
+      })
+      .catch((err) => {
+        console.error("[landing_discovery]", err);
+        setDiscoveryError(err instanceof Error ? err.message : "Something went wrong.");
+        setSuppliers([]);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  };
+
+  const showNoSuppliers =
+    hasSearched && !loading && !discoveryError && suppliers.length === 0;
+
   return (
     <div className="bg-white min-h-screen">
       {/* Top Nav */}
@@ -104,134 +197,205 @@ export default function LandingPageClient() {
 
       <main>
         {/* Hero */}
-        <section className="max-w-3xl mx-auto px-4 sm:px-6 pt-12 sm:pt-16 pb-8 sm:pb-12 text-center">
-          <h1 className="text-4xl sm:text-5xl font-semibold tracking-tight text-black mb-4">
-            Find building materials across your network.
+        <section className="max-w-3xl mx-auto px-4 sm:px-6 pt-12 sm:pt-16 pb-6 sm:pb-8 text-center">
+          <h1 className="text-3xl sm:text-5xl font-semibold tracking-tight text-black mb-4 leading-tight">
+            Stop calling suppliers to find material
           </h1>
-          <p className="text-lg text-zinc-600 mb-8 sm:mb-10">
-            Search across your supplier network.
+          <p className="text-base sm:text-lg text-zinc-600 mb-6 sm:mb-8 max-w-xl mx-auto leading-relaxed">
+            Search by category, see who can help, then create a free account to send your request.
           </p>
 
-          {/* Static search bar (non-functional demo) */}
-          <div className="w-full max-w-2xl mx-auto">
-            <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-zinc-300 bg-white text-left">
-              <svg className="w-5 h-5 text-zinc-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-              <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-zinc-100 text-zinc-700 border border-zinc-200 shrink-0">
-                Roofing
-              </span>
-              <span className="h-4 w-px bg-zinc-200 shrink-0" aria-hidden />
-              <span className="text-zinc-500 truncate">
-                Landmark Pro Moire Black
-              </span>
-            </div>
-          </div>
-        </section>
-
-        {/* Arrow: search bar → supplier response */}
-        <div className="flex justify-center py-2">
-          <svg className="w-5 h-5 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-          </svg>
-        </div>
-
-        {/* Supplier response preview – stacked rows */}
-        <section className="max-w-3xl mx-auto px-4 sm:px-6 pb-8 sm:pb-12">
-          <h2 className="text-xl font-semibold text-black mb-2">
-            How supplier responses appear
-          </h2>
-          <p className="text-sm text-zinc-600 mb-6">
-            Each supplier responds based on inventory and availability.
-          </p>
-          <div className="rounded-xl border border-zinc-200 bg-white shadow-sm overflow-hidden">
-            {SUPPLIER_ROWS.map((row, i) => (
-              <div
-                key={row.supplier}
-                className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-5 py-4 ${i < SUPPLIER_ROWS.length - 1 ? "border-b border-zinc-100" : ""}`}
-              >
-                <div className="flex gap-3 min-w-0 flex-1">
-                  <div
-                    className={`shrink-0 w-10 h-10 rounded-lg border flex items-center justify-center text-xs font-semibold ${row.logoClass}`}
-                    aria-hidden
-                  >
-                    {row.initials}
-                  </div>
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-baseline gap-2">
-                      <p className="font-semibold text-black">{row.supplier}</p>
-                      <span className="text-xs text-zinc-400">Network supplier</span>
-                    </div>
-                    <p className="font-medium text-zinc-900 text-sm sm:text-base mt-0.5">{row.product}</p>
-                    <p className="text-sm text-zinc-500 mt-1">{row.detail}</p>
-                  </div>
-                </div>
-                <span
-                  className={`shrink-0 self-start sm:self-center px-2.5 py-1 rounded-md text-xs font-medium border ${row.statusClass}`}
+          <Card className="border-zinc-200 border-2 shadow-md text-left max-w-2xl mx-auto ring-1 ring-zinc-100">
+            <CardContent className="p-5 sm:p-6 space-y-4">
+              <div>
+                <label htmlFor="landing-category" className="block text-sm font-medium text-black mb-2">
+                  Category
+                </label>
+                <select
+                  id="landing-category"
+                  value={selectedCategory}
+                  onChange={(e) => {
+                    setSelectedCategory(e.target.value);
+                    setValidationError(null);
+                  }}
+                  className="w-full px-4 py-2.5 border border-zinc-300 rounded-lg bg-white text-black focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent"
                 >
-                  {row.status}
-                </span>
+                  <option value="">Select a category…</option>
+                  {BUYER_CATEGORY_OPTIONS.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.label}
+                    </option>
+                  ))}
+                </select>
               </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Arrow: supplier response → network */}
-        <div className="flex justify-center py-2">
-          <svg className="w-5 h-5 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-          </svg>
-        </div>
-
-        {/* Centered network illustration + process copy */}
-        <section className="max-w-3xl mx-auto px-4 sm:px-6 pt-0 pb-12 sm:pb-16 text-center">
-          <div className="flex flex-col items-center">
-            {/* YOU node (top) */}
-            <div className="px-4 py-1.5 rounded-full bg-white border border-zinc-200 shadow-sm">
-              <span className="text-xs font-medium text-zinc-700">YOU</span>
-            </div>
-            {/* Vertical line: YOU → Agora */}
-            <div className="w-[1.5px] h-4 bg-blue-400 my-0.5" aria-hidden />
-            {/* Agora node (hub) */}
-            <div className="px-6 py-2.5 rounded-full bg-white border border-zinc-200 shadow-sm">
-              <span className="text-sm font-medium text-black">Agora</span>
-            </div>
-            {/* Connector lines: Agora → supplier row */}
-            <svg className="w-64 h-12 mt-0 text-blue-400" viewBox="0 0 256 48" preserveAspectRatio="none" aria-hidden>
-              {[0.1, 0.3, 0.5, 0.7, 0.9].map((x, i) => (
-                <line
-                  key={i}
-                  x1="128"
-                  y1="0"
-                  x2={x * 256}
-                  y2="48"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
+              <div>
+                <label htmlFor="landing-query" className="block text-sm font-medium text-black mb-2">
+                  What do you need?
+                </label>
+                <input
+                  id="landing-query"
+                  type="text"
+                  value={queryText}
+                  onChange={(e) => {
+                    setQueryText(e.target.value);
+                    setValidationError(null);
+                  }}
+                  placeholder="e.g. Landmark Pro shingles, quantities, delivery window…"
+                  className="w-full px-4 py-2.5 border border-zinc-300 rounded-lg bg-white text-black focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent"
+                  autoComplete="off"
                 />
-              ))}
-            </svg>
-            {/* Horizontal row of supplier nodes */}
-            <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
-              {NETWORK_SUPPLIERS.map((label) => (
-                <span
-                  key={label}
-                  className="inline-flex items-center justify-center px-3 py-1.5 min-w-0 rounded-full text-xs font-medium bg-white text-zinc-700 border border-zinc-200 shadow-sm whitespace-nowrap"
-                >
-                  {label}
-                </span>
-              ))}
-            </div>
-            {/* Centered process copy */}
-            <h2 className="text-2xl md:text-3xl font-semibold text-zinc-800 mt-10 mb-5">
-              Search → Discover → Source
-            </h2>
-            <div className="space-y-3 text-base md:text-lg text-zinc-600">
-              <p>Search what you need</p>
-              <p>See what&apos;s available across suppliers</p>
-              <p>Get it from wherever makes sense</p>
-            </div>
-          </div>
+              </div>
+              {(validationError || discoveryError) && (
+                <p className="text-sm text-red-600" role="alert">
+                  {validationError || discoveryError}
+                </p>
+              )}
+              <Button
+                type="button"
+                variant="primary"
+                size="lg"
+                className="w-full min-h-[52px] text-base font-semibold shadow-md hover:shadow-lg focus:ring-offset-2"
+                disabled={loading}
+                onClick={handleSearchMaterials}
+              >
+                {loading ? "Searching…" : "Search suppliers"}
+              </Button>
+              <p className="text-xs text-zinc-500 text-center sm:text-left">
+                Browse with no account. Free signup only when you send a request.
+              </p>
+            </CardContent>
+          </Card>
         </section>
+
+        {/* Discovery results */}
+        {hasSearched && (
+          <section className="max-w-3xl mx-auto px-4 sm:px-6 pb-10 sm:pb-12">
+            <h2 className="text-xl font-semibold text-black mb-2">
+              Who can help right now
+              {!loading && !discoveryError && suppliers.length > 0 && (
+                <span className="font-normal text-zinc-600"> · {suppliers.length} supplier{suppliers.length !== 1 ? "s" : ""}</span>
+              )}
+            </h2>
+            <p className="text-sm text-zinc-600 mb-5 leading-relaxed">
+              Results are instant—no signup to discover. Create a free account only when you&apos;re ready to send your request.
+            </p>
+
+            {loading && (
+              <div className="py-12 text-center text-sm text-zinc-600 rounded-xl border border-zinc-200 bg-zinc-50/50">
+                Finding suppliers…
+              </div>
+            )}
+
+            {!loading && discoveryError && (
+              <div className="py-10 px-4 text-center text-sm text-red-600 rounded-xl border border-red-200 bg-red-50/50">
+                {discoveryError}
+              </div>
+            )}
+
+            {showNoSuppliers && (
+              <div className="py-10 px-4 text-center text-sm text-zinc-600 rounded-xl border border-zinc-200 bg-zinc-50/50 space-y-4">
+                <p>No suppliers found in this category yet. Try another category or check back soon.</p>
+                <Link href={signupHrefFromSearch} onClick={trackDiscoverySignupClick} className="inline-block">
+                  <Button variant="primary" size="lg" className="min-h-[48px] font-semibold shadow-sm">
+                    Create free account to send request
+                  </Button>
+                </Link>
+              </div>
+            )}
+
+            {!loading && !discoveryError && suppliers.length > 0 && (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+                  {suppliers.map((supplier) => (
+                    <Card key={supplier.id} className="border-zinc-200 bg-white">
+                      <CardContent className="p-4">
+                        <h3 className="text-sm font-semibold text-black">{supplier.name}</h3>
+                        {supplier.categories.length > 0 && (
+                          <p className="text-xs text-zinc-500 mt-1">
+                            {supplier.categories
+                              .map(
+                                (cat) =>
+                                  categoryIdToLabel[cat as keyof typeof categoryIdToLabel] || cat
+                              )
+                              .join(", ")}
+                          </p>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+                <div className="rounded-xl border-2 border-zinc-200 bg-zinc-50 p-6 text-center space-y-4 shadow-sm">
+                  <p className="text-sm font-medium text-zinc-900">
+                    Ready to reach them? One free account unlocks sending.
+                  </p>
+                  <Link href={signupHrefFromSearch} onClick={trackDiscoverySignupClick} className="inline-block w-full sm:w-auto">
+                    <Button variant="primary" size="lg" className="w-full min-h-[48px] font-semibold shadow-md">
+                      Create free account to send request
+                    </Button>
+                  </Link>
+                </div>
+              </>
+            )}
+
+          </section>
+        )}
+
+        {/* Lighter “how it works” preview only before first search—avoids competing with results + CTA */}
+        {!hasSearched && (
+          <>
+            <div className="flex justify-center py-1">
+              <svg className="w-5 h-5 text-zinc-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+              </svg>
+            </div>
+
+            <section className="max-w-3xl mx-auto px-4 sm:px-6 pb-6 sm:pb-8">
+              <p className="text-center text-xs font-medium uppercase tracking-wider text-zinc-400 mb-4">
+                How responses look on Agora
+              </p>
+              <div className="rounded-xl border border-zinc-100 bg-zinc-50/60 overflow-hidden opacity-90">
+                {SUPPLIER_ROWS.map((row, i) => (
+                  <div
+                    key={row.supplier}
+                    className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-4 py-3 ${i < SUPPLIER_ROWS.length - 1 ? "border-b border-zinc-100/80" : ""}`}
+                  >
+                    <div className="flex gap-2.5 min-w-0 flex-1">
+                      <div
+                        className={`shrink-0 w-9 h-9 rounded-lg border flex items-center justify-center text-[10px] font-semibold ${row.logoClass}`}
+                        aria-hidden
+                      >
+                        {row.initials}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-black">{row.supplier}</p>
+                        <p className="text-xs text-zinc-500 mt-0.5 line-clamp-1">{row.product}</p>
+                      </div>
+                    </div>
+                    <span
+                      className={`shrink-0 self-start sm:self-center px-2 py-0.5 rounded text-[10px] font-medium border ${row.statusClass}`}
+                    >
+                      {row.status}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section className="max-w-lg mx-auto px-4 sm:px-6 pt-2 pb-10 sm:pb-12 text-center">
+              <p className="text-xs text-zinc-400 mb-3">One search, many suppliers</p>
+              <div className="flex flex-wrap justify-center gap-1.5">
+                {NETWORK_SUPPLIERS.map((label) => (
+                  <span
+                    key={label}
+                    className="inline-flex px-2.5 py-1 rounded-full text-[10px] font-medium bg-zinc-50 text-zinc-500 border border-zinc-100"
+                  >
+                    {label}
+                  </span>
+                ))}
+              </div>
+            </section>
+          </>
+        )}
       </main>
       <footer className="border-t border-zinc-200 bg-white">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-6 flex items-center justify-center gap-2 text-sm text-zinc-600">
