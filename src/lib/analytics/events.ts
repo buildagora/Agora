@@ -2,6 +2,7 @@ export const ANALYTICS_EVENTS = {
   landing_viewed: "landing_viewed",
   landing_search_started: "landing_search_started",
   landing_discovery_signup_clicked: "landing_discovery_signup_clicked",
+  landing_nav_create_account_clicked: "landing_nav_create_account_clicked",
   landing_cta_clicked: "landing_cta_clicked",
   login_clicked: "login_clicked",
   signup_started: "signup_started",

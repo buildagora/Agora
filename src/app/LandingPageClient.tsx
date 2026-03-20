@@ -113,6 +113,14 @@ export default function LandingPageClient() {
     });
   };
 
+  const trackNavbarCreateAccountClick = () => {
+    trackEvent(ANALYTICS_EVENTS.landing_nav_create_account_clicked, {
+      location: "navbar",
+      page,
+      category_id: lastSearchCategory || null,
+    });
+  };
+
   const handleSearchMaterials = () => {
     setValidationError(null);
     setDiscoveryError(null);
@@ -182,15 +190,22 @@ export default function LandingPageClient() {
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between">
             <AgoraLogo variant="auth" />
-            <Link href="/auth/sign-in" onClick={trackNavbarSignInClick}>
-              <Button
-                variant="outline"
-                size="md"
-                className="bg-white text-slate-700 border-slate-600 hover:bg-slate-50"
-              >
-                Sign In
-              </Button>
-            </Link>
+            <div className="flex items-center gap-2 sm:gap-3">
+              <Link href="/auth/sign-in" onClick={trackNavbarSignInClick}>
+                <Button
+                  variant="outline"
+                  size="md"
+                  className="bg-white text-slate-700 border-slate-600 hover:bg-slate-50"
+                >
+                  Sign In
+                </Button>
+              </Link>
+              <Link href={signupHrefFromSearch} onClick={trackNavbarCreateAccountClick}>
+                <Button variant="primary" size="md" className="font-semibold shadow-sm">
+                  Create Account
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
       </nav>
