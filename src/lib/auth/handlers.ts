@@ -808,71 +808,77 @@ export async function signUpHandler(request: NextRequest): Promise<NextResponse<
       fullName: user.fullName,
     });
 
-    // EMAIL VERIFICATION: Create verification token and send email
-    try {
-      const { rawToken, tokenHash } = generateVerificationToken();
-      const expiresAt = getVerificationTokenExpiration();
-
-      // Create verification token record
-      await prisma.emailVerificationToken.create({
-        data: {
-          userId: user.id,
-          tokenHash,
-          expiresAt,
-        },
-      });
-
-      // Send verification email
+    // EMAIL VERIFICATION: Create verification token and send email (BUYER only)
+    if (userRole === "BUYER") {
       try {
-        await sendVerificationEmail({
-          to: normalizedEmail,
-          token: rawToken,
-          userEmail: normalizedEmail,
+        const { rawToken, tokenHash } = generateVerificationToken();
+        const expiresAt = getVerificationTokenExpiration();
+
+        await prisma.emailVerificationToken.create({
+          data: {
+            userId: user.id,
+            tokenHash,
+            expiresAt,
+          },
         });
 
-        console.log("[AUTH_SIGNUP_VERIFICATION_EMAIL_SENT]", {
+        try {
+          await sendVerificationEmail({
+            to: normalizedEmail,
+            token: rawToken,
+            userEmail: normalizedEmail,
+          });
+
+          console.log("[AUTH_SIGNUP_VERIFICATION_EMAIL_SENT]", {
+            userId: user.id,
+            email: normalizedEmail,
+          });
+        } catch (emailError) {
+          console.error("[AUTH_SIGNUP_VERIFICATION_EMAIL_FAILED]", {
+            userId: user.id,
+            email: normalizedEmail,
+            error: emailError instanceof Error ? emailError.message : String(emailError),
+          });
+        }
+      } catch (verificationError) {
+        console.error("[AUTH_SIGNUP_VERIFICATION_TOKEN_FAILED]", {
           userId: user.id,
           email: normalizedEmail,
+          error: verificationError instanceof Error ? verificationError.message : String(verificationError),
         });
-      } catch (emailError) {
-        // Email sending failed - log error but don't fail signup
-        // User can request resend later
-        console.error("[AUTH_SIGNUP_VERIFICATION_EMAIL_FAILED]", {
-          userId: user.id,
-          email: normalizedEmail,
-          error: emailError instanceof Error ? emailError.message : String(emailError),
-        });
-        // Continue - we'll return a message indicating email verification is required
       }
-    } catch (verificationError) {
-      // Token creation failed - this is more serious
-      console.error("[AUTH_SIGNUP_VERIFICATION_TOKEN_FAILED]", {
-        userId: user.id,
-        email: normalizedEmail,
-        error: verificationError instanceof Error ? verificationError.message : String(verificationError),
-      });
-      // Continue - user exists, they can request resend
     }
 
     // Log success (always, not just dev)
-    console.log("[AUTH_SIGNUP_OK]", { 
+    console.log("[AUTH_SIGNUP_OK]", {
       userId: user.id,
       email: user.email,
       role: userRole,
-      emailVerified: false, // New users start unverified
+      emailVerified: user.emailVerified,
     });
 
-    // Return success (sign-up does NOT auto-login)
-    // Include message about email verification requirement
     await trackServerEvent(ANALYTICS_EVENTS.signup_completed, {
       role: userRole.toLowerCase(),
       method: "email_password",
     });
+
+    if (userRole === "BUYER") {
+      return successResponse<AuthUser>(
+        {
+          user: safeUser,
+          message:
+            "Account created successfully. Please check your email to verify your account before signing in.",
+          requiresEmailVerification: true,
+        },
+        200
+      );
+    }
+
     return successResponse<AuthUser>(
       {
         user: safeUser,
-        message: "Account created successfully. Please check your email to verify your account before signing in.",
-        requiresEmailVerification: true,
+        message: "Account created successfully. You can now sign in.",
+        requiresEmailVerification: false,
       },
       200
     );
@@ -944,8 +950,8 @@ export async function loginHandler(request: NextRequest): Promise<NextResponse<A
       );
     }
 
-    // EMAIL VERIFICATION GUARD: Block login if email is not verified
-    if (!user.emailVerified) {
+    // EMAIL VERIFICATION GUARD: Block login if email is not verified (BUYER only)
+    if (user.role === "BUYER" && !user.emailVerified) {
       return errorResponse(
         "email_not_verified",
         "Please verify your email before signing in. Check your inbox for a verification link.",

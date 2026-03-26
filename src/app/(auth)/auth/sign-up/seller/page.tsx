@@ -1,195 +1,222 @@
 "use client";
 
-import { Suspense, useState, useEffect } from "react";
+import { Suspense, useState, useEffect, startTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { MATERIAL_CATEGORIES } from "@/lib/categoryDisplay";
-import { labelToCategoryId } from "@/lib/categoryIds";
+import { labelToCategoryId, type CategoryLabel } from "@/lib/categoryIds";
 import { validateEmailOrTestId, getEmailLabel, getEmailPlaceholder } from "@/lib/validators";
 import AppShell from "@/components/ui2/AppShell";
 import Button from "@/components/ui2/Button";
 import Card, { CardContent, CardHeader } from "@/components/ui2/Card";
 import Input from "@/components/ui2/Input";
 
+interface SupplierPreview {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  category: string | null;
+}
+
 function SellerSignUpPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [formData, setFormData] = useState({
+  const supplierId = searchParams.get("supplier");
+
+  const [supplierPreview, setSupplierPreview] = useState<SupplierPreview | null>(null);
+  const [loadingPreview, setLoadingPreview] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+
+  const [formData, setFormData] = useState(() => ({
     companyName: "",
     fullName: "",
-    email: "",
+    email: searchParams.get("email") ?? "",
     phone: "",
-    businessAddress: "",
-    password: "",
+    password: searchParams.get("password") ?? "",
     agreedToTerms: false,
-  });
+  }));
   const [categoriesServed, setCategoriesServed] = useState<string[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    // Pre-fill email and password from query params
-    const emailParam = searchParams.get("email");
-    const passwordParam = searchParams.get("password");
-    if (emailParam) {
-      setFormData((prev) => ({ ...prev, email: emailParam }));
-    }
-    if (passwordParam) {
-      setFormData((prev) => ({ ...prev, password: passwordParam }));
-    }
-  }, [searchParams]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    const newErrors: Record<string, string> = {};
-
-    // Validation: Company name is preferred, but fullName is acceptable if companyName is missing
-    if (!formData.companyName.trim() && !formData.fullName.trim()) {
-      newErrors.companyName = "Company name or full name is required";
-    }
-    
-    // Validate email or test ID
-    if (!formData.email.trim()) {
-      newErrors.email = "Email is required";
-    } else {
-      const emailValidation = validateEmailOrTestId(formData.email);
-      if (!emailValidation.ok) {
-        newErrors.email = emailValidation.message || "Invalid email or test ID";
-      } else {
-        // TODO: Check if email/test ID already exists via API
-        // For now, skip duplicate check to avoid build error
-      }
-    }
-    if (!formData.phone.trim()) {
-      newErrors.phone = "Phone is required";
-    }
-    if (!formData.password) {
-      newErrors.password = "Password is required";
-    } else if (formData.password.length < 8) {
-      newErrors.password = "Password must be at least 8 characters";
-    }
-    if (categoriesServed.length === 0) {
-      newErrors.categoriesServed = "Please select at least one category";
-    }
-    if (!formData.agreedToTerms) {
-      newErrors.agreedToTerms = "You must agree to the End User Service Agreement";
-    }
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      setIsSubmitting(false);
+    if (!supplierId) {
       return;
     }
 
-    // Create user via API endpoint
-    try {
-      // Convert category labels to canonical categoryIds
-      const categoryIds = categoriesServed
-        .map((label) => labelToCategoryId[label as keyof typeof labelToCategoryId])
-        .filter((id): id is NonNullable<typeof id> => id != null); // Filter out any undefined values
+    startTransition(() => {
+      setLoadingPreview(true);
+      setPreviewError(null);
+    });
 
-      // CANONICAL ENDPOINT: POST /api/auth/signup (create account)
-      const response = await fetch("/api/auth/signup", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({
-          email: formData.email.trim().toLowerCase(),
-          password: formData.password,
-          role: "SELLER",
-          categoryIds: categoryIds, // Canonical category IDs (e.g., "roofing", "hvac")
-          categoriesServed: categoryIds, // Compatibility field (defensive)
-          // Include companyName only if provided
-          ...(formData.companyName.trim() && { companyName: formData.companyName.trim() }),
-          // Include fullName only if provided
-          ...(formData.fullName.trim() && { fullName: formData.fullName.trim() }),
-          // Include phone only if provided
-          ...(formData.phone.trim() && { phone: formData.phone.trim() }),
-          // Include serviceArea only if provided
-          ...(formData.businessAddress.trim() && { serviceArea: formData.businessAddress.trim() }),
-          agreedToTerms: formData.agreedToTerms,
-        }),
+    fetch(`/api/seller/supplier-preview?supplierId=${encodeURIComponent(supplierId)}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.ok && data.supplier) {
+          setSupplierPreview(data.supplier);
+          setFormData((prev) => ({
+            ...prev,
+            companyName: data.supplier.name || "",
+            email: data.supplier.email || prev.email,
+            phone: data.supplier.phone || "",
+          }));
+          if (data.supplier.category) {
+            const raw = String(data.supplier.category).trim().toLowerCase();
+            const match = (Object.values(labelToCategoryId) as string[]).find(
+              (id) => id.toLowerCase() === raw
+            );
+            if (match) {
+              setCategoriesServed((prev) => (prev.includes(match) ? prev : [...prev, match]));
+            }
+          }
+        } else {
+          setPreviewError(data.message || "Supplier not found. Please check your signup link.");
+        }
+      })
+      .catch(() => {
+        setPreviewError("Failed to load supplier information. Please try again.");
+      })
+      .finally(() => {
+        setLoadingPreview(false);
       });
-
-      // Always capture status, contentType, and raw text first
-      const status = response.status;
-      const contentType = response.headers.get("content-type") || "";
-      const rawText = await response.text(); // ALWAYS read text exactly once
-      let parsed: any = null;
-      try {
-        parsed = rawText ? JSON.parse(rawText) : null;
-      } catch {}
-
-      if (!response.ok) {
-        console.error(`[SIGNUP_HTTP_FAILURE] url=/api/auth/signup status=${status} contentType=${contentType}`);
-        console.error(`[SIGNUP_HTTP_FAILURE_BODY] ${rawText.slice(0, 1500)}`);
-        console.error(`[SIGNUP_HTTP_FAILURE_JSON] ${JSON.stringify(parsed)}`);
-        
-        const errorMessage = parsed?.message || parsed?.error || `Signup failed (${status})`;
-        setErrors({ 
-          submit: errorMessage
-        });
-        setIsSubmitting(false);
-        return;
-      }
-
-      // Verify response structure - MUST have ok: true and user
-      if (parsed?.ok !== true || !parsed?.user) {
-        console.error(`[SIGNUP_BAD_RESPONSE] status=${status} contentType=${contentType}`);
-        console.error(`[SIGNUP_BAD_RESPONSE_BODY] ${rawText.slice(0, 1500)}`);
-        console.error(`[SIGNUP_BAD_RESPONSE_JSON] ${JSON.stringify(parsed)}`);
-        
-        const errorMessage = parsed?.message || "Signup failed";
-        setErrors({ 
-          submit: errorMessage
-        });
-        setIsSubmitting(false);
-        return;
-      }
-
-      const result = parsed;
-
-      // Verify user has required fields
-      if (!result.user.id || !result.user.email || !result.user.role) {
-        console.error(`[SIGNUP_INVALID_USER_DATA] userId=${result.user?.id || "missing"} email=${result.user?.email || "missing"} role=${result.user?.role || "missing"}`);
-        setErrors({ 
-          submit: "Invalid user data from server. Please try again." 
-        });
-        setIsSubmitting(false);
-        return;
-      }
-      
-      // In dev mode, show stored email if it differs from input
-      if (result.storedEmail && result.storedEmail !== formData.email.trim().toLowerCase()) {
-        console.log(`[SIGNUP_DEV_EMAIL] original=${formData.email} stored=${result.storedEmail} note="Use stored email to sign in"`);
-        // Show alert with stored email for easy copy/paste
-        alert(`Account created!\n\nStored email: ${result.storedEmail}\n\nCopy this email to sign in.`);
-      }
-      
-      // TASK 3: Success - signup completed and verified, redirect to sign-in
-      // Pre-fill email in sign-in page for convenience
-      const signInUrl = `/auth/sign-in?email=${encodeURIComponent(formData.email.trim().toLowerCase())}`;
-      router.push(signInUrl);
-    } catch (error) {
-      setErrors({ 
-        submit: "Failed to create account. Please try again." 
-      });
-      setIsSubmitting(false);
-    }
-  };
+  }, [supplierId]);
 
   const handleChange = (field: string, value: string | boolean) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-    // Clear error when user starts typing
     if (errors[field]) {
       setErrors((prev) => {
-        const newErrors = { ...prev };
-        delete newErrors[field];
-        return newErrors;
+        const next = { ...prev };
+        delete next[field];
+        return next;
       });
+    }
+  };
+
+  const handleCategoryToggle = (categoryLabel: CategoryLabel) => {
+    const categoryId = labelToCategoryId[categoryLabel];
+    if (!categoryId) return;
+    setCategoriesServed((prev) =>
+      prev.includes(categoryId) ? prev.filter((id) => id !== categoryId) : [...prev, categoryId]
+    );
+    if (errors.categories) {
+      setErrors((prev) => {
+        const next = { ...prev };
+        delete next.categories;
+        return next;
+      });
+    }
+  };
+
+  const claimBlocked =
+    Boolean(supplierId) &&
+    (loadingPreview || Boolean(previewError && !supplierPreview));
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrors({});
+
+    if (!formData.companyName.trim() && !formData.fullName.trim()) {
+      setErrors({ companyName: "Company name or full name is required" });
+      return;
+    }
+
+    if (!formData.email.trim()) {
+      setErrors({ email: "Email is required" });
+      return;
+    }
+    const emailValidation = validateEmailOrTestId(formData.email);
+    if (!emailValidation.ok) {
+      setErrors({ email: emailValidation.message || "Invalid email or test ID" });
+      return;
+    }
+
+    if (!formData.phone.trim()) {
+      setErrors({ phone: "Phone is required" });
+      return;
+    }
+
+    if (!formData.password || formData.password.length < 8) {
+      setErrors({ password: "Password must be at least 8 characters" });
+      return;
+    }
+
+    if (categoriesServed.length === 0) {
+      setErrors({ categories: "Please select at least one category" });
+      return;
+    }
+
+    if (!formData.agreedToTerms) {
+      setErrors({ agreedToTerms: "You must agree to the End User Service Agreement" });
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const payload: Record<string, unknown> = {
+        email: formData.email.trim().toLowerCase(),
+        password: formData.password,
+        role: "SELLER",
+        categoryIds: categoriesServed,
+        categoriesServed,
+        agreedToTerms: true,
+      };
+
+      if (formData.companyName.trim()) payload.companyName = formData.companyName.trim();
+      if (formData.fullName.trim()) payload.fullName = formData.fullName.trim();
+      payload.phone = formData.phone.trim();
+
+      if (supplierId) {
+        payload.supplierId = supplierId;
+      }
+
+      const response = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(payload),
+      });
+
+      const rawText = await response.text();
+      let parsed: { ok?: boolean; message?: string; error?: string; user?: unknown; storedEmail?: string } | null =
+        null;
+      try {
+        parsed = rawText ? JSON.parse(rawText) : null;
+      } catch {
+        parsed = null;
+      }
+
+      if (!response.ok) {
+        const errorMessage =
+          parsed?.message || parsed?.error || `Signup failed (${response.status})`;
+        setErrors({ submit: errorMessage });
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (!parsed || parsed.ok !== true || !parsed.user) {
+        setErrors({ submit: parsed?.message || "Signup failed" });
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (parsed.storedEmail && parsed.storedEmail !== formData.email.trim().toLowerCase()) {
+        alert(
+          `Account created!\n\nStored email: ${parsed.storedEmail}\n\nCopy this email to sign in.`
+        );
+      }
+
+      const emailQ = encodeURIComponent(formData.email.trim().toLowerCase());
+      let signInUrl = `/auth/sign-in?email=${emailQ}`;
+      const returnTo = searchParams.get("returnTo");
+      if (returnTo) {
+        signInUrl += `&returnTo=${encodeURIComponent(returnTo)}`;
+      }
+      router.push(signInUrl);
+    } catch {
+      setErrors({ submit: "Failed to create account. Please try again." });
+      setIsSubmitting(false);
     }
   };
 
@@ -200,39 +227,176 @@ function SellerSignUpPageInner() {
           <Card>
             <CardHeader>
               <h1 className="text-2xl font-semibold text-black text-center">
-                Supplier Access Is Invite-Only During Beta
+                {supplierId ? "Claim supplier account" : "Create seller account"}
               </h1>
+              {supplierId && (
+                <p className="text-sm text-zinc-600 text-center mt-2">
+                  Link your account to this supplier organization.
+                </p>
+              )}
             </CardHeader>
             <CardContent>
-              <div className="flex flex-col gap-6 text-center">
-                <p className="text-zinc-600">
-                  Supplier accounts are currently created by invitation only so we can verify supplier identity and attach each account to the correct company profile.
+              {supplierId && (
+                <div className="mb-6 space-y-3">
+                  {loadingPreview && (
+                    <p className="text-sm text-zinc-600">Loading supplier information…</p>
+                  )}
+                  {previewError && (
+                    <div className="p-4 border border-red-200 rounded-lg bg-red-50">
+                      <p className="text-sm text-red-700">{previewError}</p>
+                    </div>
+                  )}
+                  {supplierPreview && !previewError && (
+                    <div className="p-4 border border-zinc-200 rounded-lg bg-zinc-50">
+                      <p className="text-xs font-medium uppercase tracking-wide text-zinc-500 mb-1">
+                        Claiming supplier
+                      </p>
+                      <p className="text-sm font-semibold text-black">{supplierPreview.name}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+                <div>
+                  <h2 className="text-lg font-semibold text-black mb-4">Account information</h2>
+                  <div className="space-y-4">
+                    <Input
+                      label="Company name *"
+                      type="text"
+                      value={formData.companyName}
+                      onChange={(e) => handleChange("companyName", e.target.value)}
+                      error={errors.companyName}
+                      disabled={claimBlocked}
+                    />
+                    <Input
+                      label="Full name (if no company name)"
+                      type="text"
+                      value={formData.fullName}
+                      onChange={(e) => handleChange("fullName", e.target.value)}
+                      error={errors.fullName}
+                      disabled={claimBlocked}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <h2 className="text-lg font-semibold text-black mb-4">Contact</h2>
+                  <div className="space-y-4">
+                    <Input
+                      label={`${getEmailLabel()} *`}
+                      type={process.env.NODE_ENV === "production" ? "email" : "text"}
+                      value={formData.email}
+                      onChange={(e) => handleChange("email", e.target.value)}
+                      placeholder={getEmailPlaceholder()}
+                      error={errors.email}
+                      disabled={claimBlocked || Boolean(supplierPreview?.email)}
+                      autoComplete="email"
+                    />
+                    <Input
+                      label="Phone *"
+                      type="tel"
+                      value={formData.phone}
+                      onChange={(e) => handleChange("phone", e.target.value)}
+                      error={errors.phone}
+                      disabled={claimBlocked}
+                      autoComplete="tel"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <h2 className="text-lg font-semibold text-black mb-4">Password</h2>
+                  <Input
+                    label="Password *"
+                    type="password"
+                    value={formData.password}
+                    onChange={(e) => handleChange("password", e.target.value)}
+                    error={errors.password}
+                    disabled={claimBlocked}
+                    autoComplete="new-password"
+                  />
+                  <p className="text-xs text-zinc-500 mt-1">At least 8 characters.</p>
+                </div>
+
+                <div>
+                  <h2 className="text-lg font-semibold text-black mb-4">Categories served *</h2>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                    {MATERIAL_CATEGORIES.map((category) => {
+                      const categoryId = labelToCategoryId[category as CategoryLabel];
+                      const isSelected = categoriesServed.includes(categoryId);
+                      return (
+                        <button
+                          key={categoryId}
+                          type="button"
+                          onClick={() => handleCategoryToggle(category as CategoryLabel)}
+                          disabled={claimBlocked}
+                          className={`px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
+                            isSelected
+                              ? "bg-slate-600 text-white border-slate-600"
+                              : "bg-white text-zinc-800 border-zinc-300 hover:bg-zinc-50"
+                          }`}
+                        >
+                          {category}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {errors.categories && (
+                    <p className="mt-2 text-sm text-red-600">{errors.categories}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.agreedToTerms}
+                      onChange={(e) => handleChange("agreedToTerms", e.target.checked)}
+                      disabled={claimBlocked}
+                      className="mt-1 w-4 h-4 rounded border-zinc-300"
+                    />
+                    <span className="text-sm text-zinc-700">
+                      I agree to the{" "}
+                      <Link
+                        href="/legal/terms"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-slate-700 font-medium underline"
+                      >
+                        Agora End User Service Agreement
+                      </Link>
+                      . *
+                    </span>
+                  </label>
+                  {errors.agreedToTerms && (
+                    <p className="mt-1 text-sm text-red-600">{errors.agreedToTerms}</p>
+                  )}
+                </div>
+
+                {errors.submit && (
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-sm text-red-700">{errors.submit}</p>
+                  </div>
+                )}
+
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="lg"
+                  className="w-full"
+                  disabled={isSubmitting || claimBlocked}
+                >
+                  {isSubmitting ? "Creating account…" : "Create seller account"}
+                </Button>
+
+                <p className="text-center text-sm text-zinc-600">
+                  Already have an account?{" "}
+                  <Link href="/auth/sign-in" className="font-medium text-slate-800 hover:underline">
+                    Sign in
+                  </Link>
                 </p>
-
-                <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-5 text-left">
-                  <p className="text-sm font-medium text-black mb-2">
-                    How supplier onboarding works during beta
-                  </p>
-                  <ul className="text-sm text-zinc-600 space-y-2 list-disc pl-5">
-                    <li>Buyers can still create accounts publicly.</li>
-                    <li>Suppliers join Agora through an invite or claim link.</li>
-                    <li>Our team can also onboard suppliers manually.</li>
-                  </ul>
-                </div>
-
-                <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                  <Link href="/auth/sign-in">
-                    <Button variant="primary" size="lg">
-                      Sign In
-                    </Button>
-                  </Link>
-                  <Link href="/suppliers">
-                    <Button variant="secondary" size="lg">
-                      Back to Supplier Page
-                    </Button>
-                  </Link>
-                </div>
-              </div>
+              </form>
             </CardContent>
           </Card>
         </div>
@@ -241,10 +405,16 @@ function SellerSignUpPageInner() {
   );
 }
 
+function SellerSignUpPageWrapper() {
+  const searchParams = useSearchParams();
+  const supplier = searchParams.get("supplier");
+  return <SellerSignUpPageInner key={supplier ?? "public"} />;
+}
+
 export default function SellerSignUpPage() {
   return (
     <Suspense fallback={null}>
-      <SellerSignUpPageInner />
+      <SellerSignUpPageWrapper />
     </Suspense>
   );
 }
