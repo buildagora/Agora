@@ -18,7 +18,7 @@ export default async function MaterialRequestDetailPage({
   const requestId = resolvedParams.requestId;
 
   if (!requestId || requestId.trim() === "") {
-    redirect("/buyer/suppliers/talk");
+    redirect("/buyer/requests");
   }
 
   // Auth check
@@ -62,14 +62,6 @@ export default async function MaterialRequestDetailPage({
             select: {
               id: true,
               updatedAt: true,
-              messages: {
-                orderBy: { createdAt: "desc" },
-                take: 1,
-                select: {
-                  body: true,
-                  createdAt: true,
-                },
-              },
             },
           },
         },
@@ -79,11 +71,11 @@ export default async function MaterialRequestDetailPage({
   });
 
   if (!materialRequest) {
-    redirect("/buyer/suppliers/talk");
+    redirect("/buyer/requests");
   }
 
   if (materialRequest.buyerId !== dbUser.id) {
-    redirect("/buyer/suppliers/talk");
+    redirect("/buyer/requests");
   }
 
   // Group recipients by status
@@ -119,7 +111,13 @@ export default async function MaterialRequestDetailPage({
   };
 
   const formatRecipient = (r: typeof materialRequest.recipients[0]) => {
-    const lastMessage = r.conversation.messages[0];
+    const activityAt =
+      r.respondedAt ??
+      r.viewedAt ??
+      r.statusUpdatedAt ??
+      r.sentAt ??
+      r.conversation.updatedAt;
+
     return {
       supplierId: r.supplierId,
       supplierName: r.supplier.name,
@@ -128,10 +126,8 @@ export default async function MaterialRequestDetailPage({
       sentAt: r.sentAt.toISOString(),
       viewedAt: r.viewedAt?.toISOString() || null,
       respondedAt: r.respondedAt?.toISOString() || null,
-      conversationUpdatedAt: r.conversation.updatedAt.toISOString(),
-      lastMessagePreview: lastMessage
-        ? lastMessage.body.substring(0, 100) + (lastMessage.body.length > 100 ? "..." : "")
-        : null,
+      conversationUpdatedAt: activityAt.toISOString(),
+      operatorNotes: r.operatorNotes ?? null,
     };
   };
 

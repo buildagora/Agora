@@ -213,12 +213,21 @@ export async function POST(
             contextLabel = "Recent supplier response";
           }
 
+          let urlPath: string;
+          if (conversation.materialRequestId) {
+            urlPath = `/buyer/material-requests/${conversation.materialRequestId}`;
+          } else if (conversation.rfqId) {
+            urlPath = `/buyer/rfqs/${conversation.rfqId}?conversationId=${encodeURIComponent(conversationId)}`;
+          } else {
+            urlPath = "/buyer/requests";
+          }
+
           const notificationData: Record<string, unknown> = {
             conversationId: conversationId,
             supplierId: supplier.id,
             supplierName: supplierName,
             messagePreview: messagePreview,
-            urlPath: `/buyer/suppliers/talk/${supplier.id}?conversationId=${conversationId}`,
+            urlPath,
             contextLabel,
           };
           if (conversation.materialRequestId) {

@@ -1,52 +1,38 @@
+/**
+ * GET /api/ops/material-requests/[requestId]
+ *
+ * Same JSON as GET /api/buyer/material-requests/[requestId] (request + recipients
+ * groups). No auth — local / trusted ops only.
+ */
+
 import { NextRequest, NextResponse } from "next/server";
 import { getPrisma } from "@/lib/db.server";
 import { jsonError, withErrorHandling } from "@/lib/apiResponse";
-import { requireCurrentUserFromRequest } from "@/lib/auth/server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/**
- * GET /api/buyer/material-requests/[requestId]
- * 
- * Returns detailed information about a specific material request including all recipients.
- */
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   context: { params: Promise<{ requestId: string }> }
 ) {
   return withErrorHandling(async () => {
-    let user;
-    try {
-      user = await requireCurrentUserFromRequest(request);
-    } catch {
-      return jsonError("UNAUTHORIZED", "Authentication required", 401);
-    }
-
-    if (user.role !== "BUYER") {
-      return jsonError("FORBIDDEN", "Buyer access required", 403);
-    }
-
     const { requestId } = await context.params;
-    const prisma = getPrisma();
+    if (!requestId?.trim()) {
+      return jsonError("BAD_REQUEST", "requestId is required", 400);
+    }
 
-    // Load material request and verify ownership
+    const prisma = getPrisma();
     const materialRequest = await prisma.materialRequest.findUnique({
-      where: { id: requestId },
+      where: { id: requestId.trim() },
       include: {
         recipients: {
           include: {
             supplier: {
-              select: {
-                id: true,
-                name: true,
-              },
+              select: { id: true, name: true },
             },
             conversation: {
-              select: {
-                id: true,
-                updatedAt: true,
-              },
+              select: { id: true, updatedAt: true },
             },
           },
           orderBy: { sentAt: "desc" },
@@ -58,11 +44,6 @@ export async function GET(
       return jsonError("NOT_FOUND", "Material request not found", 404);
     }
 
-    if (materialRequest.buyerId !== user.id) {
-      return jsonError("FORBIDDEN", "Access denied", 403);
-    }
-
-    // Group recipients by status
     const replied: typeof materialRequest.recipients = [];
     const pending: typeof materialRequest.recipients = [];
     const closedOut: typeof materialRequest.recipients = [];
@@ -81,7 +62,7 @@ export async function GET(
       }
     }
 
-    const formatRecipient = (r: typeof materialRequest.recipients[0]) => {
+    const formatRecipient = (r: (typeof materialRequest.recipients)[0]) => {
       const activityAt =
         r.respondedAt ??
         r.viewedAt ??
@@ -123,49 +104,3 @@ export async function GET(
     });
   });
 }
-
-/**
- * DELETE /api/buyer/material-requests/[requestId]
- *
- * Deletes the material request (recipients cascade; conversations get materialRequestId cleared per schema).
- */
-export async function DELETE(
-  _request: NextRequest,
-  context: { params: Promise<{ requestId: string }> }
-) {
-  return withErrorHandling(async () => {
-    let user;
-    try {
-      user = await requireCurrentUserFromRequest(_request);
-    } catch {
-      return jsonError("UNAUTHORIZED", "Authentication required", 401);
-    }
-
-    if (user.role !== "BUYER") {
-      return jsonError("FORBIDDEN", "Buyer access required", 403);
-    }
-
-    const { requestId } = await context.params;
-    const prisma = getPrisma();
-
-    const materialRequest = await prisma.materialRequest.findUnique({
-      where: { id: requestId },
-      select: { id: true, buyerId: true },
-    });
-
-    if (!materialRequest) {
-      return jsonError("NOT_FOUND", "Material request not found", 404);
-    }
-
-    if (materialRequest.buyerId !== user.id) {
-      return jsonError("FORBIDDEN", "Access denied", 403);
-    }
-
-    await prisma.materialRequest.delete({
-      where: { id: materialRequest.id },
-    });
-
-    return NextResponse.json({ ok: true });
-  });
-}
-

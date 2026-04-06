@@ -428,6 +428,7 @@ model MaterialRequestRecipient {
   viewedAt          DateTime?
   respondedAt       DateTime?
   statusUpdatedAt   DateTime             @default(now()) @updatedAt
+  operatorNotes     String?              // Internal ops notes (manual updates)
   createdAt         DateTime             @default(now())
 
   @@unique([materialRequestId, supplierId])

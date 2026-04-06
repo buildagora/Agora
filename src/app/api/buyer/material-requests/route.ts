@@ -3,7 +3,8 @@ import { getPrisma } from "@/lib/db.server";
 import { jsonError, withErrorHandling } from "@/lib/apiResponse";
 import { verifyAuthToken, getAuthCookieName } from "@/lib/jwt";
 import { requireCurrentUserFromRequest } from "@/lib/auth/server";
-import { sendSupplierMessageEmail, sendSupplierOnboardingEmail } from "@/lib/notifications/resend.server";
+import { categoryIdToLabel } from "@/lib/categoryIds";
+import { sendEmail } from "@/lib/email.server";
 import { trackServerEvent } from "@/lib/analytics/server";
 import { ANALYTICS_EVENTS } from "@/lib/analytics/events";
 
@@ -77,11 +78,22 @@ export async function GET(request: NextRequest) {
   });
 }
 
+const OPERATOR_MATERIAL_REQUEST_EMAIL = "buildagora@gmail.com";
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
 /**
  * POST /api/buyer/material-requests
- * 
- * Creates a new material request and broadcasts it to relevant suppliers.
- * For each supplier, creates a conversation and sends the request as a message.
+ *
+ * Creates a material request and recipient rows for matched suppliers.
+ * Supplier conversations are created for schema/FK only; no messages or supplier emails
+ * (operator-assisted flow — operator notified via email).
  */
 export async function POST(request: NextRequest) {
   return withErrorHandling(async () => {
@@ -220,50 +232,26 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // For each target supplier, create a NEW request-specific conversation and send message
-    // Use transactions per supplier to ensure atomicity
+    // For each target supplier: conversation row (required FK for MaterialRequestRecipient)
+    // + recipient row. No supplier messages, emails, or in-app notifications (operator-assisted flow).
     const recipientResults: Array<{ supplierId: string; conversationId: string }> = [];
 
-    // Generate a short title from request text (max ~80 chars)
     const conversationTitle = requestText.trim().substring(0, 80);
     const now = new Date();
 
     for (const supplier of targetSuppliers) {
       try {
-        // Wrap per-supplier operations in a transaction for atomicity
         await prisma.$transaction(async (tx) => {
-          // Create a NEW conversation for this material request (not the general thread)
           const conversation = await tx.supplierConversation.create({
             data: {
               buyerId: dbUser.id,
               supplierId: supplier.id,
-              rfqId: null, // Material requests are not RFQ-scoped
+              rfqId: null,
               materialRequestId: materialRequest.id,
               title: conversationTitle,
             },
           });
 
-          // Create the buyer message in this conversation
-          await tx.supplierMessage.create({
-            data: {
-              conversationId: conversation.id,
-              senderType: "BUYER",
-              senderDisplayName: dbUser.fullName || dbUser.companyName || null,
-              body: requestText.trim(),
-            },
-          });
-
-          // Update conversation updatedAt and unhide for both sides (new activity)
-          await tx.supplierConversation.update({
-            where: { id: conversation.id },
-            data: {
-              updatedAt: now,
-              hiddenForBuyerAt: null,
-              hiddenForSupplierAt: null,
-            },
-          });
-
-          // Create MaterialRequestRecipient with sentAt timestamp
           await tx.materialRequestRecipient.create({
             data: {
               materialRequestId: materialRequest.id,
@@ -280,126 +268,57 @@ export async function POST(request: NextRequest) {
             conversationId: conversation.id,
           });
         });
-
-        // Send notifications outside transaction (non-critical path)
-        try {
-          const conversationId = recipientResults[recipientResults.length - 1].conversationId;
-          
-          // Load supplier info for notifications
-          const supplierInfo = await prisma.supplier.findUnique({
-            where: { id: supplier.id },
-            select: { id: true, name: true, email: true },
-          });
-
-          if (!supplierInfo) {
-            console.warn("[MATERIAL_REQUEST_SUPPLIER_NOT_FOUND]", {
-              materialRequestId: materialRequest.id,
-              supplierId: supplier.id,
-            });
-            continue;
-          }
-
-          const buyerName = dbUser.fullName || dbUser.companyName || "Buyer";
-          const messagePreview = requestText.trim().substring(0, 160);
-
-          // Find ALL ACTIVE supplier members for this supplier
-          const activeMembers = await prisma.supplierMember.findMany({
-            where: {
-              supplierId: supplier.id,
-              status: "ACTIVE",
-            },
-            include: {
-              user: {
-                select: { id: true, email: true },
-              },
-            },
-          });
-
-          // FALLBACK: If no active members, send onboarding email to supplier org email
-          if (activeMembers.length === 0) {
-            if (supplierInfo.email) {
-              try {
-                await sendSupplierOnboardingEmail({
-                  to: supplierInfo.email,
-                  supplierName: supplierInfo.name,
-                  buyerName: buyerName,
-                  messagePreview: messagePreview,
-                  conversationId: conversationId,
-                  supplierId: supplier.id,
-                });
-              } catch (emailError) {
-                console.error("[MATERIAL_REQUEST_FALLBACK_EMAIL_FAILED]", {
-                  supplierId: supplier.id,
-                  error: emailError instanceof Error ? emailError.message : String(emailError),
-                });
-              }
-            }
-            // Continue to next supplier
-            continue;
-          }
-
-          // Notify each active member (group chat behavior)
-          for (const member of activeMembers) {
-            // Send email notification
-            if (member.user.email) {
-              try {
-                await sendSupplierMessageEmail({
-                  to: member.user.email,
-                  supplierName: supplierInfo.name,
-                  buyerName: buyerName,
-                  conversationId: conversationId,
-                  supplierId: supplier.id,
-                  messagePreview: messagePreview,
-                });
-              } catch (emailError) {
-                console.error("[MATERIAL_REQUEST_MEMBER_EMAIL_FAILED]", {
-                  supplierId: supplier.id,
-                  memberUserId: member.user.id,
-                  error: emailError instanceof Error ? emailError.message : String(emailError),
-                });
-              }
-            }
-
-            // Create in-app notification
-            try {
-              await prisma.notification.create({
-                data: {
-                  userId: member.user.id,
-                  type: "MESSAGE_RECEIVED",
-                  data: JSON.stringify({
-                    conversationId: conversationId,
-                    supplierId: supplier.id,
-                    buyerId: dbUser.id,
-                    buyerName: buyerName,
-                    messagePreview: messagePreview,
-                    urlPath: `/seller/messages?conversationId=${encodeURIComponent(conversationId)}`,
-                  }),
-                },
-              });
-            } catch (notificationError) {
-              console.error("[MATERIAL_REQUEST_NOTIFICATION_CREATE_FAILED]", {
-                memberUserId: member.user.id,
-                supplierId: supplier.id,
-                error: notificationError instanceof Error ? notificationError.message : String(notificationError),
-              });
-            }
-          }
-        } catch (notificationError) {
-          // Log but don't fail - message was already created in transaction
-          console.error("[MATERIAL_REQUEST_NOTIFICATION_ERROR]", {
-            materialRequestId: materialRequest.id,
-            supplierId: supplier.id,
-            error: notificationError instanceof Error ? notificationError.message : String(notificationError),
-          });
-        }
       } catch (error) {
-        // Log error but continue with other suppliers
         console.error("[MATERIAL_REQUEST_SUPPLIER_ERROR]", {
           materialRequestId: materialRequest.id,
           supplierId: supplier.id,
           error: error instanceof Error ? error.message : String(error),
         });
       }
+    }
+
+    const categoryLabel =
+      categoryIdToLabel[normalizedCategoryId as keyof typeof categoryIdToLabel] ||
+      normalizedCategoryId;
+    const buyerDisplayName =
+      dbUser.fullName?.trim() || dbUser.companyName?.trim() || "—";
+    const submittedAt = materialRequest.createdAt.toISOString();
+
+    try {
+      await sendEmail({
+        to: OPERATOR_MATERIAL_REQUEST_EMAIL,
+        subject: "New Material Request (Agora)",
+        html: `
+          <h2 style="margin:0 0 12px;font-size:18px;">New Material Request (Agora)</h2>
+          <p style="margin:8px 0;"><strong>Buyer:</strong> ${escapeHtml(buyerDisplayName)}</p>
+          <p style="margin:8px 0;"><strong>Category:</strong> ${escapeHtml(categoryLabel)}</p>
+          <p style="margin:8px 0;"><strong>Request:</strong></p>
+          <pre style="white-space:pre-wrap;font-family:inherit;margin:8px 0;padding:12px;background:#f4f4f5;border-radius:8px;">${escapeHtml(requestText.trim())}</pre>
+          <p style="margin:8px 0;"><strong>Timestamp:</strong> ${escapeHtml(submittedAt)}</p>
+          <p style="margin:8px 0;font-size:12px;color:#71717a;">Request ID: ${escapeHtml(materialRequest.id)}</p>
+        `,
+        text: [
+          "New Material Request (Agora)",
+          "",
+          `Buyer: ${buyerDisplayName}`,
+          `Category: ${categoryLabel}`,
+          "",
+          "Request:",
+          requestText.trim(),
+          "",
+          `Timestamp: ${submittedAt}`,
+          `Request ID: ${materialRequest.id}`,
+        ].join("\n"),
+      });
+      console.log("[MATERIAL_REQUEST_OPERATOR_EMAIL_SENT]", {
+        materialRequestId: materialRequest.id,
+        to: OPERATOR_MATERIAL_REQUEST_EMAIL,
+      });
+    } catch (emailError) {
+      console.error("[MATERIAL_REQUEST_OPERATOR_EMAIL_FAILED]", {
+        materialRequestId: materialRequest.id,
+        error: emailError instanceof Error ? emailError.message : String(emailError),
+      });
     }
 
     console.log("[MATERIAL_REQUEST_CREATED]", {

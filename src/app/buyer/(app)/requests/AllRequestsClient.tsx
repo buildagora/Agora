@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Tabs, { TabsList, TabsTrigger, TabsContent } from "@/components/ui2/Tabs";
 import Card, { CardContent } from "@/components/ui2/Card";
-import Badge from "@/components/ui2/Badge";
+import Button from "@/components/ui2/Button";
 import { categoryIdToLabel } from "@/lib/categoryIds";
 
 interface MaterialRequest {
@@ -86,11 +86,34 @@ function truncateText(text: string, maxLength: number = 80): string {
   return text.substring(0, maxLength).trim() + "...";
 }
 
+async function deleteMaterialRequest(id: string): Promise<{ ok: true } | { ok: false; message: string }> {
+  const res = await fetch(`/api/buyer/material-requests/${id}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+  const data = (await res.json().catch(() => null)) as {
+    ok?: boolean;
+    message?: string;
+    error?: string;
+  } | null;
+  if (res.ok && data?.ok) {
+    return { ok: true };
+  }
+  const message =
+    (data && typeof data.message === "string" && data.message) ||
+    (data && typeof data.error === "string" && data.error) ||
+    `Could not delete (${res.status})`;
+  return { ok: false, message };
+}
+
 export default function AllRequestsClient() {
   const [activeTab, setActiveTab] = useState("materials");
   const [materialRequests, setMaterialRequests] = useState<MaterialRequest[]>([]);
   const [loadingMaterials, setLoadingMaterials] = useState(true);
   const [materialsError, setMaterialsError] = useState<string | null>(null);
+  const [deleteRequestId, setDeleteRequestId] = useState<string | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDeleteSubmitting, setIsDeleteSubmitting] = useState(false);
   const [bidRequests, setBidRequests] = useState<BidRequest[]>([]);
   const [loadingBids, setLoadingBids] = useState(false);
   const [bidsError, setBidsError] = useState<string | null>(null);
@@ -155,6 +178,12 @@ export default function AllRequestsClient() {
     }
   }, [activeTab]);
 
+  function closeDeleteModal() {
+    setIsDeleteModalOpen(false);
+    setDeleteRequestId(null);
+    setIsDeleteSubmitting(false);
+  }
+
   return (
     <div className="flex flex-1 px-6 py-8">
       <div className="w-full max-w-6xl mx-auto">
@@ -201,28 +230,49 @@ export default function AllRequestsClient() {
             ) : (
               <div className="space-y-4">
                 {materialRequests.map((request) => (
-                  <Link
+                  <Card
                     key={request.id}
-                    href={`/buyer/material-requests/${request.id}`}
-                    className="block"
+                    className="hover:bg-gray-50 transition-colors"
                   >
-                    <Card className="hover:bg-gray-50 transition-colors cursor-pointer">
-                      <CardContent className="p-6">
-                        <div className="flex items-start justify-between mb-3">
-                          <div className="flex-1">
-                            <h3 className="text-base font-semibold text-black mb-1">
-                              {truncateText(request.requestText)}
-                            </h3>
-                            <div className="flex items-center gap-3 text-sm text-zinc-600">
-                              <span>{getCategoryLabel(request.categoryId)}</span>
-                              <span>•</span>
-                              <span>{formatShortDate(request.createdAt)}</span>
-                            </div>
+                    <CardContent className="p-6">
+                      <div className="flex items-start gap-4 mb-3">
+                        <Link
+                          href={`/buyer/material-requests/${request.id}`}
+                          className="flex-1 min-w-0 block cursor-pointer"
+                        >
+                          <h3 className="text-base font-semibold text-black mb-1">
+                            {truncateText(request.requestText)}
+                          </h3>
+                          <div className="flex items-center gap-3 text-sm text-zinc-600">
+                            <span>{getCategoryLabel(request.categoryId)}</span>
+                            <span>•</span>
+                            <span>{formatShortDate(request.createdAt)}</span>
                           </div>
-                          <div className="ml-4">
-                            {getStatusBadge(request.status)}
-                          </div>
+                        </Link>
+                        <div
+                          className="flex shrink-0 flex-col items-end gap-2"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {getStatusBadge(request.status)}
+                          <button
+                            type="button"
+                            className="text-xs text-zinc-600 underline underline-offset-2 hover:text-red-700 disabled:opacity-50"
+                            disabled={isDeleteModalOpen}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setDeleteRequestId(request.id);
+                              setIsDeleteModalOpen(true);
+                            }}
+                          >
+                            Delete
+                          </button>
                         </div>
+                      </div>
+                      <Link
+                        href={`/buyer/material-requests/${request.id}`}
+                        className="block cursor-pointer"
+                      >
                         <div className="text-sm text-zinc-600 mt-3 pt-3 border-t border-zinc-200">
                           Sent to {request.counts.totalRecipients} supplier{request.counts.totalRecipients !== 1 ? "s" : ""}
                           {request.counts.repliedCount > 0 && (
@@ -232,9 +282,9 @@ export default function AllRequestsClient() {
                             <> • {request.counts.pendingCount} pending</>
                           )}
                         </div>
-                      </CardContent>
-                    </Card>
-                  </Link>
+                      </Link>
+                    </CardContent>
+                  </Card>
                 ))}
               </div>
             )}
@@ -302,6 +352,77 @@ export default function AllRequestsClient() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {isDeleteModalOpen && deleteRequestId ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-request-modal-title"
+        >
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/50"
+            aria-label="Close dialog"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (!isDeleteSubmitting) closeDeleteModal();
+            }}
+          />
+          <Card
+            className="relative z-10 w-full max-w-md shadow-lg border border-zinc-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <CardContent className="p-6">
+              <h2
+                id="delete-request-modal-title"
+                className="text-lg font-semibold text-black"
+              >
+                Delete request?
+              </h2>
+              <p className="mt-2 text-sm text-zinc-600">
+                This action cannot be undone.
+              </p>
+              <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  disabled={isDeleteSubmitting}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    closeDeleteModal();
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  variant="primary"
+                  size="sm"
+                  className="!bg-red-600 hover:!bg-red-700 focus:!ring-red-600"
+                  disabled={isDeleteSubmitting}
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    const id = deleteRequestId;
+                    setIsDeleteSubmitting(true);
+                    const result = await deleteMaterialRequest(id);
+                    setIsDeleteSubmitting(false);
+                    if (result.ok) {
+                      setMaterialRequests((prev) => prev.filter((r) => r.id !== id));
+                      closeDeleteModal();
+                    } else {
+                      window.alert(result.message);
+                    }
+                  }}
+                >
+                  {isDeleteSubmitting ? "Deleting…" : "Delete"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      ) : null}
     </div>
   );
 }

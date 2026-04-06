@@ -86,6 +86,9 @@ export default async function SupplierConversationPage({
         redirect(`/buyer/suppliers/talk/${fullConv.supplierId}?conversationId=${encodeURIComponent(conversationIdFromQuery)}`);
       }
       selectedConversation = { id: fullConv.id, materialRequestId: fullConv.materialRequestId };
+      if (selectedConversation.materialRequestId) {
+        redirect(`/buyer/material-requests/${selectedConversation.materialRequestId}`);
+      }
     }
   }
 
@@ -245,6 +248,10 @@ export default async function SupplierConversationPage({
       },
     },
   });
+
+  if (fullConversation?.materialRequestId) {
+    redirect(`/buyer/material-requests/${fullConversation.materialRequestId}`);
+  }
 
   // If we didn't have selectedConversation from query param, check if we need to reload sidebar
   // This handles the edge case where we found/created a material-request conversation without a conversationId in query
