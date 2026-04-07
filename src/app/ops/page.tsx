@@ -28,30 +28,30 @@ export default function OpsMaterialRequestsPage() {
 
   useEffect(() => {
     let cancelled = false;
+
     (async () => {
       try {
-        let res = await fetch("/api/buyer/material-requests", {
-          credentials: "include",
-        });
-        if (res.status === 401 || res.status === 403) {
-          res = await fetch("/api/ops/material-requests");
-        }
+        const res = await fetch("/api/ops/material-requests");
+
         const json = await res.json().catch(() => null);
+
         if (!res.ok || !json?.ok || !Array.isArray(json.data)) {
           const msg =
             typeof json?.message === "string"
               ? json.message
               : typeof json?.error === "string"
-                ? json.error
-                : `Failed to load (${res.status})`;
+              ? json.error
+              : `Failed to load (${res.status})`;
+
           if (!cancelled) {
             setError(msg);
             setRows([]);
           }
           return;
         }
+
         if (!cancelled) {
-          setRows(json.data as MaterialRequestRow[]);
+          setRows(json.data);
           setError(null);
         }
       } catch {
@@ -61,6 +61,7 @@ export default function OpsMaterialRequestsPage() {
         }
       }
     })();
+
     return () => {
       cancelled = true;
     };
