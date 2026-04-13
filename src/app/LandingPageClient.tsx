@@ -217,7 +217,7 @@ export default function LandingPageClient() {
             Stop calling suppliers to find material
           </h1>
           <p className="text-base sm:text-lg text-zinc-600 mb-6 sm:mb-8 max-w-xl mx-auto leading-relaxed">
-            Search by category, see who can help, then create a free account to send your request.
+            Search for materials. Instantly see which suppliers have it.
           </p>
 
           <Card className="border-zinc-200 border-2 shadow-md text-left max-w-2xl mx-auto ring-1 ring-zinc-100">
@@ -411,6 +411,148 @@ export default function LandingPageClient() {
             </section>
           </>
         )}
+
+        <section className="border-t border-zinc-200 bg-zinc-50/80">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 py-16 sm:py-20 lg:py-24 space-y-20 sm:space-y-24">
+
+            {/* 1. How Agora Works */}
+            <div>
+              <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-10">
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-zinc-500 mb-3">
+                  Simple workflow
+                </p>
+                <h2 className="text-2xl sm:text-3xl font-semibold text-black tracking-tight">
+                  How Agora Works
+                </h2>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5">
+                <Card className="border-zinc-200/90 bg-white shadow-sm ring-1 ring-zinc-100">
+                  <CardContent className="p-5 sm:p-6">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 mb-2">
+                      Step 1
+                    </p>
+                    <h3 className="text-base font-semibold text-black mb-2">
+                      Search for what you need
+                    </h3>
+                    <p className="text-sm text-zinc-600 leading-relaxed">
+                      Search or enter what you need—materials, quantities, and timing—in one request.
+                    </p>
+                  </CardContent>
+                </Card>
+                <Card className="border-zinc-200/90 bg-white shadow-sm ring-1 ring-zinc-100">
+                  <CardContent className="p-5 sm:p-6">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 mb-2">
+                      Step 2
+                    </p>
+                    <h3 className="text-base font-semibold text-black mb-2">
+                      Suppliers respond
+                    </h3>
+                    <p className="text-sm text-zinc-600 leading-relaxed">
+                      Multiple suppliers return pricing and availability so you can compare without chasing callbacks.
+                    </p>
+                  </CardContent>
+                </Card>
+                <Card className="border-zinc-200/90 bg-white shadow-sm ring-1 ring-zinc-100">
+                  <CardContent className="p-5 sm:p-6">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 mb-2">
+                      Step 3
+                    </p>
+                    <h3 className="text-base font-semibold text-black mb-2">
+                      Move forward faster
+                    </h3>
+                    <p className="text-sm text-zinc-600 leading-relaxed">
+                      Pick the best option and keep the job moving—less phone tag, fewer wasted trips.
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+
+            {/* 2. Why Contractors Use Agora + comparison */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-14 lg:items-stretch">
+              <div className="text-left space-y-5">
+                <h2 className="text-2xl sm:text-3xl font-semibold text-black tracking-tight">
+                  Why Contractors Use Agora
+                </h2>
+                <p className="text-sm sm:text-base text-zinc-600 leading-relaxed max-w-md">
+                  Replace endless calling with one request and structured answers—built for how crews actually buy materials.
+                </p>
+                <ul className="text-sm text-zinc-700 space-y-2.5 max-w-lg pt-1">
+                  <li className="flex gap-2">
+                    <span className="text-zinc-400 shrink-0" aria-hidden>—</span>
+                    <span>Stop wasting hours calling suppliers</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="text-zinc-400 shrink-0" aria-hidden>—</span>
+                    <span>Get competitive pricing from multiple suppliers</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="text-zinc-400 shrink-0" aria-hidden>—</span>
+                    <span>Know what’s in stock before you drive</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="text-zinc-400 shrink-0" aria-hidden>—</span>
+                    <span>Reach more suppliers with a single request</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="text-zinc-400 shrink-0" aria-hidden>—</span>
+                    <span>Make faster decisions and keep jobs moving</span>
+                  </li>
+                </ul>
+              </div>
+
+              <Card className="border-zinc-200 bg-white shadow-md ring-1 ring-zinc-100/80 h-full">
+                <CardContent className="p-5 sm:p-6 flex flex-col h-full">
+                  <h3 className="text-base font-semibold text-black mb-4 pb-3 border-b border-zinc-100">
+                    The Old Way vs. Agora
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5 flex-1 text-sm">
+                    <div className="rounded-lg bg-zinc-50 border border-zinc-100 p-4">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500 mb-3">
+                        The Old Way
+                      </p>
+                      <ul className="space-y-2 text-zinc-600 leading-snug">
+                        <li>Call 3–5 suppliers</li>
+                        <li>Wait around for callbacks</li>
+                        <li>Inconsistent pricing</li>
+                        <li>Drive around just to check stock</li>
+                      </ul>
+                    </div>
+                    <div className="rounded-lg bg-white border border-zinc-200 p-4 shadow-sm">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500 mb-3">
+                        Agora
+                      </p>
+                      <ul className="space-y-2 text-zinc-800 leading-snug">
+                        <li>Send one request</li>
+                        <li>Multiple suppliers respond</li>
+                        <li>Pricing & availability upfront</li>
+                        <li>Decide without the back-and-forth</li>
+                      </ul>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* 3. Huntsville + CTA */}
+            <div className="text-center max-w-xl mx-auto space-y-6 pt-2">
+              <h2 className="text-2xl sm:text-3xl font-semibold text-black tracking-tight">
+                Built for Contractors in Huntsville
+              </h2>
+              <p className="text-sm sm:text-[15px] text-zinc-600 leading-relaxed">
+                Agora is building a local supply network in Huntsville so contractors can find materials faster, compare options more easily, and keep jobs moving without calling all over town.
+              </p>
+              <button
+                type="button"
+                onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+                className="inline-flex px-6 py-3 bg-black text-white rounded-lg text-sm font-semibold hover:opacity-90 transition-opacity shadow-sm"
+              >
+                Find Pricing & Availability
+              </button>
+            </div>
+
+          </div>
+        </section>
       </main>
       <footer className="border-t border-zinc-200 bg-white">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-6 flex items-center justify-center gap-2 text-sm text-zinc-600">
