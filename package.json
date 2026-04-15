@@ -17,7 +17,7 @@
     "dev:clean": "npx tsx scripts/assert-cwd.ts && rm -rf .next && node scripts/check-root.js && npx tsx scripts/assert-project-root.ts && next dev --turbo --hostname 127.0.0.1 --port 3000",
     "dev:webpack": "npx tsx scripts/assert-cwd.ts && node scripts/check-root.js && npx tsx scripts/assert-project-root.ts && next dev",
     "dev:status": "npx tsx scripts/dev-status.ts",
-    "build": "next build",
+    "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
     "test:messages": "tsx scripts/test-messages.ts",
