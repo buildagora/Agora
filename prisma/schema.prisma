@@ -404,6 +404,9 @@ model MaterialRequest {
   status          String                     @default("OPEN") // OPEN | CLOSED | FULFILLED | CANCELLED
   closedAt        DateTime?
   fulfilledAt     DateTime?
+  locationCity    String?
+  locationRegion  String?
+  locationCountry String?
   createdAt       DateTime                   @default(now())
   updatedAt       DateTime                   @updatedAt
   recipients      MaterialRequestRecipient[]

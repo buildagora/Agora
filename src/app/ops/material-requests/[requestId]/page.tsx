@@ -9,7 +9,21 @@ type RequestSummary = {
   categoryId: string;
   requestText: string;
   createdAt: string;
+  locationCity?: string | null;
+  locationRegion?: string | null;
+  locationCountry?: string | null;
 };
+
+function formatOpsRequestLocation(r: RequestSummary): string | null {
+  const city = r.locationCity?.trim();
+  const region = r.locationRegion?.trim();
+  const country = r.locationCountry?.trim();
+  if (city || region) {
+    return [city, region].filter(Boolean).join(", ");
+  }
+  if (country) return country;
+  return null;
+}
 
 type RecipientRow = {
   supplierId: string;
@@ -94,6 +108,9 @@ export default function OpsMaterialRequestDetailPage() {
         categoryId: r.categoryId,
         requestText: r.requestText,
         createdAt: r.createdAt,
+        locationCity: r.locationCity ?? null,
+        locationRegion: r.locationRegion ?? null,
+        locationCountry: r.locationCountry ?? null,
       });
       setRecipients(allRecipients);
 
@@ -168,6 +185,9 @@ export default function OpsMaterialRequestDetailPage() {
     );
   }
 
+  const locationLine =
+    request != null ? formatOpsRequestLocation(request) : null;
+
   return (
     <div className="min-h-screen bg-zinc-50 px-4 py-8 pb-16">
       <div className="mx-auto w-full max-w-xl space-y-6">
@@ -206,6 +226,12 @@ export default function OpsMaterialRequestDetailPage() {
                 <span className="font-medium text-zinc-800">categoryId:</span>{" "}
                 {request.categoryId}
               </p>
+              {locationLine && (
+                <p className="text-sm text-zinc-600">
+                  <span className="font-medium text-zinc-800">location:</span>{" "}
+                  {locationLine}
+                </p>
+              )}
               <p className="text-sm text-zinc-600">
                 <span className="font-medium text-zinc-800">createdAt:</span>{" "}
                 {new Date(request.createdAt).toLocaleString(undefined, {

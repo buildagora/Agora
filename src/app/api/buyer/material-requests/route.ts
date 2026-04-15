@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { headers } from "next/headers";
 import { getPrisma } from "@/lib/db.server";
 import { jsonError, withErrorHandling } from "@/lib/apiResponse";
 import { verifyAuthToken, getAuthCookieName } from "@/lib/jwt";
@@ -110,29 +111,66 @@ export async function POST(request: NextRequest) {
       return jsonError(errorCode, message, status);
     };
 
-    // Read auth cookie
+    // Read auth cookie — authenticated buyers use JWT; anonymous callers use shared ghost buyer
     const cookieName = getAuthCookieName();
     const token = request.cookies.get(cookieName)?.value;
 
-    if (!token) {
-      return fail("UNAUTHORIZED", 401, "Authentication required");
-    }
-
-    // Verify JWT token
-    const payload = await verifyAuthToken(token);
-    if (!payload) {
-      return fail("UNAUTHORIZED", 401, "Authentication required");
-    }
-
-    // Load user from database
     const prisma = getPrisma();
-    const dbUser = await prisma.user.findUnique({
-      where: { id: payload.userId },
-      select: { id: true, role: true, fullName: true, companyName: true },
-    });
 
-    if (!dbUser) {
-      return fail("UNAUTHORIZED", 401, "User not found");
+    let dbUser: {
+      id: string;
+      role: string;
+      fullName: string | null;
+      companyName: string | null;
+    };
+
+    if (token) {
+      const payload = await verifyAuthToken(token);
+      if (!payload) {
+        return fail("UNAUTHORIZED", 401, "Authentication required");
+      }
+
+      const loaded = await prisma.user.findUnique({
+        where: { id: payload.userId },
+        select: { id: true, role: true, fullName: true, companyName: true },
+      });
+
+      if (!loaded) {
+        return fail("UNAUTHORIZED", 401, "User not found");
+      }
+
+      dbUser = loaded;
+    } else {
+      let ghost = await prisma.user.findFirst({
+        where: {
+          email: "anonymous@agora.com",
+        },
+        select: {
+          id: true,
+          role: true,
+          fullName: true,
+          companyName: true,
+        },
+      });
+
+      if (!ghost) {
+        ghost = await prisma.user.create({
+          data: {
+            email: "anonymous@agora.com",
+            passwordHash: "",
+            role: "BUYER",
+            emailVerified: false,
+          },
+          select: {
+            id: true,
+            role: true,
+            fullName: true,
+            companyName: true,
+          },
+        });
+      }
+
+      dbUser = ghost;
     }
 
     if (dbUser.role !== "BUYER") {
@@ -221,6 +259,22 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    const headerStore = await headers();
+    const rawCity = headerStore.get("x-vercel-ip-city");
+    const rawRegion = headerStore.get("x-vercel-ip-country-region");
+    const rawCountry = headerStore.get("x-vercel-ip-country");
+    const decodeGeo = (raw: string | null) => {
+      if (raw == null || raw === "") return null;
+      try {
+        return decodeURIComponent(raw.replace(/\+/g, " "));
+      } catch {
+        return raw;
+      }
+    };
+    const locationCity = decodeGeo(rawCity);
+    const locationRegion = decodeGeo(rawRegion);
+    const locationCountry = decodeGeo(rawCountry);
+
     // Create MaterialRequest
     const materialRequest = await prisma.materialRequest.create({
       data: {
@@ -229,6 +283,9 @@ export async function POST(request: NextRequest) {
         requestText: requestText.trim(),
         sendMode: sendMode,
         supplierIdsJson: sendMode === "DIRECT" ? JSON.stringify(supplierIds) : null,
+        locationCity: locationCity || null,
+        locationRegion: locationRegion || null,
+        locationCountry: locationCountry || null,
       },
     });
 

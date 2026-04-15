@@ -2,22 +2,13 @@
 
 import Link from "next/link";
 import AgoraLogo from "@/components/brand/AgoraLogo";
-import Button from "@/components/ui2/Button";
 
 export default function TermsPage() {
   return (
     <div className="min-h-screen bg-zinc-50">
-      {/* Navigation */}
-      <nav className="relative z-50 w-full border-b border-zinc-200 bg-white">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex h-16 items-center justify-between">
-            <AgoraLogo variant="auth" />
-            <Link href="/auth/sign-in">
-              <Button variant="outline" size="md">
-                Sign In
-              </Button>
-            </Link>
-          </div>
+      <nav className="w-full border-b border-zinc-200 bg-white">
+        <div className="flex h-16 items-center px-4 sm:px-6 lg:px-8">
+          <AgoraLogo variant="header" />
         </div>
       </nav>
 

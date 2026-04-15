@@ -114,6 +114,9 @@ export async function GET(
         updatedAt: materialRequest.updatedAt.toISOString(),
         closedAt: materialRequest.closedAt?.toISOString() || null,
         fulfilledAt: materialRequest.fulfilledAt?.toISOString() || null,
+        locationCity: materialRequest.locationCity ?? null,
+        locationRegion: materialRequest.locationRegion ?? null,
+        locationCountry: materialRequest.locationCountry ?? null,
       },
       recipients: {
         replied: replied.map(formatRecipient),
