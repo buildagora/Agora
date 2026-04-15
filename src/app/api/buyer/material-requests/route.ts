@@ -117,30 +117,29 @@ export async function POST(request: NextRequest) {
 
     const prisma = getPrisma();
 
-    let dbUser: {
+    type DbUserRow = {
       id: string;
       role: string;
       fullName: string | null;
       companyName: string | null;
     };
 
+    let dbUser: DbUserRow | undefined;
+
     if (token) {
       const payload = await verifyAuthToken(token);
-      if (!payload) {
-        return fail("UNAUTHORIZED", 401, "Authentication required");
+      if (payload) {
+        const loaded = await prisma.user.findUnique({
+          where: { id: payload.userId },
+          select: { id: true, role: true, fullName: true, companyName: true },
+        });
+        if (loaded?.role === "BUYER") {
+          dbUser = loaded;
+        }
       }
+    }
 
-      const loaded = await prisma.user.findUnique({
-        where: { id: payload.userId },
-        select: { id: true, role: true, fullName: true, companyName: true },
-      });
-
-      if (!loaded) {
-        return fail("UNAUTHORIZED", 401, "User not found");
-      }
-
-      dbUser = loaded;
-    } else {
+    if (!dbUser) {
       let ghost = await prisma.user.findFirst({
         where: {
           email: "anonymous@agora.com",
@@ -171,10 +170,6 @@ export async function POST(request: NextRequest) {
       }
 
       dbUser = ghost;
-    }
-
-    if (dbUser.role !== "BUYER") {
-      return fail("FORBIDDEN", 403, "Buyer access required");
     }
 
     // Parse request body
@@ -275,13 +270,23 @@ export async function POST(request: NextRequest) {
     const locationRegion = decodeGeo(rawRegion);
     const locationCountry = decodeGeo(rawCountry);
 
-    // Create MaterialRequest
+    const buyerId = dbUser?.id || null;
+
+    console.log("Creating request:", {
+      buyerId,
+      categoryId: normalizedCategoryId,
+      requestText: requestText.trim(),
+      locationCity,
+      locationRegion,
+      locationCountry,
+    });
+
     const materialRequest = await prisma.materialRequest.create({
       data: {
-        buyerId: dbUser.id,
+        buyerId: buyerId || dbUser.id,
         categoryId: normalizedCategoryId,
         requestText: requestText.trim(),
-        sendMode: sendMode,
+        sendMode,
         supplierIdsJson: sendMode === "DIRECT" ? JSON.stringify(supplierIds) : null,
         locationCity: locationCity || null,
         locationRegion: locationRegion || null,
