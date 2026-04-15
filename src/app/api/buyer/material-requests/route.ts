@@ -139,39 +139,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    if (!dbUser) {
-      let ghost = await prisma.user.findFirst({
-        where: {
-          email: "anonymous@agora.com",
-        },
-        select: {
-          id: true,
-          role: true,
-          fullName: true,
-          companyName: true,
-        },
-      });
-
-      if (!ghost) {
-        ghost = await prisma.user.create({
-          data: {
-            email: "anonymous@agora.com",
-            passwordHash: "",
-            role: "BUYER",
-            emailVerified: false,
-          },
-          select: {
-            id: true,
-            role: true,
-            fullName: true,
-            companyName: true,
-          },
-        });
-      }
-
-      dbUser = ghost;
-    }
-
     // Parse request body
     let body;
     try {
@@ -270,8 +237,43 @@ export async function POST(request: NextRequest) {
     const locationRegion = decodeGeo(rawRegion);
     const locationCountry = decodeGeo(rawCountry);
 
+    let effectiveBuyer: DbUserRow | undefined = dbUser;
+
+    if (!effectiveBuyer) {
+      const foundGhost = await prisma.user.findFirst({
+        where: { email: "anonymous@agora.com" },
+        select: {
+          id: true,
+          role: true,
+          fullName: true,
+          companyName: true,
+        },
+      });
+
+      effectiveBuyer =
+        foundGhost ??
+        (await prisma.user.create({
+          data: {
+            email: "anonymous@agora.com",
+            passwordHash: "",
+            role: "BUYER",
+            emailVerified: false,
+          },
+          select: {
+            id: true,
+            role: true,
+            fullName: true,
+            companyName: true,
+          },
+        }));
+    }
+
+    if (!effectiveBuyer) {
+      return fail("INTERNAL", 500, "Unable to resolve buyer for material request");
+    }
+
     console.log("Creating request:", {
-      buyerId: dbUser?.id || "anonymous",
+      buyerId: effectiveBuyer.id,
       categoryId: normalizedCategoryId,
       requestText: requestText.trim(),
       locationCity,
@@ -281,7 +283,7 @@ export async function POST(request: NextRequest) {
 
     const materialRequest = await prisma.materialRequest.create({
       data: {
-        buyerId: dbUser?.id || "anonymous",
+        buyerId: effectiveBuyer.id,
         categoryId: normalizedCategoryId,
         requestText: requestText.trim(),
         sendMode,
@@ -304,7 +306,7 @@ export async function POST(request: NextRequest) {
         await prisma.$transaction(async (tx) => {
           const conversation = await tx.supplierConversation.create({
             data: {
-              buyerId: dbUser?.id || "anonymous",
+              buyerId: effectiveBuyer.id,
               supplierId: supplier.id,
               rfqId: null,
               materialRequestId: materialRequest.id,
@@ -341,7 +343,9 @@ export async function POST(request: NextRequest) {
       categoryIdToLabel[normalizedCategoryId as keyof typeof categoryIdToLabel] ||
       normalizedCategoryId;
     const buyerDisplayName =
-      dbUser?.fullName?.trim() || dbUser?.companyName?.trim() || "—";
+      effectiveBuyer?.fullName?.trim() ||
+      effectiveBuyer?.companyName?.trim() ||
+      "—";
     const submittedAt = materialRequest.createdAt.toISOString();
 
     try {
@@ -383,7 +387,7 @@ export async function POST(request: NextRequest) {
 
     console.log("[MATERIAL_REQUEST_CREATED]", {
       materialRequestId: materialRequest.id,
-      buyerId: dbUser?.id || "anonymous",
+      buyerId: effectiveBuyer.id,
       categoryId: normalizedCategoryId,
       sendMode: sendMode,
       supplierCount: recipientResults.length,
