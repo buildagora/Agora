@@ -270,10 +270,8 @@ export async function POST(request: NextRequest) {
     const locationRegion = decodeGeo(rawRegion);
     const locationCountry = decodeGeo(rawCountry);
 
-    const buyerId = dbUser?.id || null;
-
     console.log("Creating request:", {
-      buyerId,
+      buyerId: dbUser?.id || "anonymous",
       categoryId: normalizedCategoryId,
       requestText: requestText.trim(),
       locationCity,
@@ -283,7 +281,7 @@ export async function POST(request: NextRequest) {
 
     const materialRequest = await prisma.materialRequest.create({
       data: {
-        buyerId: buyerId || dbUser.id,
+        buyerId: dbUser?.id || "anonymous",
         categoryId: normalizedCategoryId,
         requestText: requestText.trim(),
         sendMode,
@@ -306,7 +304,7 @@ export async function POST(request: NextRequest) {
         await prisma.$transaction(async (tx) => {
           const conversation = await tx.supplierConversation.create({
             data: {
-              buyerId: dbUser.id,
+              buyerId: dbUser?.id || "anonymous",
               supplierId: supplier.id,
               rfqId: null,
               materialRequestId: materialRequest.id,
@@ -343,7 +341,7 @@ export async function POST(request: NextRequest) {
       categoryIdToLabel[normalizedCategoryId as keyof typeof categoryIdToLabel] ||
       normalizedCategoryId;
     const buyerDisplayName =
-      dbUser.fullName?.trim() || dbUser.companyName?.trim() || "—";
+      dbUser?.fullName?.trim() || dbUser?.companyName?.trim() || "—";
     const submittedAt = materialRequest.createdAt.toISOString();
 
     try {
@@ -385,7 +383,7 @@ export async function POST(request: NextRequest) {
 
     console.log("[MATERIAL_REQUEST_CREATED]", {
       materialRequestId: materialRequest.id,
-      buyerId: dbUser.id,
+      buyerId: dbUser?.id || "anonymous",
       categoryId: normalizedCategoryId,
       sendMode: sendMode,
       supplierCount: recipientResults.length,
