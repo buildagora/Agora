@@ -155,7 +155,7 @@ export default function LandingPageClient() {
           </div>
 
           <h1 className="mb-4 w-full text-[18px] font-normal leading-snug text-zinc-600 sm:mb-5 sm:text-[22px]">
-            What construction materials do you need?
+            Search for materials
           </h1>
 
           <div className="w-full">
