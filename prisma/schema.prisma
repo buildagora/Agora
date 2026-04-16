@@ -229,6 +229,8 @@ model Supplier {
   zip       String
   phone     String?
   email     String?
+  logoUrl   String?
+  hoursText String?
   onboarded Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -432,6 +434,14 @@ model MaterialRequestRecipient {
   respondedAt       DateTime?
   statusUpdatedAt   DateTime             @default(now()) @updatedAt
   operatorNotes     String?              // Internal ops notes (manual updates)
+  availabilityStatus String? // IN_STOCK | OUT_OF_STOCK | CHECKING | AVAILABLE_SOON
+  quantityAvailable  Int?
+  quantityUnit       String?
+  price                Decimal? @db.Decimal(10, 2)
+  priceUnit            String?
+  pickupAvailable      Boolean?
+  deliveryAvailable    Boolean?
+  deliveryEta          String?
   createdAt         DateTime             @default(now())
 
   @@unique([materialRequestId, supplierId])

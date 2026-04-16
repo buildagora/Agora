@@ -8,6 +8,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import AgoraLogo from "@/components/brand/AgoraLogo";
+import SiteHeader from "@/components/layout/SiteHeader";
 import { trackEvent } from "@/lib/analytics/client";
 import { ANALYTICS_EVENTS } from "@/lib/analytics/events";
 
@@ -142,11 +143,7 @@ export default function LandingPageClient() {
 
   return (
     <div className="flex min-h-screen flex-col bg-white">
-      <nav className="w-full border-b border-zinc-200 bg-white">
-        <div className="mx-auto flex h-16 max-w-6xl items-center px-4 sm:px-6 lg:px-8">
-          <AgoraLogo variant="header" />
-        </div>
-      </nav>
+      <SiteHeader />
 
       <main className="flex min-h-0 w-full flex-1 flex-col items-center justify-center px-4 py-10 sm:px-6 sm:py-14 lg:px-8 lg:py-16">
         <section className="mx-auto flex w-full max-w-3xl flex-col items-center text-center">

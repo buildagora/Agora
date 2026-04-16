@@ -8,6 +8,7 @@
  */
 
 import { NextRequest } from "next/server";
+import { Prisma } from "@prisma/client";
 import { requireServerEnv } from "@/lib/env";
 import { jsonOk, jsonError, withErrorHandling } from "@/lib/apiResponse";
 import { getPrisma } from "@/lib/db.server";
@@ -16,7 +17,82 @@ import { categoryIdToLabel } from "@/lib/categoryIds";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const ALLOWED_STATUS = new Set(["REPLIED", "OUT_OF_STOCK", "NO_RESPONSE", "VIEWED"]);
+const ALLOWED_STATUS = new Set(["REPLIED", "OUT_OF_STOCK", "NO_RESPONSE", "VIEWED", "SENT"]);
+
+const AVAILABILITY = new Set([
+  "CHECKING",
+  "IN_STOCK",
+  "OUT_OF_STOCK",
+  "AVAILABLE_SOON",
+]);
+
+function statusFromAvailability(av: string): string {
+  switch (av) {
+    case "IN_STOCK":
+    case "AVAILABLE_SOON":
+      return "REPLIED";
+    case "OUT_OF_STOCK":
+      return "OUT_OF_STOCK";
+    case "CHECKING":
+      return "VIEWED";
+    default:
+      return "VIEWED";
+  }
+}
+
+function parseOptionalBool(v: unknown): boolean | null | undefined {
+  if (v === undefined) return undefined;
+  if (v === null || v === "") return null;
+  if (typeof v === "boolean") return v;
+  if (typeof v === "string") {
+    const s = v.trim().toLowerCase();
+    if (s === "true" || s === "1" || s === "yes") return true;
+    if (s === "false" || s === "0" || s === "no") return false;
+  }
+  return undefined;
+}
+
+function parseOptionalInt(v: unknown): number | null | undefined {
+  if (v === undefined) return undefined;
+  if (v === null || v === "") return null;
+  if (typeof v === "number" && Number.isFinite(v)) return Math.trunc(v);
+  if (typeof v === "string") {
+    const t = v.trim();
+    if (t === "") return null;
+    const n = parseInt(t, 10);
+    if (!Number.isFinite(n)) return undefined;
+    return n;
+  }
+  return undefined;
+}
+
+function parseOptionalDecimal(
+  v: unknown
+): Prisma.Decimal | null | undefined {
+  if (v === undefined) return undefined;
+  if (v === null || v === "") return null;
+  if (typeof v === "number" && Number.isFinite(v)) {
+    return new Prisma.Decimal(v);
+  }
+  if (typeof v === "string") {
+    const t = v.trim();
+    if (t === "") return null;
+    try {
+      return new Prisma.Decimal(t);
+    } catch {
+      return undefined;
+    }
+  }
+  return undefined;
+}
+
+function parseOptionalString(v: unknown): string | null | undefined {
+  if (v === undefined) return undefined;
+  if (v === null) return null;
+  if (typeof v !== "string") return undefined;
+  const t = v.trim();
+  return t.length > 0 ? t : null;
+}
 
 export async function POST(
   request: NextRequest,
@@ -43,28 +119,70 @@ export async function POST(
 
     const b = body as Record<string, unknown>;
     const supplierId = b.supplierId;
-    const status = b.status;
-    const notes = b.notes;
 
     if (typeof supplierId !== "string" || !supplierId.trim()) {
       return jsonError("BAD_REQUEST", "supplierId is required", 400);
     }
 
-    if (typeof status !== "string" || !ALLOWED_STATUS.has(status)) {
+    const availabilityRaw = b.availabilityStatus;
+    const legacyStatus = b.status;
+
+    let derivedStatus: string;
+    let availabilityStatusValue: string | null | undefined;
+
+    if (
+      typeof availabilityRaw === "string" &&
+      AVAILABILITY.has(availabilityRaw)
+    ) {
+      availabilityStatusValue = availabilityRaw;
+      derivedStatus = statusFromAvailability(availabilityRaw);
+    } else if (typeof legacyStatus === "string" && ALLOWED_STATUS.has(legacyStatus)) {
+      derivedStatus = legacyStatus;
+      availabilityStatusValue = undefined;
+    } else {
       return jsonError(
         "BAD_REQUEST",
-        "status must be one of: REPLIED, OUT_OF_STOCK, NO_RESPONSE, VIEWED",
+        "Provide availabilityStatus (CHECKING | IN_STOCK | OUT_OF_STOCK | AVAILABLE_SOON) or legacy status (REPLIED | OUT_OF_STOCK | NO_RESPONSE | VIEWED | SENT)",
         400
       );
     }
 
+    const notesFromBody =
+      typeof b.operatorNotes === "string"
+        ? b.operatorNotes
+        : typeof b.notes === "string"
+          ? b.notes
+          : undefined;
+
     let notesValue: string | null | undefined;
-    if (notes !== undefined && notes !== null) {
-      if (typeof notes !== "string") {
-        return jsonError("BAD_REQUEST", "notes must be a string", 400);
-      }
-      const trimmed = notes.trim();
+    if (notesFromBody !== undefined) {
+      const trimmed = notesFromBody.trim();
       notesValue = trimmed.length > 0 ? trimmed : null;
+    }
+
+    const quantityAvailable = parseOptionalInt(b.quantityAvailable);
+    const quantityUnit = parseOptionalString(b.quantityUnit);
+    const price = parseOptionalDecimal(b.price);
+    const priceUnit = parseOptionalString(b.priceUnit);
+    const pickupAvailable = parseOptionalBool(b.pickupAvailable);
+    const deliveryAvailable = parseOptionalBool(b.deliveryAvailable);
+    const deliveryEta = parseOptionalString(b.deliveryEta);
+
+    if (
+      b.quantityAvailable !== undefined &&
+      b.quantityAvailable !== null &&
+      b.quantityAvailable !== "" &&
+      quantityAvailable === undefined
+    ) {
+      return jsonError("BAD_REQUEST", "quantityAvailable must be an integer or empty", 400);
+    }
+    if (
+      b.price !== undefined &&
+      b.price !== null &&
+      String(b.price).trim() !== "" &&
+      price === undefined
+    ) {
+      return jsonError("BAD_REQUEST", "price must be a valid number", 400);
     }
 
     const prisma = getPrisma();
@@ -125,25 +243,44 @@ export async function POST(
     const shouldCreateMessage =
       notesValue !== undefined && notesValue !== null && notesValue.length > 0;
 
-    const updateData: {
-      status: string;
-      statusUpdatedAt: Date;
-      operatorNotes?: string | null;
-      viewedAt?: Date;
-      respondedAt?: Date;
-    } = {
-      status,
+    const updateData: Prisma.MaterialRequestRecipientUpdateInput = {
+      status: derivedStatus,
       statusUpdatedAt: now,
     };
 
+    if (availabilityStatusValue !== undefined) {
+      updateData.availabilityStatus = availabilityStatusValue;
+    }
+
+    if (quantityAvailable !== undefined) {
+      updateData.quantityAvailable = quantityAvailable;
+    }
+    if (quantityUnit !== undefined) {
+      updateData.quantityUnit = quantityUnit;
+    }
+    if (price !== undefined) {
+      updateData.price = price;
+    }
+    if (priceUnit !== undefined) {
+      updateData.priceUnit = priceUnit;
+    }
+    if (pickupAvailable !== undefined) {
+      updateData.pickupAvailable = pickupAvailable;
+    }
+    if (deliveryAvailable !== undefined) {
+      updateData.deliveryAvailable = deliveryAvailable;
+    }
+    if (deliveryEta !== undefined) {
+      updateData.deliveryEta = deliveryEta;
+    }
     if (notesValue !== undefined) {
       updateData.operatorNotes = notesValue;
     }
 
-    if (status === "VIEWED") {
+    if (derivedStatus === "VIEWED" || derivedStatus === "SENT") {
       updateData.viewedAt = now;
     }
-    if (status === "REPLIED") {
+    if (derivedStatus === "REPLIED") {
       updateData.respondedAt = now;
     }
 
@@ -234,6 +371,14 @@ export async function POST(
           viewedAt: true,
           respondedAt: true,
           operatorNotes: true,
+          availabilityStatus: true,
+          quantityAvailable: true,
+          quantityUnit: true,
+          price: true,
+          priceUnit: true,
+          pickupAvailable: true,
+          deliveryAvailable: true,
+          deliveryEta: true,
         },
       });
 
@@ -332,6 +477,7 @@ export async function POST(
           statusUpdatedAt: updated.statusUpdatedAt.toISOString(),
           viewedAt: updated.viewedAt?.toISOString() ?? null,
           respondedAt: updated.respondedAt?.toISOString() ?? null,
+          price: updated.price != null ? Number(updated.price) : null,
         },
       },
       200

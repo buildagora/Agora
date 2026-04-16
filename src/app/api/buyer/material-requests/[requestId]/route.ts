@@ -40,6 +40,12 @@ export async function GET(
               select: {
                 id: true,
                 name: true,
+                street: true,
+                city: true,
+                state: true,
+                zip: true,
+                phone: true,
+                logoUrl: true,
               },
             },
             conversation: {
@@ -99,6 +105,17 @@ export async function GET(
         respondedAt: r.respondedAt?.toISOString() || null,
         conversationUpdatedAt: activityAt.toISOString(),
         operatorNotes: r.operatorNotes ?? null,
+        address: `${r.supplier.street}, ${r.supplier.city}, ${r.supplier.state} ${r.supplier.zip}`,
+        phone: r.supplier.phone,
+        logoUrl: r.supplier.logoUrl ?? null,
+        availabilityStatus: r.availabilityStatus ?? null,
+        quantityAvailable: r.quantityAvailable ?? null,
+        quantityUnit: r.quantityUnit ?? null,
+        price: r.price != null ? Number(r.price) : null,
+        priceUnit: r.priceUnit ?? null,
+        pickupAvailable: r.pickupAvailable ?? null,
+        deliveryAvailable: r.deliveryAvailable ?? null,
+        deliveryEta: r.deliveryEta ?? null,
       };
     };
 

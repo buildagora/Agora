@@ -56,6 +56,13 @@ export default async function MaterialRequestDetailPage({
             select: {
               id: true,
               name: true,
+              street: true,
+              city: true,
+              state: true,
+              zip: true,
+              phone: true,
+              logoUrl: true,
+              hoursText: true,
             },
           },
           conversation: {
@@ -108,6 +115,9 @@ export default async function MaterialRequestDetailPage({
     updatedAt: materialRequest.updatedAt.toISOString(),
     closedAt: materialRequest.closedAt?.toISOString() || null,
     fulfilledAt: materialRequest.fulfilledAt?.toISOString() || null,
+    locationCity: materialRequest.locationCity ?? null,
+    locationRegion: materialRequest.locationRegion ?? null,
+    locationCountry: materialRequest.locationCountry ?? null,
   };
 
   const formatRecipient = (r: typeof materialRequest.recipients[0]) => {
@@ -128,6 +138,18 @@ export default async function MaterialRequestDetailPage({
       respondedAt: r.respondedAt?.toISOString() || null,
       conversationUpdatedAt: activityAt.toISOString(),
       operatorNotes: r.operatorNotes ?? null,
+      address: `${r.supplier.street}, ${r.supplier.city}, ${r.supplier.state} ${r.supplier.zip}`,
+      phone: r.supplier.phone,
+      logoUrl: r.supplier.logoUrl ?? null,
+      hoursText: r.supplier.hoursText ?? null,
+      availabilityStatus: r.availabilityStatus ?? null,
+      quantityAvailable: r.quantityAvailable ?? null,
+      quantityUnit: r.quantityUnit ?? null,
+      price: r.price != null ? Number(r.price) : null,
+      priceUnit: r.priceUnit ?? null,
+      pickupAvailable: r.pickupAvailable ?? null,
+      deliveryAvailable: r.deliveryAvailable ?? null,
+      deliveryEta: r.deliveryEta ?? null,
     };
   };
 

@@ -30,17 +30,71 @@ type RecipientRow = {
   supplierName: string;
   status: string;
   operatorNotes: string | null;
+  availabilityStatus: string | null;
+  quantityAvailable: number | null;
+  quantityUnit: string | null;
+  price: number | null;
+  priceUnit: string | null;
+  pickupAvailable: boolean | null;
+  deliveryAvailable: boolean | null;
+  deliveryEta: string | null;
 };
 
-const STATUS_OPTIONS = ["VIEWED", "REPLIED", "OUT_OF_STOCK", "NO_RESPONSE"] as const;
+const AVAILABILITY_OPTIONS = [
+  "CHECKING",
+  "IN_STOCK",
+  "OUT_OF_STOCK",
+  "AVAILABLE_SOON",
+] as const;
 
-function normalizeStatusForForm(status: string): (typeof STATUS_OPTIONS)[number] {
-  if (STATUS_OPTIONS.includes(status as (typeof STATUS_OPTIONS)[number])) {
-    return status as (typeof STATUS_OPTIONS)[number];
+function inferAvailability(row: RecipientRow): (typeof AVAILABILITY_OPTIONS)[number] {
+  const av = row.availabilityStatus;
+  if (
+    av &&
+    (AVAILABILITY_OPTIONS as readonly string[]).includes(av)
+  ) {
+    return av as (typeof AVAILABILITY_OPTIONS)[number];
   }
-  if (status === "SENT") return "VIEWED";
-  if (status === "DECLINED") return "NO_RESPONSE";
-  return "VIEWED";
+  if (row.status === "REPLIED") return "IN_STOCK";
+  if (row.status === "OUT_OF_STOCK") return "OUT_OF_STOCK";
+  return "CHECKING";
+}
+
+type RecipientDraft = {
+  availabilityStatus: (typeof AVAILABILITY_OPTIONS)[number];
+  quantityAvailable: string;
+  quantityUnit: string;
+  price: string;
+  priceUnit: string;
+  pickupAvailable: "" | "true" | "false";
+  deliveryAvailable: "" | "true" | "false";
+  deliveryEta: string;
+  notes: string;
+};
+
+function rowToDraft(row: RecipientRow): RecipientDraft {
+  return {
+    availabilityStatus: inferAvailability(row),
+    quantityAvailable:
+      row.quantityAvailable != null ? String(row.quantityAvailable) : "",
+    quantityUnit: row.quantityUnit ?? "",
+    price: row.price != null ? String(row.price) : "",
+    priceUnit: row.priceUnit ?? "",
+    pickupAvailable:
+      row.pickupAvailable === true
+        ? "true"
+        : row.pickupAvailable === false
+          ? "false"
+          : "",
+    deliveryAvailable:
+      row.deliveryAvailable === true
+        ? "true"
+        : row.deliveryAvailable === false
+          ? "false"
+          : "",
+    deliveryEta: row.deliveryEta ?? "",
+    notes: row.operatorNotes ?? "",
+  };
 }
 
 async function fetchDetail(requestId: string) {
@@ -66,10 +120,7 @@ export default function OpsMaterialRequestDetailPage() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [savingId, setSavingId] = useState<string | null>(null);
 
-  /** Per-supplier draft: status + notes while editing */
-  const [drafts, setDrafts] = useState<
-    Record<string, { status: string; notes: string }>
-  >({});
+  const [drafts, setDrafts] = useState<Record<string, RecipientDraft>>({});
 
   const load = useCallback(async () => {
     if (!requestId.trim()) {
@@ -114,12 +165,9 @@ export default function OpsMaterialRequestDetailPage() {
       });
       setRecipients(allRecipients);
 
-      const nextDrafts: Record<string, { status: string; notes: string }> = {};
+      const nextDrafts: Record<string, RecipientDraft> = {};
       for (const row of allRecipients) {
-        nextDrafts[row.supplierId] = {
-          status: normalizeStatusForForm(row.status),
-          notes: row.operatorNotes ?? "",
-        };
+        nextDrafts[row.supplierId] = rowToDraft(row);
       }
       setDrafts(nextDrafts);
     } catch {
@@ -144,17 +192,36 @@ export default function OpsMaterialRequestDetailPage() {
     setSaveError(null);
     setSavingId(supplierId);
 
+    const qtyTrim = draft.quantityAvailable.trim();
+    const priceTrim = draft.price.trim();
+
+    const body: Record<string, unknown> = {
+      supplierId,
+      availabilityStatus: draft.availabilityStatus,
+      quantityUnit: draft.quantityUnit.trim() || null,
+      priceUnit: draft.priceUnit.trim() || null,
+      deliveryEta: draft.deliveryEta.trim() || null,
+      operatorNotes: draft.notes.trim() || null,
+    };
+
+    body.quantityAvailable = qtyTrim === "" ? null : qtyTrim;
+    body.price = priceTrim === "" ? null : priceTrim;
+    body.pickupAvailable =
+      draft.pickupAvailable === ""
+        ? null
+        : draft.pickupAvailable === "true";
+    body.deliveryAvailable =
+      draft.deliveryAvailable === ""
+        ? null
+        : draft.deliveryAvailable === "true";
+
     try {
       const res = await fetch(
         `/api/ops/material-requests/${requestId}/update-recipient`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            supplierId,
-            status: draft.status,
-            notes: draft.notes,
-          }),
+          body: JSON.stringify(body),
         }
       );
       const json = await res.json().catch(() => null);
@@ -190,7 +257,7 @@ export default function OpsMaterialRequestDetailPage() {
 
   return (
     <div className="min-h-screen bg-zinc-50 px-4 py-8 pb-16">
-      <div className="mx-auto w-full max-w-xl space-y-6">
+      <div className="mx-auto w-full max-w-2xl space-y-6">
         <div>
           <Link
             href="/ops"
@@ -246,10 +313,7 @@ export default function OpsMaterialRequestDetailPage() {
                 Suppliers ({recipients.length})
               </h2>
               {recipients.map((row) => {
-                const draft = drafts[row.supplierId] ?? {
-                  status: normalizeStatusForForm(row.status),
-                  notes: row.operatorNotes ?? "",
-                };
+                const draft = drafts[row.supplierId] ?? rowToDraft(row);
                 return (
                   <div
                     key={row.supplierId}
@@ -260,27 +324,28 @@ export default function OpsMaterialRequestDetailPage() {
                         {row.supplierName}
                       </p>
                       <p className="mt-1 text-xs text-zinc-500">
-                        Current status:{" "}
+                        Recipient status:{" "}
                         <span className="font-mono">{row.status}</span>
                       </p>
                     </div>
 
                     <label className="block text-xs font-medium text-zinc-700">
-                      Status
+                      Availability
                       <select
                         className="mt-1 block w-full rounded border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900"
-                        value={draft.status}
+                        value={draft.availabilityStatus}
                         onChange={(e) =>
                           setDrafts((d) => ({
                             ...d,
                             [row.supplierId]: {
                               ...draft,
-                              status: e.target.value,
+                              availabilityStatus: e.target
+                                .value as RecipientDraft["availabilityStatus"],
                             },
                           }))
                         }
                       >
-                        {STATUS_OPTIONS.map((opt) => (
+                        {AVAILABILITY_OPTIONS.map((opt) => (
                           <option key={opt} value={opt}>
                             {opt}
                           </option>
@@ -288,8 +353,141 @@ export default function OpsMaterialRequestDetailPage() {
                       </select>
                     </label>
 
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <label className="block text-xs font-medium text-zinc-700">
+                        Quantity available
+                        <input
+                          type="number"
+                          className="mt-1 block w-full rounded border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900"
+                          value={draft.quantityAvailable}
+                          onChange={(e) =>
+                            setDrafts((d) => ({
+                              ...d,
+                              [row.supplierId]: {
+                                ...draft,
+                                quantityAvailable: e.target.value,
+                              },
+                            }))
+                          }
+                        />
+                      </label>
+                      <label className="block text-xs font-medium text-zinc-700">
+                        Quantity unit
+                        <input
+                          type="text"
+                          className="mt-1 block w-full rounded border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900"
+                          value={draft.quantityUnit}
+                          onChange={(e) =>
+                            setDrafts((d) => ({
+                              ...d,
+                              [row.supplierId]: {
+                                ...draft,
+                                quantityUnit: e.target.value,
+                              },
+                            }))
+                          }
+                        />
+                      </label>
+                      <label className="block text-xs font-medium text-zinc-700">
+                        Price
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          className="mt-1 block w-full rounded border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900"
+                          value={draft.price}
+                          onChange={(e) =>
+                            setDrafts((d) => ({
+                              ...d,
+                              [row.supplierId]: {
+                                ...draft,
+                                price: e.target.value,
+                              },
+                            }))
+                          }
+                        />
+                      </label>
+                      <label className="block text-xs font-medium text-zinc-700">
+                        Price unit
+                        <input
+                          type="text"
+                          className="mt-1 block w-full rounded border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900"
+                          value={draft.priceUnit}
+                          onChange={(e) =>
+                            setDrafts((d) => ({
+                              ...d,
+                              [row.supplierId]: {
+                                ...draft,
+                                priceUnit: e.target.value,
+                              },
+                            }))
+                          }
+                        />
+                      </label>
+                    </div>
+
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <label className="block text-xs font-medium text-zinc-700">
+                        Pickup available
+                        <select
+                          className="mt-1 block w-full rounded border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900"
+                          value={draft.pickupAvailable}
+                          onChange={(e) =>
+                            setDrafts((d) => ({
+                              ...d,
+                              [row.supplierId]: {
+                                ...draft,
+                                pickupAvailable: e.target.value as RecipientDraft["pickupAvailable"],
+                              },
+                            }))
+                          }
+                        >
+                          <option value="">—</option>
+                          <option value="true">Yes</option>
+                          <option value="false">No</option>
+                        </select>
+                      </label>
+                      <label className="block text-xs font-medium text-zinc-700">
+                        Delivery available
+                        <select
+                          className="mt-1 block w-full rounded border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900"
+                          value={draft.deliveryAvailable}
+                          onChange={(e) =>
+                            setDrafts((d) => ({
+                              ...d,
+                              [row.supplierId]: {
+                                ...draft,
+                                deliveryAvailable: e.target.value as RecipientDraft["deliveryAvailable"],
+                              },
+                            }))
+                          }
+                        >
+                          <option value="">—</option>
+                          <option value="true">Yes</option>
+                          <option value="false">No</option>
+                        </select>
+                      </label>
+                    </div>
+
                     <label className="block text-xs font-medium text-zinc-700">
-                      Notes
+                      Delivery ETA
+                      <input
+                        type="text"
+                        className="mt-1 block w-full rounded border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900"
+                        value={draft.deliveryEta}
+                        onChange={(e) =>
+                          setDrafts((d) => ({
+                            ...d,
+                            [row.supplierId]: {
+                              ...draft,
+                              deliveryEta: e.target.value,
+                            },
+                          }))
+                        }
+                      />
+                    </label>
+
+                    <label className="block text-xs font-medium text-zinc-700">
+                      Operator notes
                       <textarea
                         className="mt-1 block min-h-[88px] w-full rounded border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900"
                         value={draft.notes}
