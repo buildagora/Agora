@@ -230,9 +230,7 @@ declare global {
 
 export function getPrisma(): PrismaClient {
   if (!globalThis.__prisma) {
-    globalThis.__prisma = new PrismaClient({
-      adapter: new PrismaPg(getPool()),
-    });
+    globalThis.__prisma = new PrismaClient();
     
     // Runtime guard: Verify prisma.user exists (Prisma Client matches schema)
     if (!globalThis.__prisma.user) {
