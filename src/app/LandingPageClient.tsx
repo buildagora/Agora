@@ -86,14 +86,6 @@ export default function LandingPageClient() {
     };
   }, []);
 
-  const trackNavbarCreateAccountClick = () => {
-    trackEvent(ANALYTICS_EVENTS.landing_nav_create_account_clicked, {
-      location: "navbar",
-      page,
-      category_id: selectedCategory,
-    });
-  };
-
   const handleSearchMaterials = () => {
     if (!selectedCategory) return;
 
@@ -151,12 +143,12 @@ export default function LandingPageClient() {
   return (
     <div className="flex min-h-screen flex-col bg-white">
       <nav className="w-full border-b border-zinc-200 bg-white">
-        <div className="flex h-16 items-center px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto flex h-16 max-w-6xl items-center px-4 sm:px-6 lg:px-8">
           <AgoraLogo variant="header" />
         </div>
       </nav>
 
-      <main className="flex min-h-0 w-full flex-1 flex-col items-center justify-center px-4 py-12 sm:px-6 sm:py-16 lg:px-8 lg:py-20">
+      <main className="flex min-h-0 w-full flex-1 flex-col items-center justify-center px-4 py-10 sm:px-6 sm:py-14 lg:px-8 lg:py-16">
         <section className="mx-auto flex w-full max-w-3xl flex-col items-center text-center">
           <div className="mb-5 flex w-full justify-center sm:mb-6">
             <AgoraLogo variant="hero" />
@@ -166,7 +158,7 @@ export default function LandingPageClient() {
             What construction materials do you need?
           </h1>
 
-          <div className="mb-6 w-full sm:mb-8">
+          <div className="w-full">
             <div className="flex w-full min-w-0 items-center rounded-full border border-zinc-200 bg-white py-3 pl-3 pr-2 shadow-sm transition-shadow hover:shadow-md sm:pl-4">
               <select
                 aria-label="Material category"
@@ -215,26 +207,6 @@ export default function LandingPageClient() {
                 {validationError || requestError}
               </p>
             )}
-          </div>
-
-          <div className="flex w-full flex-col items-center justify-center gap-4 sm:flex-row sm:gap-5">
-            <button
-              type="button"
-              onClick={handleSearchMaterials}
-              disabled={loading}
-              className="inline-flex h-11 min-h-0 w-full flex-1 items-center justify-center gap-2 rounded-lg bg-[#1E3A5F] px-5 text-base font-medium text-white shadow-sm transition hover:bg-[#183250] disabled:opacity-60 sm:min-w-[260px]"
-            >
-              <SearchGlyph className="h-[18px] w-[18px] shrink-0 text-white" />
-              {loading ? "Searching…" : "View Supplier Network"}
-            </button>
-
-            <Link
-              href="/auth/sign-up"
-              onClick={trackNavbarCreateAccountClick}
-              className="inline-flex h-11 min-h-0 w-full flex-1 items-center justify-center rounded-lg border border-zinc-300 bg-zinc-100 px-5 text-base font-medium text-[#1E3A5F] transition hover:bg-zinc-200 sm:min-w-[260px]"
-            >
-              + Create an Account
-            </Link>
           </div>
         </section>
       </main>

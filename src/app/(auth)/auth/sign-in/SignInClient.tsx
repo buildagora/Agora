@@ -285,9 +285,6 @@ export default function SignInClient() {
               <div className="flex items-center justify-center mb-2">
                 <AgoraLogo variant="auth" />
               </div>
-              <p className="text-sm text-slate-500">
-                Your Digital Sales Representative
-              </p>
             </div>
             <h2 className="text-xl font-semibold text-black text-center">
               Sign In

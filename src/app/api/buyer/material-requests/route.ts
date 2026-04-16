@@ -393,11 +393,21 @@ export async function POST(request: NextRequest) {
       supplierCount: recipientResults.length,
     });
 
-    await trackServerEvent(ANALYTICS_EVENTS.request_submitted, {
-      category_id: normalizedCategoryId,
-      send_mode: sendMode.toLowerCase(),
-      recipient_count: recipientResults.length,
-    });
+    try {
+      await trackServerEvent(ANALYTICS_EVENTS.request_submitted, {
+        category_id: normalizedCategoryId,
+        send_mode: sendMode.toLowerCase(),
+        recipient_count: recipientResults.length,
+      });
+    } catch (analyticsError) {
+      console.error("[MATERIAL_REQUEST_ANALYTICS_FAILED]", {
+        materialRequestId: materialRequest.id,
+        error:
+          analyticsError instanceof Error
+            ? analyticsError.message
+            : String(analyticsError),
+      });
+    }
 
     return NextResponse.json({
       ok: true,
