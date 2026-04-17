@@ -5,6 +5,19 @@ import { logDatabaseFingerprint, getDatabaseFingerprint, getDatabaseUrlHash } fr
 import { assertDevDbLock } from "./devDbLock";
 import { assertPrismaResolution, getPrismaClientPath } from "./prismaResolutionGuard";
 
+/**
+ * Single server-only entry point for Prisma.
+ *
+ * - Do NOT export a module-level `prisma` — that would instantiate the client at import time
+ *   (breaks builds, causes PrismaClientInitializationError when env is missing during analysis).
+ * - All API routes, server actions, and jobs must call `getPrisma()` inside the handler/body.
+ * - The client is created lazily on first `getPrisma()` and cached on `globalThis`.
+ *
+ * Prisma v7: datasource URLs for Migrate live in `prisma.config.ts`. Runtime connections use the
+ * `@prisma/adapter-pg` driver + `pg` pool (see getPrisma) — `new PrismaClient()` without options
+ * is invalid and causes PrismaClientInitializationError in production.
+ */
+
 // Hard guard: Never allow this module in browser
 if (typeof window !== "undefined") {
   throw new Error(
@@ -23,7 +36,7 @@ if (process.env.NEXT_RUNTIME === "edge") {
 // This checks where Node.js actually resolves @prisma/client from
 if (process.env.NODE_ENV !== "production") {
   assertPrismaResolution();
-  
+
   // Log Prisma Client resolution path for verification
   const prismaPath = getPrismaClientPath();
   console.log("");
@@ -41,10 +54,10 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 // Validate DATABASE_URL - MUST be PostgreSQL, no SQLite fallback
-// This guard runs at module load time (server-only, nodejs runtime only)
+// Called from getPrisma() only — not at module load — so `next build` can run without DATABASE_URL.
 function validateDatabaseUrl(): string {
   const databaseUrl = process.env.DATABASE_URL;
-  
+
   // Check if missing
   if (!databaseUrl || !databaseUrl.trim()) {
     const urlPrefix = databaseUrl ? databaseUrl.substring(0, 20) : "undefined";
@@ -52,11 +65,11 @@ function validateDatabaseUrl(): string {
     const nextRuntime = process.env.NEXT_RUNTIME || "undefined";
     throw new Error(
       `DATABASE_URL is missing. Set DATABASE_URL in .env.local. ` +
-      `Current prefix: ${urlPrefix}... (NODE_ENV=${nodeEnv}, NEXT_RUNTIME=${nextRuntime}). ` +
-      `Required format: postgresql://user:password@host:port/dbname`
+        `Current prefix: ${urlPrefix}... (NODE_ENV=${nodeEnv}, NEXT_RUNTIME=${nextRuntime}). ` +
+        `Required format: postgresql://user:password@host:port/dbname`
     );
   }
-  
+
   // Check if SQLite (file:)
   if (databaseUrl.startsWith("file:")) {
     const urlPrefix = databaseUrl.substring(0, 20);
@@ -64,26 +77,23 @@ function validateDatabaseUrl(): string {
     const nextRuntime = process.env.NEXT_RUNTIME || "undefined";
     throw new Error(
       `DATABASE_URL points to SQLite (file:), but schema expects PostgreSQL. ` +
-      `Current prefix: ${urlPrefix}... (NODE_ENV=${nodeEnv}, NEXT_RUNTIME=${nextRuntime}). ` +
-      `Update DATABASE_URL in .env.local to: postgresql://user:password@localhost:5432/dbname`
+        `Current prefix: ${urlPrefix}... (NODE_ENV=${nodeEnv}, NEXT_RUNTIME=${nextRuntime}). ` +
+        `Update DATABASE_URL in .env.local to: postgresql://user:password@localhost:5432/dbname`
     );
   }
-  
+
   // Check if PostgreSQL format
   if (!databaseUrl.startsWith("postgresql://") && !databaseUrl.startsWith("postgres://")) {
     const urlPrefix = databaseUrl.substring(0, 20);
     throw new Error(
       `DATABASE_URL must start with postgresql:// or postgres://. ` +
-      `Current prefix: ${urlPrefix}... ` +
-      `Update DATABASE_URL in .env.local to: postgresql://user:password@localhost:5432/dbname`
+        `Current prefix: ${urlPrefix}... ` +
+        `Update DATABASE_URL in .env.local to: postgresql://user:password@localhost:5432/dbname`
     );
   }
-  
+
   return databaseUrl;
 }
-
-// Validate at module load (server-only, nodejs runtime only)
-const databaseUrl = validateDatabaseUrl();
 
 // TASK 1: DATABASE REALITY - Expose exact DB fingerprint at startup
 // Log DB fingerprint once at startup (dev only)
@@ -116,10 +126,10 @@ if (process.env.NODE_ENV !== "production") {
       const fingerprint = getDatabaseFingerprint();
       const urlHash = getDatabaseUrlHash();
       const prismaPath = getPrismaClientPath();
-      
+
       // TASK 4: Prove basic query - run prisma.user.count()
       const userCount = await prisma.user.count();
-      
+
       // Log success with diagnostics
       console.log("");
       console.log("=".repeat(70));
@@ -131,11 +141,11 @@ if (process.env.NODE_ENV !== "production") {
       console.log(`URL Hash: ${urlHash}`);
       console.log("=".repeat(70));
       console.log("");
-      
+
       // TASK 6: Check if database is clean (dev only)
       if (userCount > 0) {
         const enforceClean = process.env.ENFORCE_CLEAN_DEV_DB === "1";
-        
+
         console.warn("");
         console.warn("=".repeat(70));
         console.warn("⚠️  DEV DATABASE NOT CLEAN");
@@ -164,7 +174,7 @@ if (process.env.NODE_ENV !== "production") {
       const fingerprint = getDatabaseFingerprint();
       const urlHash = getDatabaseUrlHash();
       const prismaPath = getPrismaClientPath();
-      
+
       console.error("");
       console.error("=".repeat(70));
       console.error("❌ BASIC QUERY FAILED — CANNOT START SERVER");
@@ -212,16 +222,8 @@ try {
   throw error; // Re-throw to crash the app
 }
 
-// Create connection pool (lazy, but validated)
-let pool: pg.Pool | null = null;
-function getPool(): pg.Pool {
-  if (!pool) {
-    pool = new pg.Pool({
-      connectionString: databaseUrl,
-    });
-  }
-  return pool;
-}
+/** Lazy `pg` pool — only created on first `getPrisma()` (never at import time). */
+let pgPool: pg.Pool | null = null;
 
 declare global {
   // eslint-disable-next-line no-var
@@ -230,35 +232,25 @@ declare global {
 
 export function getPrisma(): PrismaClient {
   if (!globalThis.__prisma) {
-    globalThis.__prisma = new PrismaClient();
-    
+    const connectionString = validateDatabaseUrl();
+    if (!pgPool) {
+      pgPool = new pg.Pool({ connectionString });
+    }
+    const adapter = new PrismaPg(pgPool);
+    globalThis.__prisma = new PrismaClient({ adapter });
+
     // Runtime guard: Verify prisma.user exists (Prisma Client matches schema)
     if (!globalThis.__prisma.user) {
       throw new Error(
         "CRITICAL: Prisma Client does not match schema. " +
-        "prisma.user is undefined. " +
-        "Run 'npm run db:generate' from /agora directory. " +
-        "Schema path must be: agora/prisma/schema.prisma"
+          "prisma.user is undefined. " +
+          "Run 'npm run db:generate' from /agora directory. " +
+          "Schema path must be: agora/prisma/schema.prisma"
       );
     }
-    
-    // Runtime guard: Verify prisma.agentThread exists (Prisma Client matches schema)
-    // TEMPORARILY DISABLED: Agent is moved to src/agent and not part of build
-    // if (!globalThis.__prisma.agentThread) {
-    //   const prismaKeys = Object.keys(globalThis.__prisma).filter(key => !key.startsWith("$") && !key.startsWith("_"));
-    //   throw new Error(
-    //     "CRITICAL: Prisma Client does not include AgentThread model. " +
-    //     `Available models: ${prismaKeys.join(", ")}. ` +
-    //     "Run 'npx prisma generate' from /agora directory to regenerate the client. " +
-    //     "Then restart the dev server."
-    //   );
-    // }
   }
   return globalThis.__prisma;
 }
 
 // Re-export fingerprint function from centralized module
 export { getDatabaseFingerprint } from "./dbFingerprint";
-
-// DO NOT export prisma at module scope — it would eagerly instantiate PrismaClient.
-// Always use getPrisma() inside route handlers and jobs to ensure lazy initialization.
