@@ -12,10 +12,10 @@ export const GET = () =>
   withErrorHandling(async () => {
     let prismaClientLoaded = false;
     try {
-      // Try to import prisma (this will fail if there's an engine type issue)
-      const { prisma } = await import("@/lib/db.server");
-      // Just accessing prisma to ensure it's loaded
-      void prisma;
+      // Try to import the db module (this will fail if there's an engine type issue)
+      const { getPrisma } = await import("@/lib/db.server");
+      // Just accessing the getter to ensure the module loads
+      void getPrisma;
       prismaClientLoaded = true;
     } catch (error) {
       // Prisma failed to load - report but don't crash

@@ -13,13 +13,13 @@ import "server-only";
  * @returns Promise that resolves if DB responds within timeout
  */
 export async function pingDb(timeoutMs = 2500): Promise<unknown> {
-  // Import prisma dynamically inside function
-  const { prisma } = await import("@/lib/db.server");
-  
+  const { getPrisma } = await import("@/lib/db.server");
+  const prisma = getPrisma();
+
   const timeout = new Promise<never>((_, reject) => {
     setTimeout(() => reject(new Error("DB_CONNECT_TIMEOUT")), timeoutMs);
   });
-  
+
   return Promise.race([prisma.$queryRaw`SELECT 1`, timeout]);
 }
 

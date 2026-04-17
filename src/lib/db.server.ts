@@ -260,7 +260,5 @@ export function getPrisma(): PrismaClient {
 // Re-export fingerprint function from centralized module
 export { getDatabaseFingerprint } from "./dbFingerprint";
 
-// DO NOT export prisma at module scope - it creates PrismaClient at import time
-// Always use getPrisma() inside route handlers to ensure lazy initialization
-// Export prisma only for backward compatibility, but prefer getPrisma()
-export const prisma = getPrisma();
+// DO NOT export prisma at module scope — it would eagerly instantiate PrismaClient.
+// Always use getPrisma() inside route handlers and jobs to ensure lazy initialization.

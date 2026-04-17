@@ -21,9 +21,9 @@ export async function GET() {
     let prismaImportOk = false;
     let prismaImportErrorMessage: string | null = null;
     try {
-      const { prisma } = await import("@/lib/db.server");
-      // Just verify it's imported (don't make DB calls)
-      void prisma;
+      const { getPrisma } = await import("@/lib/db.server");
+      // Just verify the module imports and the getter exists
+      void getPrisma;
       prismaImportOk = true;
     } catch (e: any) {
       prismaImportOk = false;
