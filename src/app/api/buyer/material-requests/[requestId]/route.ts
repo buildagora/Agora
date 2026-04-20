@@ -30,7 +30,6 @@ export async function GET(
     const { requestId } = await context.params;
     const prisma = getPrisma();
 
-    // Load material request and verify ownership (minimal select for older production schemas)
     const materialRequest = await prisma.materialRequest.findUnique({
       where: { id: requestId },
       select: {
@@ -44,6 +43,9 @@ export async function GET(
         updatedAt: true,
         closedAt: true,
         fulfilledAt: true,
+        locationCity: true,
+        locationRegion: true,
+        locationCountry: true,
         recipients: {
           select: {
             supplierId: true,
@@ -52,6 +54,16 @@ export async function GET(
             sentAt: true,
             viewedAt: true,
             respondedAt: true,
+            statusUpdatedAt: true,
+            operatorNotes: true,
+            availabilityStatus: true,
+            quantityAvailable: true,
+            quantityUnit: true,
+            price: true,
+            priceUnit: true,
+            pickupAvailable: true,
+            deliveryAvailable: true,
+            deliveryEta: true,
             supplier: {
               select: {
                 id: true,
@@ -61,6 +73,8 @@ export async function GET(
                 state: true,
                 zip: true,
                 phone: true,
+                logoUrl: true,
+                hoursText: true,
               },
             },
             conversation: {
@@ -104,10 +118,11 @@ export async function GET(
 
     const formatRecipient = (r: (typeof rows)[number]) => {
       const activityAt =
-        r.conversation?.updatedAt ??
         r.respondedAt ??
         r.viewedAt ??
+        r.statusUpdatedAt ??
         r.sentAt ??
+        r.conversation?.updatedAt ??
         materialRequest.updatedAt;
 
       return {
@@ -119,19 +134,19 @@ export async function GET(
         viewedAt: r.viewedAt?.toISOString() || null,
         respondedAt: r.respondedAt?.toISOString() || null,
         conversationUpdatedAt: activityAt.toISOString(),
-        operatorNotes: null,
+        operatorNotes: r.operatorNotes ?? null,
         address: `${r.supplier.street}, ${r.supplier.city}, ${r.supplier.state} ${r.supplier.zip}`,
         phone: r.supplier.phone,
-        logoUrl: null,
-        hoursText: null,
-        availabilityStatus: null,
-        quantityAvailable: null,
-        quantityUnit: null,
-        price: null,
-        priceUnit: null,
-        pickupAvailable: null,
-        deliveryAvailable: null,
-        deliveryEta: null,
+        logoUrl: r.supplier.logoUrl ?? null,
+        hoursText: r.supplier.hoursText ?? null,
+        availabilityStatus: r.availabilityStatus ?? null,
+        quantityAvailable: r.quantityAvailable ?? null,
+        quantityUnit: r.quantityUnit ?? null,
+        price: r.price != null ? Number(r.price) : null,
+        priceUnit: r.priceUnit ?? null,
+        pickupAvailable: r.pickupAvailable ?? null,
+        deliveryAvailable: r.deliveryAvailable ?? null,
+        deliveryEta: r.deliveryEta ?? null,
       };
     };
 
@@ -147,9 +162,9 @@ export async function GET(
         updatedAt: materialRequest.updatedAt.toISOString(),
         closedAt: materialRequest.closedAt?.toISOString() || null,
         fulfilledAt: materialRequest.fulfilledAt?.toISOString() || null,
-        locationCity: null,
-        locationRegion: null,
-        locationCountry: null,
+        locationCity: materialRequest.locationCity ?? null,
+        locationRegion: materialRequest.locationRegion ?? null,
+        locationCountry: materialRequest.locationCountry ?? null,
       },
       recipients: {
         replied: replied.map(formatRecipient),
