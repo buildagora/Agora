@@ -14,8 +14,8 @@ export const dynamic = "force-dynamic";
  * CRITICAL: This API uses SupplierCategoryLink as the ONLY source of truth for category filtering.
  * Supplier.category is deprecated and should NOT be used for filtering.
  * 
- * Category filtering works with canonical lowercase category IDs:
- * - roofing, hvac, electrical, plumbing, framing, drywall, concrete, lumber_siding
+ * Category filtering uses canonical category IDs from @/lib/categoryIds (see `categoryIdToLabel`),
+ * e.g. roofing, concrete_cement, brick, lumber_siding, hardware_fasteners, etc.
  * 
  * @param categoryId - Optional canonical category ID (lowercase). If "all" or empty, returns all suppliers.
  */

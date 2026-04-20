@@ -14,9 +14,7 @@ export type CategoryOption = {
   label: string;
 };
 
-/**
- * Derive CATEGORY_IDS array from canonical source
- */
+/** Same order as keys in `categoryIdToLabel` — single source of truth. */
 export const CATEGORY_IDS = Object.keys(categoryIdToLabel) as CategoryId[];
 
 /**
@@ -33,26 +31,16 @@ export const MATERIAL_CATEGORIES: string[] = CATEGORY_IDS.map((id) =>
   categoryIdToLabel[id]
 );
 
-/**
- * Category options array (modern object-based structure)
- * Each entry includes both id and label for dropdown use
- */
+/** Dropdown rows: `{ id, label }[]` derived only from `CATEGORY_IDS` / `categoryIdToLabel`. */
 export const CATEGORY_OPTIONS: CategoryOption[] = CATEGORY_IDS.map((id) => ({
   id,
   label: categoryIdToLabel[id],
 }));
 
-/**
- * Buyer-facing category IDs that are currently live/supported
- * Only these categories should appear in buyer UI dropdowns
- */
+/** Buyer UI uses the full canonical category list (same as `CATEGORY_IDS`). */
 export const BUYER_LIVE_CATEGORY_IDS: CategoryId[] = [...CATEGORY_IDS];
 
-/**
- * Buyer-facing category options for UI dropdowns
- * Restricted to only live categories: Roofing and Lumber/Siding
- * Use this in buyer-facing dropdowns instead of CATEGORY_OPTIONS
- */
+/** Alias of `CATEGORY_OPTIONS` — same ids and labels as `BUYER_LIVE_CATEGORY_IDS`. */
 export const BUYER_CATEGORY_OPTIONS: CategoryOption[] = BUYER_LIVE_CATEGORY_IDS.map((id) => ({
   id,
   label: categoryIdToLabel[id],
@@ -103,24 +91,29 @@ export function normalizeCategoryInput(
     };
   }
   
-  // Alias matching (common variations)
+  // Alias matching (common variations and legacy ids)
   const aliases: Record<string, CategoryId> = {
-    "mechanical": "hvac",
-    "hvac": "hvac",
-    "heating": "hvac",
-    "cooling": "hvac",
-    "ac": "hvac",
+    mechanical: "hvac",
+    hvac: "hvac",
+    heating: "hvac",
+    cooling: "hvac",
+    ac: "hvac",
     "air conditioning": "hvac",
-    "roof": "roofing",
-    "roofing": "roofing",
-    "plumb": "plumbing",
-    "plumbing": "plumbing",
-    "electrical": "electrical",
-    "electric": "electrical",
-    "lumber": "lumber_siding",
-    "siding": "lumber_siding",
+    roof: "roofing",
+    roofing: "roofing",
+    plumb: "plumbing",
+    plumbing: "plumbing",
+    electrical: "electrical",
+    electric: "electrical",
+    lumber: "lumber_siding",
+    siding: "lumber_siding",
     "lumber / siding": "lumber_siding",
     "lumber/siding": "lumber_siding",
+    concrete: "concrete_cement",
+    cement: "concrete_cement",
+    concrete_cement: "concrete_cement",
+    masonry: "brick",
+    brick: "brick",
   };
   
   if (aliases[lower]) {

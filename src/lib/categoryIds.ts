@@ -1,51 +1,12 @@
 // src/lib/categoryIds.ts
 
-export const labelToCategoryId = {
-  Roofing: "roofing",
-  HVAC: "hvac",
-  Electrical: "electrical",
-  Plumbing: "plumbing",
-  Framing: "framing",
-  Drywall: "drywall",
-  Concrete: "concrete",
-  "Lumber / Siding": "lumber_siding",
-  "Lumber/Siding": "lumber_siding",
-  Insulation: "insulation",
-  "Steel & Metal": "steel_metal",
-  "Steel/Metal": "steel_metal",
-  Flooring: "flooring",
-  "Tile & Stone": "tile_stone",
-  "Tile/Stone": "tile_stone",
-  "Paint & Coatings": "paint",
-  Paint: "paint",
-  "Windows & Doors": "windows_doors",
-  "Windows/Doors": "windows_doors",
-  "Cabinets & Countertops": "cabinets_countertops",
-  "Cabinets/Countertops": "cabinets_countertops",
-  "Fasteners & Hardware": "hardware_fasteners",
-  "Fasteners/Hardware": "hardware_fasteners",
-  "Tools & Equipment": "tools_equipment",
-  "Tools/Equipment": "tools_equipment",
-  Fencing: "fencing",
-  "Landscaping & Outdoor": "landscaping",
-  Landscaping: "landscaping",
-  "Decking & Railing": "decking_railing",
-  "Decking/Railing": "decking_railing",
-  "Gutters & Drainage": "gutter_drainage",
-  "Gutters/Drainage": "gutter_drainage",
-  "Glass & Glazing": "glass_glazing",
-  "Glass/Glazing": "glass_glazing",
-  Masonry: "masonry",
-} as const;
-
 export const categoryIdToLabel = {
   roofing: "Roofing",
   hvac: "HVAC",
   electrical: "Electrical",
   plumbing: "Plumbing",
-  framing: "Framing",
   drywall: "Drywall",
-  concrete: "Concrete",
+  concrete_cement: "Concrete",
   lumber_siding: "Lumber / Siding",
   insulation: "Insulation",
   steel_metal: "Steel & Metal",
@@ -61,8 +22,19 @@ export const categoryIdToLabel = {
   decking_railing: "Decking & Railing",
   gutter_drainage: "Gutters & Drainage",
   glass_glazing: "Glass & Glazing",
-  masonry: "Masonry",
+  brick: "Masonry",
 } as const;
 
 export type CategoryId = keyof typeof categoryIdToLabel;
+
+type CategoryLabelValue = (typeof categoryIdToLabel)[CategoryId];
+
+/** Exact inverse of `categoryIdToLabel` (one entry per canonical label). */
+export const labelToCategoryId = Object.fromEntries(
+  (Object.keys(categoryIdToLabel) as CategoryId[]).map((id) => [
+    categoryIdToLabel[id],
+    id,
+  ])
+) as { readonly [L in CategoryLabelValue]: CategoryId };
+
 export type CategoryLabel = keyof typeof labelToCategoryId;

@@ -9,10 +9,10 @@ export const AGENT_CAPABILITY_INVENTORY = [
   { id: "hvac", name: "HVAC" },
   { id: "electrical", name: "Electrical" },
   { id: "plumbing", name: "Plumbing" },
-  { id: "framing", name: "Framing" },
   { id: "drywall", name: "Drywall" },
-  { id: "concrete", name: "Concrete" },
-  { id: "lumber_siding", name: "Lumber & Siding" },
+  { id: "concrete_cement", name: "Concrete" },
+  { id: "brick", name: "Masonry" },
+  { id: "lumber_siding", name: "Lumber / Siding" },
 ] as const;
 
 export type CapabilityId = (typeof AGENT_CAPABILITY_INVENTORY)[number]["id"];

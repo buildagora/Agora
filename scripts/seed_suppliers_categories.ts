@@ -81,14 +81,14 @@ const SUPPLIERS: SupplierSeed[] = [
     onboarded: true,
   },
   {
-    name: "Framing Experts",
+    name: "North Alabama Lumber",
     street: "789 Pine St",
     city: "Huntsville",
     state: "AL",
     zip: "35803",
     phone: "256-555-0300",
-    email: "info@framingexperts.com",
-    categoryIds: ["framing", "lumber_siding"],
+    email: "orders@nalumber.example.com",
+    categoryIds: ["lumber_siding"],
     onboarded: true,
   },
   {
@@ -99,7 +99,7 @@ const SUPPLIERS: SupplierSeed[] = [
     zip: "35804",
     phone: "256-555-0400",
     email: "sales@concretesolutions.com",
-    categoryIds: ["concrete"],
+    categoryIds: ["concrete_cement"],
     onboarded: true,
   },
   {

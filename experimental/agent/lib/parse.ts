@@ -29,7 +29,7 @@ export function parseCategory(text: string): string | null {
     "Drywall": ["drywall", "sheetrock", "gypsum"],
     "Insulation": ["insulation", "fiberglass", "foam", "batting"],
     "Windows & Doors": ["window", "door", "frame", "glass"],
-    "Concrete & Masonry": ["concrete", "cement", "block", "brick", "mortar"],
+    "Concrete & Masonry": ["concrete_cement", "cement", "block", "brick", "mortar"],
     "Paint": ["paint", "primer", "stain", "coating"],
   };
 
