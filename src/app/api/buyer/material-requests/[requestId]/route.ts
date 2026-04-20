@@ -30,12 +30,28 @@ export async function GET(
     const { requestId } = await context.params;
     const prisma = getPrisma();
 
-    // Load material request and verify ownership
+    // Load material request and verify ownership (minimal select for older production schemas)
     const materialRequest = await prisma.materialRequest.findUnique({
       where: { id: requestId },
-      include: {
+      select: {
+        id: true,
+        buyerId: true,
+        categoryId: true,
+        requestText: true,
+        sendMode: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+        closedAt: true,
+        fulfilledAt: true,
         recipients: {
-          include: {
+          select: {
+            supplierId: true,
+            conversationId: true,
+            status: true,
+            sentAt: true,
+            viewedAt: true,
+            respondedAt: true,
             supplier: {
               select: {
                 id: true,
@@ -45,7 +61,6 @@ export async function GET(
                 state: true,
                 zip: true,
                 phone: true,
-                logoUrl: true,
               },
             },
             conversation: {
@@ -68,12 +83,12 @@ export async function GET(
       return jsonError("FORBIDDEN", "Access denied", 403);
     }
 
-    // Group recipients by status
-    const replied: typeof materialRequest.recipients = [];
-    const pending: typeof materialRequest.recipients = [];
-    const closedOut: typeof materialRequest.recipients = [];
+    const rows = materialRequest.recipients ?? [];
+    const replied: typeof rows = [];
+    const pending: typeof rows = [];
+    const closedOut: typeof rows = [];
 
-    for (const recipient of materialRequest.recipients) {
+    for (const recipient of rows) {
       if (recipient.status === "REPLIED") {
         replied.push(recipient);
       } else if (recipient.status === "SENT" || recipient.status === "VIEWED") {
@@ -87,13 +102,13 @@ export async function GET(
       }
     }
 
-    const formatRecipient = (r: typeof materialRequest.recipients[0]) => {
+    const formatRecipient = (r: (typeof rows)[number]) => {
       const activityAt =
+        r.conversation?.updatedAt ??
         r.respondedAt ??
         r.viewedAt ??
-        r.statusUpdatedAt ??
         r.sentAt ??
-        r.conversation.updatedAt;
+        materialRequest.updatedAt;
 
       return {
         supplierId: r.supplierId,
@@ -104,18 +119,19 @@ export async function GET(
         viewedAt: r.viewedAt?.toISOString() || null,
         respondedAt: r.respondedAt?.toISOString() || null,
         conversationUpdatedAt: activityAt.toISOString(),
-        operatorNotes: r.operatorNotes ?? null,
+        operatorNotes: null,
         address: `${r.supplier.street}, ${r.supplier.city}, ${r.supplier.state} ${r.supplier.zip}`,
         phone: r.supplier.phone,
-        logoUrl: r.supplier.logoUrl ?? null,
-        availabilityStatus: r.availabilityStatus ?? null,
-        quantityAvailable: r.quantityAvailable ?? null,
-        quantityUnit: r.quantityUnit ?? null,
-        price: r.price != null ? Number(r.price) : null,
-        priceUnit: r.priceUnit ?? null,
-        pickupAvailable: r.pickupAvailable ?? null,
-        deliveryAvailable: r.deliveryAvailable ?? null,
-        deliveryEta: r.deliveryEta ?? null,
+        logoUrl: null,
+        hoursText: null,
+        availabilityStatus: null,
+        quantityAvailable: null,
+        quantityUnit: null,
+        price: null,
+        priceUnit: null,
+        pickupAvailable: null,
+        deliveryAvailable: null,
+        deliveryEta: null,
       };
     };
 
@@ -131,9 +147,9 @@ export async function GET(
         updatedAt: materialRequest.updatedAt.toISOString(),
         closedAt: materialRequest.closedAt?.toISOString() || null,
         fulfilledAt: materialRequest.fulfilledAt?.toISOString() || null,
-        locationCity: materialRequest.locationCity ?? null,
-        locationRegion: materialRequest.locationRegion ?? null,
-        locationCountry: materialRequest.locationCountry ?? null,
+        locationCity: null,
+        locationRegion: null,
+        locationCountry: null,
       },
       recipients: {
         replied: replied.map(formatRecipient),

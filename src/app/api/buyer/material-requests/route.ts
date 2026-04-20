@@ -301,6 +301,8 @@ export async function POST(request: NextRequest) {
     const conversationTitle = requestText.trim().substring(0, 80);
     const now = new Date();
 
+    console.log("Target suppliers:", targetSuppliers);
+
     for (const supplier of targetSuppliers) {
       try {
         await prisma.$transaction(async (tx) => {
@@ -331,12 +333,18 @@ export async function POST(request: NextRequest) {
           });
         });
       } catch (error) {
-        console.error("[MATERIAL_REQUEST_SUPPLIER_ERROR]", {
-          materialRequestId: materialRequest.id,
+        console.error("FAILED TO CREATE RECIPIENT:", {
           supplierId: supplier.id,
-          error: error instanceof Error ? error.message : String(error),
+          requestId: materialRequest.id,
+          error,
         });
+
+        throw error;
       }
+    }
+
+    if (recipientResults.length === 0) {
+      throw new Error("No recipients were created for this request");
     }
 
     const categoryLabel =

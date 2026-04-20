@@ -6,7 +6,7 @@ import MaterialRequestDetailClient from "./MaterialRequestDetailClient";
 
 /**
  * Material Request Detail Page - Server Component
- * 
+ *
  * Loads material request details directly from Prisma.
  */
 export default async function MaterialRequestDetailPage({
@@ -46,12 +46,28 @@ export default async function MaterialRequestDetailPage({
     redirect("/buyer/login");
   }
 
-  // Load material request and verify ownership
+  // Load material request and verify ownership (minimal select for older DB schemas)
   const materialRequest = await prisma.materialRequest.findUnique({
     where: { id: requestId },
-    include: {
+    select: {
+      id: true,
+      buyerId: true,
+      categoryId: true,
+      requestText: true,
+      sendMode: true,
+      status: true,
+      createdAt: true,
+      updatedAt: true,
+      closedAt: true,
+      fulfilledAt: true,
       recipients: {
-        include: {
+        select: {
+          supplierId: true,
+          conversationId: true,
+          status: true,
+          sentAt: true,
+          viewedAt: true,
+          respondedAt: true,
           supplier: {
             select: {
               id: true,
@@ -61,8 +77,6 @@ export default async function MaterialRequestDetailPage({
               state: true,
               zip: true,
               phone: true,
-              logoUrl: true,
-              hoursText: true,
             },
           },
           conversation: {
@@ -85,12 +99,12 @@ export default async function MaterialRequestDetailPage({
     redirect("/buyer/requests");
   }
 
-  // Group recipients by status
-  const replied: typeof materialRequest.recipients = [];
-  const pending: typeof materialRequest.recipients = [];
-  const closedOut: typeof materialRequest.recipients = [];
+  const rows = materialRequest.recipients ?? [];
+  const replied: typeof rows = [];
+  const pending: typeof rows = [];
+  const closedOut: typeof rows = [];
 
-  for (const recipient of materialRequest.recipients) {
+  for (const recipient of rows) {
     if (recipient.status === "REPLIED") {
       replied.push(recipient);
     } else if (recipient.status === "SENT" || recipient.status === "VIEWED") {
@@ -104,7 +118,6 @@ export default async function MaterialRequestDetailPage({
     }
   }
 
-  // Format data for client
   const requestData = {
     id: materialRequest.id,
     categoryId: materialRequest.categoryId,
@@ -115,18 +128,18 @@ export default async function MaterialRequestDetailPage({
     updatedAt: materialRequest.updatedAt.toISOString(),
     closedAt: materialRequest.closedAt?.toISOString() || null,
     fulfilledAt: materialRequest.fulfilledAt?.toISOString() || null,
-    locationCity: materialRequest.locationCity ?? null,
-    locationRegion: materialRequest.locationRegion ?? null,
-    locationCountry: materialRequest.locationCountry ?? null,
+    locationCity: null,
+    locationRegion: null,
+    locationCountry: null,
   };
 
-  const formatRecipient = (r: typeof materialRequest.recipients[0]) => {
+  const formatRecipient = (r: (typeof rows)[number]) => {
     const activityAt =
+      r.conversation?.updatedAt ??
       r.respondedAt ??
       r.viewedAt ??
-      r.statusUpdatedAt ??
       r.sentAt ??
-      r.conversation.updatedAt;
+      materialRequest.updatedAt;
 
     return {
       supplierId: r.supplierId,
@@ -137,19 +150,19 @@ export default async function MaterialRequestDetailPage({
       viewedAt: r.viewedAt?.toISOString() || null,
       respondedAt: r.respondedAt?.toISOString() || null,
       conversationUpdatedAt: activityAt.toISOString(),
-      operatorNotes: r.operatorNotes ?? null,
+      operatorNotes: null,
       address: `${r.supplier.street}, ${r.supplier.city}, ${r.supplier.state} ${r.supplier.zip}`,
       phone: r.supplier.phone,
-      logoUrl: r.supplier.logoUrl ?? null,
-      hoursText: r.supplier.hoursText ?? null,
-      availabilityStatus: r.availabilityStatus ?? null,
-      quantityAvailable: r.quantityAvailable ?? null,
-      quantityUnit: r.quantityUnit ?? null,
-      price: r.price != null ? Number(r.price) : null,
-      priceUnit: r.priceUnit ?? null,
-      pickupAvailable: r.pickupAvailable ?? null,
-      deliveryAvailable: r.deliveryAvailable ?? null,
-      deliveryEta: r.deliveryEta ?? null,
+      logoUrl: null,
+      hoursText: null,
+      availabilityStatus: null,
+      quantityAvailable: null,
+      quantityUnit: null,
+      price: null,
+      priceUnit: null,
+      pickupAvailable: null,
+      deliveryAvailable: null,
+      deliveryEta: null,
     };
   };
 
@@ -166,6 +179,3 @@ export default async function MaterialRequestDetailPage({
     />
   );
 }
-
-
-
