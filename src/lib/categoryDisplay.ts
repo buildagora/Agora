@@ -46,7 +46,7 @@ export const CATEGORY_OPTIONS: CategoryOption[] = CATEGORY_IDS.map((id) => ({
  * Buyer-facing category IDs that are currently live/supported
  * Only these categories should appear in buyer UI dropdowns
  */
-export const BUYER_LIVE_CATEGORY_IDS: CategoryId[] = ["roofing", "lumber_siding"] as const;
+export const BUYER_LIVE_CATEGORY_IDS: CategoryId[] = [...CATEGORY_IDS];
 
 /**
  * Buyer-facing category options for UI dropdowns

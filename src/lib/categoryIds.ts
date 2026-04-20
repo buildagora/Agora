@@ -1,28 +1,68 @@
 // src/lib/categoryIds.ts
 
 export const labelToCategoryId = {
-    Roofing: "roofing",
-    HVAC: "hvac",
-    Electrical: "electrical",
-    Plumbing: "plumbing",
-    Framing: "framing",
-    Drywall: "drywall",
-    Concrete: "concrete",
-    "Lumber / Siding": "lumber_siding",
-    "Lumber/Siding": "lumber_siding",
-  } as const;
-  
-  export const categoryIdToLabel = {
-    roofing: "Roofing",
-    hvac: "HVAC",
-    electrical: "Electrical",
-    plumbing: "Plumbing",
-    framing: "Framing",
-    drywall: "Drywall",
-    concrete: "Concrete",
-    lumber_siding: "Lumber / Siding",
-  } as const;
-  
-  export type CategoryId = keyof typeof categoryIdToLabel;
-  export type CategoryLabel = keyof typeof labelToCategoryId;
-  
+  Roofing: "roofing",
+  HVAC: "hvac",
+  Electrical: "electrical",
+  Plumbing: "plumbing",
+  Framing: "framing",
+  Drywall: "drywall",
+  Concrete: "concrete",
+  "Lumber / Siding": "lumber_siding",
+  "Lumber/Siding": "lumber_siding",
+  Insulation: "insulation",
+  "Steel & Metal": "steel_metal",
+  "Steel/Metal": "steel_metal",
+  Flooring: "flooring",
+  "Tile & Stone": "tile_stone",
+  "Tile/Stone": "tile_stone",
+  "Paint & Coatings": "paint",
+  Paint: "paint",
+  "Windows & Doors": "windows_doors",
+  "Windows/Doors": "windows_doors",
+  "Cabinets & Countertops": "cabinets_countertops",
+  "Cabinets/Countertops": "cabinets_countertops",
+  "Fasteners & Hardware": "hardware_fasteners",
+  "Fasteners/Hardware": "hardware_fasteners",
+  "Tools & Equipment": "tools_equipment",
+  "Tools/Equipment": "tools_equipment",
+  Fencing: "fencing",
+  "Landscaping & Outdoor": "landscaping",
+  Landscaping: "landscaping",
+  "Decking & Railing": "decking_railing",
+  "Decking/Railing": "decking_railing",
+  "Gutters & Drainage": "gutter_drainage",
+  "Gutters/Drainage": "gutter_drainage",
+  "Glass & Glazing": "glass_glazing",
+  "Glass/Glazing": "glass_glazing",
+  Masonry: "masonry",
+} as const;
+
+export const categoryIdToLabel = {
+  roofing: "Roofing",
+  hvac: "HVAC",
+  electrical: "Electrical",
+  plumbing: "Plumbing",
+  framing: "Framing",
+  drywall: "Drywall",
+  concrete: "Concrete",
+  lumber_siding: "Lumber / Siding",
+  insulation: "Insulation",
+  steel_metal: "Steel & Metal",
+  flooring: "Flooring",
+  tile_stone: "Tile & Stone",
+  paint: "Paint & Coatings",
+  windows_doors: "Windows & Doors",
+  cabinets_countertops: "Cabinets & Countertops",
+  hardware_fasteners: "Fasteners & Hardware",
+  tools_equipment: "Tools & Equipment",
+  fencing: "Fencing",
+  landscaping: "Landscaping & Outdoor",
+  decking_railing: "Decking & Railing",
+  gutter_drainage: "Gutters & Drainage",
+  glass_glazing: "Glass & Glazing",
+  masonry: "Masonry",
+} as const;
+
+export type CategoryId = keyof typeof categoryIdToLabel;
+export type CategoryLabel = keyof typeof labelToCategoryId;

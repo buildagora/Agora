@@ -11,31 +11,8 @@ import AgoraLogo from "@/components/brand/AgoraLogo";
 import SiteHeader from "@/components/layout/SiteHeader";
 import { trackEvent } from "@/lib/analytics/client";
 import { ANALYTICS_EVENTS } from "@/lib/analytics/events";
+import { CATEGORY_OPTIONS } from "@/lib/categoryDisplay";
 
-const CATEGORY_OPTIONS = [
-  { id: "roofing", label: "Roofing" },
-  { id: "lumber_siding", label: "Lumber & Siding" },
-  { id: "drywall", label: "Drywall" },
-  { id: "insulation", label: "Insulation" },
-  { id: "concrete", label: "Concrete & Cement" },
-  { id: "masonry", label: "Masonry & Brick" },
-  { id: "steel_metal", label: "Steel & Metal" },
-  { id: "flooring", label: "Flooring" },
-  { id: "tile", label: "Tile & Stone" },
-  { id: "paint", label: "Paint & Coatings" },
-  { id: "windows_doors", label: "Windows & Doors" },
-  { id: "cabinets_countertops", label: "Cabinets & Countertops" },
-  { id: "hvac", label: "HVAC" },
-  { id: "plumbing", label: "Plumbing" },
-  { id: "electrical", label: "Electrical" },
-  { id: "fasteners", label: "Fasteners & Hardware" },
-  { id: "tools_equipment", label: "Tools & Equipment" },
-  { id: "fencing", label: "Fencing" },
-  { id: "landscaping", label: "Landscaping & Outdoor" },
-  { id: "decking", label: "Decking & Railing" },
-  { id: "gutters", label: "Gutters & Drainage" },
-  { id: "glass", label: "Glass & Glazing" },
-] as const;
 
 function SearchGlyph({ className }: { className?: string }) {
   return (
