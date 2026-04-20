@@ -203,10 +203,10 @@ export default function UIPreviewPage() {
                   {[
                     { name: "ABC Materials", category: "Lumber", rating: "4.8" },
                     { name: "XYZ Supply", category: "Concrete", rating: "4.6" },
-                    { name: "Build Co", category: "General", rating: "4.9" },
+                    { name: "Build Co", category: "Lumber", rating: "4.9" },
                     { name: "Steel Works", category: "Metal", rating: "4.7" },
                     { name: "Roof Pro", category: "Roofing", rating: "4.5" },
-                    { name: "Hardware Plus", category: "General", rating: "4.8" },
+                    { name: "Hardware Plus", category: "Fasteners", rating: "4.8" },
                   ].map((supplier) => (
                     <div
                       key={supplier.name}

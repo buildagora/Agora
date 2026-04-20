@@ -35,7 +35,6 @@ const CATEGORY_OPTIONS = [
   { id: "decking", label: "Decking & Railing" },
   { id: "gutters", label: "Gutters & Drainage" },
   { id: "glass", label: "Glass & Glazing" },
-  { id: "general", label: "General Materials" },
 ] as const;
 
 function SearchGlyph({ className }: { className?: string }) {
