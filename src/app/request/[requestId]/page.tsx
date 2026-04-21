@@ -222,7 +222,6 @@ export default async function PublicRequestPage({
       <MaterialRequestDetailClient
         request={requestData}
         recipients={recipientsData}
-        backHref="/"
       />
     </>
   );

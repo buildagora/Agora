@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import Card, { CardContent } from "@/components/ui2/Card";
@@ -75,8 +74,6 @@ interface Recipients {
 interface MaterialRequestDetailClientProps {
   request: Request;
   recipients: Recipients;
-  /** Back link target (default buyer requests hub). */
-  backHref?: string;
 }
 
 function SearchGlyph({ className }: { className?: string }) {
@@ -331,7 +328,6 @@ function SupplierRow({
 export default function MaterialRequestDetailClient({
   request,
   recipients,
-  backHref = "/buyer/requests",
 }: MaterialRequestDetailClientProps) {
   const pathname = usePathname();
   const isBuyerApp = pathname?.startsWith("/buyer") ?? false;
@@ -358,13 +354,7 @@ export default function MaterialRequestDetailClient({
     <>
       {/* Search-first header — aligned with main site content column */}
       <header className="space-y-2 sm:space-y-2.5">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <Link
-              href={backHref}
-              className="text-sm font-medium text-zinc-600 transition-colors hover:text-zinc-900"
-            >
-              ← Back
-            </Link>
+          <div className="flex flex-wrap justify-end gap-3">
             <button
               type="button"
               onClick={() => {
