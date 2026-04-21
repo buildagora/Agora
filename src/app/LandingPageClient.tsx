@@ -8,11 +8,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import AgoraLogo from "@/components/brand/AgoraLogo";
+import RecentSearchesDrawer from "@/components/layout/RecentSearchesDrawer";
+import RecentSearchesSidebar from "@/components/layout/RecentSearchesSidebar";
 import SiteHeader from "@/components/layout/SiteHeader";
+import { useIsMobileMd } from "@/hooks/useIsMobileMd";
 import { trackEvent } from "@/lib/analytics/client";
 import { ANALYTICS_EVENTS } from "@/lib/analytics/events";
 import { CATEGORY_OPTIONS } from "@/lib/categoryDisplay";
-
 
 function SearchGlyph({ className }: { className?: string }) {
   return (
@@ -36,12 +38,14 @@ export default function LandingPageClient() {
   const pathname = usePathname();
   const page = pathname || "/";
   const landingViewedRef = useRef(false);
+  const isMobile = useIsMobileMd();
 
   const [queryText, setQueryText] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("roofing");
   const [validationError, setValidationError] = useState<string | null>(null);
   const [requestError, setRequestError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   useEffect(() => {
     if (landingViewedRef.current) return;
@@ -104,7 +108,34 @@ export default function LandingPageClient() {
       })
       .then((data) => {
         const requestId = data.materialRequestId;
-        window.location.href = `/request/${requestId}`;
+        const url = `/request/${requestId}`;
+
+        try {
+          const existing = JSON.parse(
+            localStorage.getItem("agora:recent_searches") || "[]"
+          );
+
+          const newEntry = {
+            id: requestId,
+            text: queryText.trim(),
+            url,
+            createdAt: Date.now(),
+          };
+
+          const updated = [
+            newEntry,
+            ...existing.filter((e: { id: string }) => e.id !== requestId),
+          ].slice(0, 10);
+
+          localStorage.setItem(
+            "agora:recent_searches",
+            JSON.stringify(updated)
+          );
+        } catch {
+          /* ignore */
+        }
+
+        window.location.href = url;
       })
       .catch((err) => {
         console.error("[landing_request]", err);
@@ -119,72 +150,88 @@ export default function LandingPageClient() {
 
   return (
     <div className="flex min-h-screen flex-col bg-white">
-      <SiteHeader />
+      <SiteHeader drawerOpen={drawerOpen} onDrawerOpenChange={setDrawerOpen} />
+      {isMobile && (
+        <RecentSearchesDrawer
+          open={drawerOpen}
+          onClose={() => setDrawerOpen(false)}
+        />
+      )}
 
-      <main className="flex min-h-0 w-full flex-1 flex-col items-center justify-center px-4 py-10 sm:px-6 sm:py-14 lg:px-8 lg:py-16">
-        <section className="mx-auto flex w-full max-w-3xl flex-col items-center text-center">
-          <div className="mb-5 flex w-full justify-center sm:mb-6">
-            <AgoraLogo variant="hero" />
-          </div>
+      <div className="flex min-h-0 flex-1 flex-col md:flex-row">
+        {drawerOpen && (
+          <aside className="hidden w-64 shrink-0 border-r border-zinc-200 bg-zinc-50 md:block md:self-stretch">
+            <RecentSearchesSidebar />
+          </aside>
+        )}
 
-          <h1 className="mb-4 w-full text-[18px] font-normal leading-snug text-zinc-600 sm:mb-5 sm:text-[22px]">
-            Search for materials
-          </h1>
+        <div className="flex min-w-0 flex-1 flex-col">
+          <main className="flex min-h-0 w-full flex-1 flex-col items-center justify-center px-4 py-10 sm:px-6 sm:py-14 lg:px-8 lg:py-16">
+            <section className="mx-auto flex w-full max-w-3xl flex-col items-center text-center">
+              <div className="mb-5 flex w-full justify-center sm:mb-6">
+                <AgoraLogo variant="hero" />
+              </div>
 
-          <div className="w-full">
-            <div className="flex w-full min-w-0 items-center rounded-full border border-zinc-200 bg-white py-3 pl-3 pr-2 shadow-sm transition-shadow hover:shadow-md sm:pl-4">
-              <select
-                aria-label="Material category"
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="shrink-0 cursor-pointer bg-transparent text-[15px] text-zinc-700 outline-none sm:text-base min-w-[140px] pr-2"
-              >
-                {CATEGORY_OPTIONS.map((option) => (
-                  <option key={option.id} value={option.id}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-              <div
-                className="mx-2 h-6 w-px shrink-0 self-center bg-zinc-200"
-                aria-hidden
-              />
-              <input
-                type="text"
-                value={queryText}
-                onChange={(e) => {
-                  setQueryText(e.target.value);
-                  setValidationError(null);
-                  setRequestError(null);
-                }}
-                placeholder="e.g. 30 squares of Landmark Pro Driftwood"
-                className="min-w-0 flex-1 bg-transparent text-base text-zinc-800 outline-none placeholder:text-zinc-400 sm:text-[17px]"
-              />
-              <div
-                className="mx-2 h-6 w-px shrink-0 self-center bg-zinc-200"
-                aria-hidden
-              />
-              <button
-                type="button"
-                onClick={handleSearchMaterials}
-                disabled={loading}
-                className="flex shrink-0 items-center justify-center rounded-full p-2.5 text-zinc-500 transition hover:bg-zinc-50 hover:text-zinc-800 disabled:opacity-50"
-                aria-label="Search"
-              >
-                <SearchGlyph className="h-5 w-5" />
-              </button>
-            </div>
+              <h1 className="mb-4 w-full text-[18px] font-normal leading-snug text-zinc-600 sm:mb-5 sm:text-[22px]">
+                Search for materials
+              </h1>
 
-            {(validationError || requestError) && (
-              <p className="mt-3 text-center text-sm text-red-600">
-                {validationError || requestError}
-              </p>
-            )}
-          </div>
-        </section>
-      </main>
+              <div className="w-full">
+                <div className="flex w-full min-w-0 items-center rounded-full border border-zinc-200 bg-white py-3 pl-3 pr-2 shadow-sm transition-shadow hover:shadow-md sm:pl-4">
+                  <select
+                    aria-label="Material category"
+                    value={selectedCategory}
+                    onChange={(e) => setSelectedCategory(e.target.value)}
+                    className="min-w-[140px] shrink-0 cursor-pointer bg-transparent pr-2 text-[15px] text-zinc-700 outline-none sm:text-base"
+                  >
+                    {CATEGORY_OPTIONS.map((option) => (
+                      <option key={option.id} value={option.id}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                  <div
+                    className="mx-2 h-6 w-px shrink-0 self-center bg-zinc-200"
+                    aria-hidden
+                  />
+                  <input
+                    type="text"
+                    value={queryText}
+                    onChange={(e) => {
+                      setQueryText(e.target.value);
+                      setValidationError(null);
+                      setRequestError(null);
+                    }}
+                    placeholder="e.g. 30 squares of Landmark Pro Driftwood"
+                    className="min-w-0 flex-1 bg-transparent text-base text-zinc-800 outline-none placeholder:text-zinc-400 sm:text-[17px]"
+                  />
+                  <div
+                    className="mx-2 h-6 w-px shrink-0 self-center bg-zinc-200"
+                    aria-hidden
+                  />
+                  <button
+                    type="button"
+                    onClick={handleSearchMaterials}
+                    disabled={loading}
+                    className="flex shrink-0 items-center justify-center rounded-full p-2.5 text-zinc-500 transition hover:bg-zinc-50 hover:text-zinc-800 disabled:opacity-50"
+                    aria-label="Search"
+                  >
+                    <SearchGlyph className="h-5 w-5" />
+                  </button>
+                </div>
 
-      <footer className="mt-auto w-full border-t border-zinc-200 bg-white">
+                {(validationError || requestError) && (
+                  <p className="mt-3 text-center text-sm text-red-600">
+                    {validationError || requestError}
+                  </p>
+                )}
+              </div>
+            </section>
+          </main>
+        </div>
+      </div>
+
+      <footer className="mt-auto w-full shrink-0 border-t border-zinc-200 bg-white">
         <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
           <div className="grid grid-cols-1 items-center gap-6 text-center text-xs leading-relaxed text-zinc-500 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] sm:gap-x-8 sm:gap-y-0 sm:text-[13px]">
             <p className="sm:justify-self-start sm:text-left">

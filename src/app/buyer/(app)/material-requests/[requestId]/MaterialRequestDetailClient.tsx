@@ -2,9 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Card, { CardContent } from "@/components/ui2/Card";
+import RecentSearchesDrawer from "@/components/layout/RecentSearchesDrawer";
+import RecentSearchesSidebar from "@/components/layout/RecentSearchesSidebar";
 import SiteHeader from "@/components/layout/SiteHeader";
+import { useIsMobileMd } from "@/hooks/useIsMobileMd";
 import {
   Boxes,
   CheckCircle,
@@ -300,8 +303,11 @@ export default function MaterialRequestDetailClient({
 }: MaterialRequestDetailClientProps) {
   const pathname = usePathname();
   const isBuyerApp = pathname?.startsWith("/buyer") ?? false;
+  const showDesktopSidebar = !isBuyerApp;
+  const isMobile = useIsMobileMd();
 
   const [searchQuery, setSearchQuery] = useState(() => request.requestText.trim());
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   const totalRecipients =
     recipients.replied.length + recipients.pending.length + recipients.closedOut.length;
@@ -315,31 +321,34 @@ export default function MaterialRequestDetailClient({
   const persistedRequestText = request.requestText.trim() || "Your search";
   const locationLine = locationContextLine(request);
 
-  return (
-    <div
-      className={
-        isBuyerApp ? "w-full min-h-0" : "flex min-h-screen flex-col bg-white"
-      }
-    >
-      {!isBuyerApp && <SiteHeader />}
-
-      <div className="mx-auto w-full max-w-6xl flex-1 px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
-        {/* Search-first header — aligned with main site content column */}
-        <header className="space-y-2 sm:space-y-2.5">
-          <div>
+  const mainColumn = (
+    <>
+      {/* Search-first header — aligned with main site content column */}
+      <header className="space-y-2 sm:space-y-2.5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <Link
               href={backHref}
               className="text-sm font-medium text-zinc-600 transition-colors hover:text-zinc-900"
             >
               ← Back
             </Link>
+            <button
+              type="button"
+              onClick={() => {
+                navigator.clipboard.writeText(window.location.href);
+                alert("Link copied");
+              }}
+              className="text-sm px-3 py-1.5 border rounded-md hover:bg-zinc-50"
+            >
+              Share
+            </button>
           </div>
 
           <div className="w-full">
             <label htmlFor="material-request-search" className="sr-only">
               Search materials
             </label>
-            <div className="flex w-full min-w-0 items-center rounded-full border border-zinc-200 bg-white py-2.5 pl-4 pr-2 shadow-sm transition-shadow hover:shadow-md sm:py-3 sm:pl-5">
+            <div className="mb-4 flex w-full min-w-0 items-center rounded-full border border-zinc-200 bg-white py-2.5 pl-4 pr-2 shadow-sm transition-shadow hover:shadow-md sm:mb-5 sm:py-3 sm:pl-5">
               <input
                 id="material-request-search"
                 type="search"
@@ -355,6 +364,24 @@ export default function MaterialRequestDetailClient({
                 aria-hidden
               >
                 <SearchGlyph className="h-5 w-5" />
+              </div>
+            </div>
+            <div
+              role="status"
+              aria-live="polite"
+              className="mt-3 mb-6 flex items-start gap-3 rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 sm:mb-7 sm:gap-3.5 sm:px-4 sm:py-3"
+            >
+              <Loader2
+                className="mt-0.5 h-4 w-4 shrink-0 animate-spin text-emerald-600/90"
+                aria-hidden
+              />
+              <div className="min-w-0 flex-1 space-y-0.5">
+                <p className="text-sm font-semibold leading-snug text-zinc-800">
+                  Checking live availability and pricing from nearby suppliers
+                </p>
+                <p className="text-xs leading-relaxed text-zinc-500">
+                  Results update in real time as suppliers respond.
+                </p>
               </div>
             </div>
           </div>
@@ -397,7 +424,48 @@ export default function MaterialRequestDetailClient({
             </Card>
           </div>
         )}
-      </div>
+    </>
+  );
+
+  return (
+    <div
+      className={
+        isBuyerApp ? "w-full min-h-0" : "flex min-h-screen flex-col bg-white"
+      }
+    >
+      {showDesktopSidebar && (
+        <>
+          <SiteHeader
+            drawerOpen={drawerOpen}
+            onDrawerOpenChange={setDrawerOpen}
+          />
+          {isMobile && (
+            <RecentSearchesDrawer
+              open={drawerOpen}
+              onClose={() => setDrawerOpen(false)}
+            />
+          )}
+        </>
+      )}
+
+      {isBuyerApp ? (
+        <div className="mx-auto w-full max-w-6xl flex-1 px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
+          {mainColumn}
+        </div>
+      ) : (
+        <div className="flex min-h-0 flex-1 flex-col md:flex-row">
+          {drawerOpen && (
+            <aside className="hidden w-64 shrink-0 border-r border-zinc-200 bg-zinc-50 md:block md:self-stretch">
+              <RecentSearchesSidebar />
+            </aside>
+          )}
+          <div className="min-w-0 flex-1">
+            <div className="mx-auto w-full max-w-6xl flex-1 px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
+              {mainColumn}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
