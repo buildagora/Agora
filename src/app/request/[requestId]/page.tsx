@@ -99,7 +99,6 @@ export default async function PublicRequestPage({
             },
           },
         },
-        orderBy: { sentAt: "desc" },
       },
     },
   });
@@ -199,10 +198,22 @@ export default async function PublicRequestPage({
     };
   };
 
+  function sortRecipientsByDistance<
+    T extends { distanceMiles: number | null; supplierName: string },
+  >(items: T[]): T[] {
+    return [...items].sort((a, b) => {
+      const aHas = a.distanceMiles != null;
+      const bHas = b.distanceMiles != null;
+      if (aHas && bHas) return a.distanceMiles! - b.distanceMiles!;
+      if (aHas !== bHas) return aHas ? -1 : 1;
+      return a.supplierName.localeCompare(b.supplierName);
+    });
+  }
+
   const recipientsData = {
-    replied: replied.map(formatRecipient),
-    pending: pending.map(formatRecipient),
-    closedOut: closedOut.map(formatRecipient),
+    replied: sortRecipientsByDistance(replied.map(formatRecipient)),
+    pending: sortRecipientsByDistance(pending.map(formatRecipient)),
+    closedOut: sortRecipientsByDistance(closedOut.map(formatRecipient)),
   };
 
   return (
