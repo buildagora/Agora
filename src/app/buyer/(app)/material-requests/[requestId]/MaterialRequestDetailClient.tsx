@@ -8,6 +8,7 @@ import RecentSearchesDrawer from "@/components/layout/RecentSearchesDrawer";
 import RecentSearchesSidebar from "@/components/layout/RecentSearchesSidebar";
 import SiteHeader from "@/components/layout/SiteHeader";
 import { useIsMobileMd } from "@/hooks/useIsMobileMd";
+import { categoryIdToLabel } from "@/lib/categoryIds";
 import {
   Boxes,
   CheckCircle,
@@ -36,6 +37,8 @@ interface Request {
   locationCity?: string | null;
   locationRegion?: string | null;
   locationCountry?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 interface Recipient {
@@ -60,6 +63,7 @@ interface Recipient {
   pickupAvailable: boolean | null;
   deliveryAvailable: boolean | null;
   deliveryEta: string | null;
+  distanceMiles: number | null;
 }
 
 interface Recipients {
@@ -129,6 +133,22 @@ function locationContextLine(request: Request): string | null {
   return null;
 }
 
+/** Friendly subtitle for supplier cards (e.g. “Roofing Supply”) from request category. */
+function supplierCardCategoryLabel(request: Request): string {
+  const raw = request.categoryId?.trim().toLowerCase();
+  if (!raw) return "Supplier";
+  if (raw in categoryIdToLabel) {
+    return `${categoryIdToLabel[raw as keyof typeof categoryIdToLabel]} Supply`;
+  }
+  const titled = raw
+    .replace(/_/g, " ")
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+  return `${titled} Supply`;
+}
+
 function getRecipientStatusLabel(status: string): string {
   const labels: Record<string, string> = {
     REPLIED: "Available",
@@ -165,10 +185,12 @@ function SupplierRow({
   recipient,
   timeValue,
   requestText,
+  categoryLabel,
 }: {
   recipient: Recipient;
   timeValue: string;
   requestText: string;
+  categoryLabel: string;
 }) {
   return (
     <div className="rounded-2xl border border-zinc-200 bg-white px-6 py-6 shadow-sm">
@@ -188,11 +210,21 @@ function SupplierRow({
               </div>
             )}
           </div>
-          <div className="min-w-0">
+          <div className="flex min-w-0 flex-col gap-1">
             <h3 className="truncate text-lg font-semibold leading-tight text-zinc-900">
               {recipient.supplierName}
             </h3>
-            <div className="mt-2 min-h-[0.125rem]" aria-hidden />
+            <p className="truncate text-xs leading-snug text-zinc-500">
+              <span>{categoryLabel}</span>
+              {recipient.distanceMiles != null && (
+                <>
+                  <span className="mx-1.5 select-none text-zinc-400" aria-hidden>
+                    •
+                  </span>
+                  <span>{recipient.distanceMiles.toFixed(1)} miles away</span>
+                </>
+              )}
+            </p>
           </div>
         </div>
         <div className="shrink-0 self-start pt-0.5">
@@ -201,7 +233,7 @@ function SupplierRow({
       </div>
 
       {/* 2. Supplier details */}
-      <div className="mt-3 space-y-1 border-t border-zinc-100 pt-3 text-sm text-zinc-600">
+      <div className="mt-2 space-y-1 border-t border-zinc-100 pt-2 text-sm text-zinc-600">
         {recipient.address && recipient.address.replace(/[, ]+/g, "").length > 0 && (
           <p className="flex items-start gap-2 leading-snug">
             <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-zinc-500" aria-hidden />
@@ -224,7 +256,7 @@ function SupplierRow({
       </div>
 
       {/* 3. Search answer (single divider, no nested panel) */}
-      <div className="mt-4 border-t border-zinc-200 pt-4">
+      <div className="mt-3 border-t border-zinc-200 pt-3">
         <p className="mb-3 text-xs text-zinc-500">
           RESULT FOR: &quot;{requestText}&quot;
         </p>
@@ -320,6 +352,7 @@ export default function MaterialRequestDetailClient({
 
   const persistedRequestText = request.requestText.trim() || "Your search";
   const locationLine = locationContextLine(request);
+  const cardCategoryLabel = supplierCardCategoryLabel(request);
 
   const mainColumn = (
     <>
@@ -404,6 +437,7 @@ export default function MaterialRequestDetailClient({
                         recipient.respondedAt || recipient.conversationUpdatedAt
                       )}
                       requestText={persistedRequestText}
+                      categoryLabel={cardCategoryLabel}
                     />
                   ))}
                 </div>

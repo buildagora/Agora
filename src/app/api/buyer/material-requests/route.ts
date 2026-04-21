@@ -81,6 +81,67 @@ export async function GET(request: NextRequest) {
 
 const OPERATOR_MATERIAL_REQUEST_EMAIL = "buildagora@gmail.com";
 
+const NOMINATIM_USER_AGENT = "AgoraLocalDev/1.0 (buildagora@gmail.com)";
+
+/** Great-circle distance between two WGS84 points, in miles. */
+function haversineMiles(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number
+): number {
+  const toRad = (deg: number) => (deg * Math.PI) / 180;
+  const earthMi = 3958.8;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) *
+      Math.cos(toRad(lat2)) *
+      Math.sin(dLon / 2) ** 2;
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return earthMi * c;
+}
+
+/**
+ * Approximate request coordinates from city / region / country via Nominatim (US).
+ * Returns null if lookup fails or location data is unusable.
+ */
+async function resolveRequestCoordinates(
+  locationCity: string | null,
+  locationRegion: string | null,
+  locationCountry: string | null
+): Promise<{ latitude: number; longitude: number } | null> {
+  const city = typeof locationCity === "string" ? locationCity.trim() : "";
+  const region = typeof locationRegion === "string" ? locationRegion.trim() : "";
+  const country =
+    typeof locationCountry === "string" ? locationCountry.trim() : "";
+  const q = [city, region, country].filter(Boolean).join(", ");
+  if (!q) return null;
+
+  try {
+    const params = new URLSearchParams({
+      format: "jsonv2",
+      limit: "1",
+      countrycodes: "us",
+      q,
+    });
+    const url = `https://nominatim.openstreetmap.org/search?${params}`;
+    const res = await fetch(url, {
+      headers: { "User-Agent": NOMINATIM_USER_AGENT },
+    });
+    if (!res.ok) return null;
+    const data = (await res.json()) as Array<{ lat?: string; lon?: string }>;
+    if (!Array.isArray(data) || data.length === 0) return null;
+    const lat = Number.parseFloat(String(data[0].lat));
+    const lon = Number.parseFloat(String(data[0].lon));
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+    return { latitude: lat, longitude: lon };
+  } catch {
+    return null;
+  }
+}
+
 function escapeHtml(s: string): string {
   return s
     .replace(/&/g, "&amp;")
@@ -172,12 +233,45 @@ export async function POST(request: NextRequest) {
     // Normalize category ID
     const normalizedCategoryId = categoryId.trim().toLowerCase();
 
+    const headerStore = await headers();
+    const rawCity = headerStore.get("x-vercel-ip-city");
+    const rawRegion = headerStore.get("x-vercel-ip-country-region");
+    const rawCountry = headerStore.get("x-vercel-ip-country");
+    const decodeGeo = (raw: string | null) => {
+      if (raw == null || raw === "") return null;
+      try {
+        return decodeURIComponent(raw.replace(/\+/g, " "));
+      } catch {
+        return raw;
+      }
+    };
+    let locationCity = decodeGeo(rawCity);
+    let locationRegion = decodeGeo(rawRegion);
+    let locationCountry = decodeGeo(rawCountry);
+
+    if (
+      process.env.NODE_ENV === "development" &&
+      !locationCity?.trim() &&
+      !locationRegion?.trim() &&
+      !locationCountry?.trim()
+    ) {
+      locationCity = "Huntsville";
+      locationRegion = "AL";
+      locationCountry = "US";
+    }
+
+    const requestCoords = await resolveRequestCoordinates(
+      locationCity,
+      locationRegion,
+      locationCountry
+    );
+
     // Resolve target suppliers
     let targetSuppliers: Array<{ id: string; name: string }> = [];
 
     if (sendMode === "NETWORK") {
       // NETWORK: Find all suppliers with matching category via SupplierCategoryLink
-      const suppliers = await prisma.supplier.findMany({
+      let suppliers = await prisma.supplier.findMany({
         where: {
           categoryLinks: {
             some: {
@@ -188,11 +282,39 @@ export async function POST(request: NextRequest) {
         select: {
           id: true,
           name: true,
+          latitude: true,
+          longitude: true,
         },
-        orderBy: { name: "asc" },
       });
 
-      targetSuppliers = suppliers;
+      if (requestCoords) {
+        const withCoords = suppliers.filter(
+          (s) => s.latitude != null && s.longitude != null
+        );
+        const withoutCoords = suppliers.filter(
+          (s) => s.latitude == null || s.longitude == null
+        );
+        withCoords.sort((a, b) => {
+          const da = haversineMiles(
+            requestCoords.latitude,
+            requestCoords.longitude,
+            a.latitude!,
+            a.longitude!
+          );
+          const db = haversineMiles(
+            requestCoords.latitude,
+            requestCoords.longitude,
+            b.latitude!,
+            b.longitude!
+          );
+          return da - db;
+        });
+        suppliers = [...withCoords, ...withoutCoords];
+      } else {
+        suppliers.sort((a, b) => a.name.localeCompare(b.name));
+      }
+
+      targetSuppliers = suppliers.map(({ id, name }) => ({ id, name }));
     } else {
       // DIRECT: Fetch only selected suppliers
       const supplierIdsArray = supplierIds as string[];
@@ -220,22 +342,6 @@ export async function POST(request: NextRequest) {
         send_mode: sendMode.toLowerCase(),
       });
     }
-
-    const headerStore = await headers();
-    const rawCity = headerStore.get("x-vercel-ip-city");
-    const rawRegion = headerStore.get("x-vercel-ip-country-region");
-    const rawCountry = headerStore.get("x-vercel-ip-country");
-    const decodeGeo = (raw: string | null) => {
-      if (raw == null || raw === "") return null;
-      try {
-        return decodeURIComponent(raw.replace(/\+/g, " "));
-      } catch {
-        return raw;
-      }
-    };
-    const locationCity = decodeGeo(rawCity);
-    const locationRegion = decodeGeo(rawRegion);
-    const locationCountry = decodeGeo(rawCountry);
 
     let effectiveBuyer: DbUserRow | undefined = dbUser;
 
@@ -291,6 +397,8 @@ export async function POST(request: NextRequest) {
         locationCity: locationCity || null,
         locationRegion: locationRegion || null,
         locationCountry: locationCountry || null,
+        latitude: requestCoords?.latitude ?? null,
+        longitude: requestCoords?.longitude ?? null,
       },
     });
 

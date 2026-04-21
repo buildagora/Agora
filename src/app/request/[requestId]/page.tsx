@@ -5,6 +5,26 @@ import MaterialRequestDetailClient from "@/app/buyer/(app)/material-requests/[re
 
 export const revalidate = 0;
 
+/** Same formula as `/api/buyer/material-requests` — distance in statute miles. */
+function haversineMiles(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number
+): number {
+  const toRad = (deg: number) => (deg * Math.PI) / 180;
+  const earthMi = 3958.8;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) *
+      Math.cos(toRad(lat2)) *
+      Math.sin(dLon / 2) ** 2;
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return earthMi * c;
+}
+
 /**
  * Public material request results — no auth. Used after landing search redirect.
  */
@@ -37,6 +57,8 @@ export default async function PublicRequestPage({
       locationCity: true,
       locationRegion: true,
       locationCountry: true,
+      latitude: true,
+      longitude: true,
       recipients: {
         select: {
           supplierId: true,
@@ -63,6 +85,8 @@ export default async function PublicRequestPage({
               city: true,
               state: true,
               zip: true,
+              latitude: true,
+              longitude: true,
               phone: true,
               logoUrl: true,
               hoursText: true,
@@ -116,6 +140,8 @@ export default async function PublicRequestPage({
     locationCity: materialRequest.locationCity ?? null,
     locationRegion: materialRequest.locationRegion ?? null,
     locationCountry: materialRequest.locationCountry ?? null,
+    latitude: materialRequest.latitude ?? null,
+    longitude: materialRequest.longitude ?? null,
   };
 
   const formatRecipient = (r: (typeof rows)[number]) => {
@@ -126,6 +152,26 @@ export default async function PublicRequestPage({
       r.sentAt ??
       r.conversation?.updatedAt ??
       materialRequest.updatedAt;
+
+    const reqLat = materialRequest.latitude;
+    const reqLon = materialRequest.longitude;
+    const supLat = r.supplier.latitude;
+    const supLon = r.supplier.longitude;
+
+    let distanceMiles: number | null = null;
+    if (
+      reqLat != null &&
+      reqLon != null &&
+      supLat != null &&
+      supLon != null &&
+      Number.isFinite(reqLat) &&
+      Number.isFinite(reqLon) &&
+      Number.isFinite(supLat) &&
+      Number.isFinite(supLon)
+    ) {
+      const d = haversineMiles(reqLat, reqLon, supLat, supLon);
+      distanceMiles = Math.round(d * 10) / 10;
+    }
 
     return {
       supplierId: r.supplierId,
@@ -149,6 +195,7 @@ export default async function PublicRequestPage({
       pickupAvailable: r.pickupAvailable ?? null,
       deliveryAvailable: r.deliveryAvailable ?? null,
       deliveryEta: r.deliveryEta ?? null,
+      distanceMiles,
     };
   };
 

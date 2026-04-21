@@ -178,6 +178,7 @@ export default async function MaterialRequestDetailPage({
       pickupAvailable: r.pickupAvailable ?? null,
       deliveryAvailable: r.deliveryAvailable ?? null,
       deliveryEta: r.deliveryEta ?? null,
+      distanceMiles: null,
     };
   };
 

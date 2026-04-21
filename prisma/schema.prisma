@@ -227,6 +227,8 @@ model Supplier {
   city      String
   state     String
   zip       String
+  latitude  Float?
+  longitude Float?
   phone     String?
   email     String?
   logoUrl   String?
@@ -409,6 +411,8 @@ model MaterialRequest {
   locationCity    String?
   locationRegion  String?
   locationCountry String?
+  latitude        Float?
+  longitude       Float?
   createdAt       DateTime                   @default(now())
   updatedAt       DateTime                   @updatedAt
   recipients      MaterialRequestRecipient[]
