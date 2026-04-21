@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Card, { CardContent } from "@/components/ui2/Card";
 import RecentSearchesDrawer from "@/components/layout/RecentSearchesDrawer";
 import RecentSearchesSidebar from "@/components/layout/RecentSearchesSidebar";
@@ -336,6 +336,14 @@ export default function MaterialRequestDetailClient({
 
   const [searchQuery, setSearchQuery] = useState(() => request.requestText.trim());
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
+  const copyResetRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (copyResetRef.current) clearTimeout(copyResetRef.current);
+    };
+  }, []);
 
   const totalRecipients =
     recipients.replied.length + recipients.pending.length + recipients.closedOut.length;
@@ -350,6 +358,17 @@ export default function MaterialRequestDetailClient({
   const locationLine = locationContextLine(request);
   const cardCategoryLabel = supplierCardCategoryLabel(request);
 
+  const handleShareLink = () => {
+    void navigator.clipboard.writeText(window.location.href).then(() => {
+      setCopiedLink(true);
+      if (copyResetRef.current) clearTimeout(copyResetRef.current);
+      copyResetRef.current = setTimeout(() => {
+        setCopiedLink(false);
+        copyResetRef.current = null;
+      }, 1500);
+    });
+  };
+
   const mainColumn = (
     <>
       {/* Search-first header — aligned with main site content column */}
@@ -357,13 +376,15 @@ export default function MaterialRequestDetailClient({
           <div className="flex flex-wrap justify-end gap-3">
             <button
               type="button"
-              onClick={() => {
-                navigator.clipboard.writeText(window.location.href);
-                alert("Link copied");
-              }}
-              className="text-sm px-3 py-1.5 border rounded-md hover:bg-zinc-50"
+              onClick={handleShareLink}
+              className={`text-sm rounded-md border px-3 py-1.5 transition-colors ${
+                copiedLink
+                  ? "border-emerald-200 bg-emerald-50/90 text-emerald-900"
+                  : "border-zinc-200 hover:bg-zinc-50"
+              }`}
+              aria-live="polite"
             >
-              Share
+              {copiedLink ? "Copied" : "Share"}
             </button>
           </div>
 
