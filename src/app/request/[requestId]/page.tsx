@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation";
 import { getPrisma } from "@/lib/db.rsc";
+import { trackServerEvent } from "@/lib/analytics/server";
+import { ANALYTICS_EVENTS } from "@/lib/analytics/events";
 import AutoRefresh from "@/components/AutoRefresh";
 import MaterialRequestDetailClient from "@/app/buyer/(app)/material-requests/[requestId]/MaterialRequestDetailClient";
 
@@ -105,6 +107,14 @@ export default async function PublicRequestPage({
 
   if (!materialRequest) {
     notFound();
+  }
+
+  try {
+    await trackServerEvent(ANALYTICS_EVENTS.results_viewed, {
+      requestId,
+    });
+  } catch {
+    // analytics must not break results page
   }
 
   const rows = materialRequest.recipients ?? [];

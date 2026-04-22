@@ -81,7 +81,7 @@ export default function LandingPageClient() {
 
     setLoading(true);
 
-    trackEvent(ANALYTICS_EVENTS.landing_search_started, {
+    trackEvent(ANALYTICS_EVENTS.search_submitted, {
       location: "landing",
       page,
       category_id: selectedCategory,

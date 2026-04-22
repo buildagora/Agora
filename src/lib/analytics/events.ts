@@ -21,6 +21,9 @@ export const ANALYTICS_EVENTS = {
   message_sent: "message_sent",
   quote_started: "quote_started",
   quote_submitted: "quote_submitted",
+  search_submitted: "search_submitted",
+  request_created: "request_created",
+  results_viewed: "results_viewed",
 } as const;
 
 export type AnalyticsEventName = (typeof ANALYTICS_EVENTS)[keyof typeof ANALYTICS_EVENTS];

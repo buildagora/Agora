@@ -396,6 +396,21 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    try {
+      await trackServerEvent(ANALYTICS_EVENTS.request_created, {
+        requestId: materialRequest.id,
+        categoryId: materialRequest.categoryId,
+      });
+    } catch (analyticsError) {
+      console.error("[MATERIAL_REQUEST_ANALYTICS_REQUEST_CREATED_FAILED]", {
+        materialRequestId: materialRequest.id,
+        error:
+          analyticsError instanceof Error
+            ? analyticsError.message
+            : String(analyticsError),
+      });
+    }
+
     // For each target supplier: conversation row (required FK for MaterialRequestRecipient)
     // + recipient row. No supplier messages, emails, or in-app notifications (operator-assisted flow).
     const recipientResults: Array<{ supplierId: string; conversationId: string }> = [];
