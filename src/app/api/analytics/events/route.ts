@@ -5,7 +5,7 @@
 import { NextRequest } from "next/server";
 import { requireServerEnv } from "@/lib/env";
 import { jsonOk, jsonError, withErrorHandling } from "@/lib/apiResponse";
-import { getPrisma } from "@/lib/db.server";
+import { storeAnalyticsEvent } from "@/lib/analytics/ingest.server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -112,31 +112,28 @@ export async function POST(request: NextRequest) {
       return jsonError("BAD_REQUEST", "path must be a string or null", 400);
     }
 
-    let propertiesJson: string | null = null;
+    let properties: Record<string, unknown> | null = null;
     if (b.properties !== undefined && b.properties !== null) {
       if (typeof b.properties !== "object" || Array.isArray(b.properties)) {
         return jsonError("BAD_REQUEST", "properties must be an object", 400);
       }
-      propertiesJson = JSON.stringify(b.properties);
+      properties = b.properties as Record<string, unknown>;
     }
 
     const geo = coarseGeoFromRequest(request);
 
-    const prisma = getPrisma();
-    await prisma.analyticsEvent.create({
-      data: {
-        name: b.name.trim(),
-        visitorId: b.visitorId.trim(),
-        sessionId: b.sessionId.trim(),
-        source: sourceOpt === undefined ? null : sourceOpt,
-        medium: mediumOpt === undefined ? null : mediumOpt,
-        campaign: campaignOpt === undefined ? null : campaignOpt,
-        path: pathOpt === undefined ? null : pathOpt,
-        properties: propertiesJson,
-        country: geo.country,
-        region: geo.region,
-        city: geo.city,
-      },
+    await storeAnalyticsEvent({
+      name: b.name.trim(),
+      visitorId: b.visitorId.trim(),
+      sessionId: b.sessionId.trim(),
+      source: sourceOpt === undefined ? null : sourceOpt,
+      medium: mediumOpt === undefined ? null : mediumOpt,
+      campaign: campaignOpt === undefined ? null : campaignOpt,
+      path: pathOpt === undefined ? null : pathOpt,
+      properties,
+      country: geo.country,
+      region: geo.region,
+      city: geo.city,
     });
 
     return jsonOk({ stored: true }, 201);
