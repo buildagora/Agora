@@ -416,6 +416,8 @@ model MaterialRequest {
   locationCountry String?
   latitude        Float?
   longitude       Float?
+  opsStatus       String                     @default("NEW") // NEW | IN_PROGRESS | COMPLETED
+  opsUpdatedAt    DateTime?
   createdAt       DateTime                   @default(now())
   updatedAt       DateTime                   @updatedAt
   recipients      MaterialRequestRecipient[]
