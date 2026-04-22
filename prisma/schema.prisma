@@ -165,7 +165,7 @@ model AgentThread {
 }
 
 model EmailEvent {
-  id                String   @id @default(cuid())
+  id                String    @id @default(cuid())
   to                String
   subject           String
   status            String // SENT | FAILED | OUTBOX
@@ -173,7 +173,10 @@ model EmailEvent {
   error             String?
   rfqId             String?
   supplierId        String?
-  createdAt         DateTime @default(now())
+  attemptCount      Int       @default(0)
+  lastAttemptAt     DateTime?
+  nextAttemptAt     DateTime  @default(now())
+  createdAt         DateTime  @default(now())
 
   @@index([rfqId])
   @@index([supplierId])

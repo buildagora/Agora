@@ -4,8 +4,12 @@ import { getPrisma } from "@/lib/db.server";
 import { jsonError, withErrorHandling } from "@/lib/apiResponse";
 import { verifyAuthToken, getAuthCookieName } from "@/lib/jwt";
 import { requireCurrentUserFromRequest } from "@/lib/auth/server";
-import { categoryIdToLabel } from "@/lib/categoryIds";
 import { sendEmail } from "@/lib/email.server";
+import {
+  OPERATOR_MATERIAL_REQUEST_EMAIL,
+  OPERATOR_MATERIAL_REQUEST_SUBJECT,
+  buildOperatorMaterialRequestEmailPayload,
+} from "@/lib/operatorMaterialRequestEmail.server";
 import { trackServerEvent } from "@/lib/analytics/server";
 import { ANALYTICS_EVENTS } from "@/lib/analytics/events";
 
@@ -79,9 +83,6 @@ export async function GET(request: NextRequest) {
   });
 }
 
-const OPERATOR_MATERIAL_REQUEST_EMAIL = "buildagora@gmail.com";
-const OPERATOR_MATERIAL_REQUEST_SUBJECT = "New Material Request (Agora)";
-
 const NOMINATIM_USER_AGENT = "AgoraLocalDev/1.0 (buildagora@gmail.com)";
 
 /** Great-circle distance between two WGS84 points, in miles. */
@@ -141,14 +142,6 @@ async function resolveRequestCoordinates(
   } catch {
     return null;
   }
-}
-
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
 }
 
 /**
@@ -456,14 +449,19 @@ export async function POST(request: NextRequest) {
       throw new Error("No recipients were created for this request");
     }
 
-    const categoryLabel =
-      categoryIdToLabel[normalizedCategoryId as keyof typeof categoryIdToLabel] ||
-      normalizedCategoryId;
     const buyerDisplayName =
       effectiveBuyer?.fullName?.trim() ||
       effectiveBuyer?.companyName?.trim() ||
       "—";
     const submittedAt = materialRequest.createdAt.toISOString();
+
+    const operatorEmailPayload = buildOperatorMaterialRequestEmailPayload({
+      materialRequestId: materialRequest.id,
+      categoryId: normalizedCategoryId,
+      requestText: requestText.trim(),
+      buyerDisplayName,
+      submittedAtIso: submittedAt,
+    });
 
     const operatorEmailEvent = await prisma.emailEvent.create({
       data: {
@@ -476,31 +474,7 @@ export async function POST(request: NextRequest) {
     });
 
     try {
-      const { id: providerMessageId } = await sendEmail({
-        to: OPERATOR_MATERIAL_REQUEST_EMAIL,
-        subject: OPERATOR_MATERIAL_REQUEST_SUBJECT,
-        html: `
-          <h2 style="margin:0 0 12px;font-size:18px;">${escapeHtml(OPERATOR_MATERIAL_REQUEST_SUBJECT)}</h2>
-          <p style="margin:8px 0;"><strong>Buyer:</strong> ${escapeHtml(buyerDisplayName)}</p>
-          <p style="margin:8px 0;"><strong>Category:</strong> ${escapeHtml(categoryLabel)}</p>
-          <p style="margin:8px 0;"><strong>Request:</strong></p>
-          <pre style="white-space:pre-wrap;font-family:inherit;margin:8px 0;padding:12px;background:#f4f4f5;border-radius:8px;">${escapeHtml(requestText.trim())}</pre>
-          <p style="margin:8px 0;"><strong>Timestamp:</strong> ${escapeHtml(submittedAt)}</p>
-          <p style="margin:8px 0;font-size:12px;color:#71717a;">Request ID: ${escapeHtml(materialRequest.id)}</p>
-        `,
-        text: [
-          OPERATOR_MATERIAL_REQUEST_SUBJECT,
-          "",
-          `Buyer: ${buyerDisplayName}`,
-          `Category: ${categoryLabel}`,
-          "",
-          "Request:",
-          requestText.trim(),
-          "",
-          `Timestamp: ${submittedAt}`,
-          `Request ID: ${materialRequest.id}`,
-        ].join("\n"),
-      });
+      const { id: providerMessageId } = await sendEmail(operatorEmailPayload);
 
       await prisma.emailEvent.update({
         where: { id: operatorEmailEvent.id },
@@ -520,11 +494,14 @@ export async function POST(request: NextRequest) {
       const errorMessage =
         emailError instanceof Error ? emailError.message : String(emailError);
 
+      const retryAt = new Date(Date.now() + 10_000);
       await prisma.emailEvent.update({
         where: { id: operatorEmailEvent.id },
         data: {
-          status: "FAILED",
+          status: "OUTBOX",
           error: errorMessage,
+          lastAttemptAt: new Date(),
+          nextAttemptAt: retryAt,
         },
       });
 
@@ -532,6 +509,8 @@ export async function POST(request: NextRequest) {
         materialRequestId: materialRequest.id,
         emailEventId: operatorEmailEvent.id,
         error: errorMessage,
+        nextAttemptAt: retryAt.toISOString(),
+        note: "outbox_worker_will_retry",
       });
     }
 
