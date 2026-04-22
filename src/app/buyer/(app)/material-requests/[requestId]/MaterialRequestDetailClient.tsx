@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import Card, { CardContent } from "@/components/ui2/Card";
@@ -190,7 +191,7 @@ function SupplierRow({
   categoryLabel: string;
 }) {
   return (
-    <div className="rounded-2xl border border-zinc-200 bg-white px-6 py-6 shadow-sm">
+    <div className="rounded-2xl border border-zinc-200 bg-white px-6 py-6 shadow-sm transition-colors duration-200 group-hover:border-zinc-300/90">
       {/* 1. Business identity */}
       <div className="flex items-start justify-between gap-6">
         <div className="flex flex-1 items-center gap-4 min-w-0">
@@ -321,6 +322,10 @@ function SupplierRow({
           )}
         </div>
       </div>
+
+      <p className="mt-4 border-t border-zinc-100 pt-3 text-xs font-medium text-zinc-500 group-hover:text-blue-700">
+        View details →
+      </p>
     </div>
   );
 }
@@ -441,15 +446,20 @@ export default function MaterialRequestDetailClient({
               <CardContent className="p-4">
                 <div className="space-y-4">
                   {allRecipients.map((recipient) => (
-                    <SupplierRow
+                    <Link
                       key={recipient.conversationId}
-                      recipient={recipient}
-                      timeValue={formatRelativeTime(
-                        recipient.respondedAt || recipient.conversationUpdatedAt
-                      )}
-                      requestText={persistedRequestText}
-                      categoryLabel={cardCategoryLabel}
-                    />
+                      href={`/request/${request.id}/supplier/${recipient.supplierId}`}
+                      className="group block cursor-pointer rounded-2xl outline-offset-2 transition-shadow duration-200 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-zinc-400"
+                    >
+                      <SupplierRow
+                        recipient={recipient}
+                        timeValue={formatRelativeTime(
+                          recipient.respondedAt || recipient.conversationUpdatedAt
+                        )}
+                        requestText={persistedRequestText}
+                        categoryLabel={cardCategoryLabel}
+                      />
+                    </Link>
                   ))}
                 </div>
               </CardContent>
