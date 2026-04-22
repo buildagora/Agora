@@ -80,6 +80,7 @@ export async function GET(request: NextRequest) {
 }
 
 const OPERATOR_MATERIAL_REQUEST_EMAIL = "buildagora@gmail.com";
+const OPERATOR_MATERIAL_REQUEST_SUBJECT = "New Material Request (Agora)";
 
 const NOMINATIM_USER_AGENT = "AgoraLocalDev/1.0 (buildagora@gmail.com)";
 
@@ -464,12 +465,22 @@ export async function POST(request: NextRequest) {
       "—";
     const submittedAt = materialRequest.createdAt.toISOString();
 
-    try {
-      await sendEmail({
+    const operatorEmailEvent = await prisma.emailEvent.create({
+      data: {
         to: OPERATOR_MATERIAL_REQUEST_EMAIL,
-        subject: "New Material Request (Agora)",
+        subject: OPERATOR_MATERIAL_REQUEST_SUBJECT,
+        status: "OUTBOX",
+        rfqId: materialRequest.id,
+        supplierId: null,
+      },
+    });
+
+    try {
+      const { id: providerMessageId } = await sendEmail({
+        to: OPERATOR_MATERIAL_REQUEST_EMAIL,
+        subject: OPERATOR_MATERIAL_REQUEST_SUBJECT,
         html: `
-          <h2 style="margin:0 0 12px;font-size:18px;">New Material Request (Agora)</h2>
+          <h2 style="margin:0 0 12px;font-size:18px;">${escapeHtml(OPERATOR_MATERIAL_REQUEST_SUBJECT)}</h2>
           <p style="margin:8px 0;"><strong>Buyer:</strong> ${escapeHtml(buyerDisplayName)}</p>
           <p style="margin:8px 0;"><strong>Category:</strong> ${escapeHtml(categoryLabel)}</p>
           <p style="margin:8px 0;"><strong>Request:</strong></p>
@@ -478,7 +489,7 @@ export async function POST(request: NextRequest) {
           <p style="margin:8px 0;font-size:12px;color:#71717a;">Request ID: ${escapeHtml(materialRequest.id)}</p>
         `,
         text: [
-          "New Material Request (Agora)",
+          OPERATOR_MATERIAL_REQUEST_SUBJECT,
           "",
           `Buyer: ${buyerDisplayName}`,
           `Category: ${categoryLabel}`,
@@ -490,14 +501,37 @@ export async function POST(request: NextRequest) {
           `Request ID: ${materialRequest.id}`,
         ].join("\n"),
       });
+
+      await prisma.emailEvent.update({
+        where: { id: operatorEmailEvent.id },
+        data: {
+          status: "SENT",
+          providerMessageId,
+          error: null,
+        },
+      });
+
       console.log("[MATERIAL_REQUEST_OPERATOR_EMAIL_SENT]", {
         materialRequestId: materialRequest.id,
+        emailEventId: operatorEmailEvent.id,
         to: OPERATOR_MATERIAL_REQUEST_EMAIL,
       });
     } catch (emailError) {
+      const errorMessage =
+        emailError instanceof Error ? emailError.message : String(emailError);
+
+      await prisma.emailEvent.update({
+        where: { id: operatorEmailEvent.id },
+        data: {
+          status: "FAILED",
+          error: errorMessage,
+        },
+      });
+
       console.error("[MATERIAL_REQUEST_OPERATOR_EMAIL_FAILED]", {
         materialRequestId: materialRequest.id,
-        error: emailError instanceof Error ? emailError.message : String(emailError),
+        emailEventId: operatorEmailEvent.id,
+        error: errorMessage,
       });
     }
 
