@@ -182,7 +182,7 @@ export default function LandingPageClient() {
                     aria-label="Material category"
                     value={selectedCategory}
                     onChange={(e) => setSelectedCategory(e.target.value)}
-                    className="min-w-[140px] shrink-0 cursor-pointer bg-transparent pr-2 text-[15px] text-zinc-700 outline-none sm:text-base"
+                    className="min-w-[108px] max-w-[128px] shrink-0 cursor-pointer bg-transparent pr-1 text-[15px] text-zinc-700 outline-none sm:min-w-[140px] sm:max-w-none sm:pr-2 sm:text-base"
                   >
                     {CATEGORY_OPTIONS.map((option) => (
                       <option key={option.id} value={option.id}>
