@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { getPrisma } from "@/lib/db.rsc";
+import { searchCapabilities } from "@/lib/search/capabilitySearch";
 import { trackServerEvent } from "@/lib/analytics/server";
 import { ANALYTICS_EVENTS } from "@/lib/analytics/events";
 import AutoRefresh from "@/components/AutoRefresh";
@@ -108,6 +109,10 @@ export default async function PublicRequestPage({
   if (!materialRequest) {
     notFound();
   }
+
+  const capabilityMatches = await searchCapabilities(
+    materialRequest.requestText || ""
+  );
 
   try {
     await trackServerEvent(ANALYTICS_EVENTS.results_viewed, {
@@ -232,6 +237,7 @@ export default async function PublicRequestPage({
       <MaterialRequestDetailClient
         request={requestData}
         recipients={recipientsData}
+        capabilityMatches={capabilityMatches}
       />
     </>
   );

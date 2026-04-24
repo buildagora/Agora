@@ -9,6 +9,7 @@ import RecentSearchesSidebar from "@/components/layout/RecentSearchesSidebar";
 import SiteHeader from "@/components/layout/SiteHeader";
 import { useIsMobileMd } from "@/hooks/useIsMobileMd";
 import { categoryIdToLabel } from "@/lib/categoryIds";
+import type { CapabilitySearchResult } from "@/lib/search/capabilitySearch";
 import {
   Boxes,
   CheckCircle,
@@ -75,6 +76,8 @@ interface Recipients {
 interface MaterialRequestDetailClientProps {
   request: Request;
   recipients: Recipients;
+  /** Public results page: catalog-derived evidence that a supplier carries brands/products from the query. */
+  capabilityMatches?: CapabilitySearchResult[];
 }
 
 function SearchGlyph({ className }: { className?: string }) {
@@ -179,17 +182,88 @@ function recipientStatusBadge(status: string) {
   );
 }
 
+const capabilityBadgeBase =
+  "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium shrink-0";
+
+/** Top-right badge: override static "Checking" (SENT/VIEWED) when catalog match score is high enough. */
+function recipientStatusBadgeWithCapability(
+  recipient: Recipient,
+  topCapabilityScore: number | null
+) {
+  const isCheckingBadgeStatus =
+    recipient.status === "SENT" || recipient.status === "VIEWED";
+
+  if (isCheckingBadgeStatus) {
+    if (topCapabilityScore != null && topCapabilityScore >= 13) {
+      return (
+        <span
+          className={`${capabilityBadgeBase} bg-emerald-50 text-emerald-800 border border-emerald-200`}
+        >
+          In Stock
+        </span>
+      );
+    }
+    if (topCapabilityScore != null && topCapabilityScore >= 10) {
+      return (
+        <span
+          className={`${capabilityBadgeBase} bg-sky-50 text-sky-800 border border-sky-200`}
+        >
+          Likely In Stock
+        </span>
+      );
+    }
+    return recipientStatusBadge(recipient.status);
+  }
+
+  return recipientStatusBadge(recipient.status);
+}
+
+function getScoreForSupplier(
+  supplierId: string,
+  capabilityMatches: CapabilitySearchResult[] | undefined
+): number {
+  const matchesForSupplier = (capabilityMatches ?? []).filter(
+    (m) => m.supplierId === supplierId
+  );
+  return matchesForSupplier.length
+    ? Math.max(...matchesForSupplier.map((m) => m.score))
+    : 0;
+}
+
 function SupplierRow({
   recipient,
   timeValue,
   requestText,
   categoryLabel,
+  capabilityMatches,
 }: {
   recipient: Recipient;
   timeValue: string;
   requestText: string;
   categoryLabel: string;
+  capabilityMatches?: CapabilitySearchResult[];
 }) {
+  const supplierMatchesSorted = (capabilityMatches ?? [])
+    .filter((m) => m.supplierId === recipient.supplierId)
+    .sort((a, b) => b.score - a.score);
+
+  const topCapabilityScore = supplierMatchesSorted[0]?.score ?? null;
+  const capabilityEvidence = supplierMatchesSorted.slice(0, 2);
+
+  const isCheckingAvailability =
+    recipient.availabilityStatus === "CHECKING" ||
+    recipient.status === "SENT" ||
+    recipient.status === "VIEWED";
+
+  const capabilityAvailabilityOverride =
+    isCheckingAvailability &&
+    topCapabilityScore != null &&
+    topCapabilityScore >= 10
+      ? topCapabilityScore >= 13
+        ? ("data" as const)
+        : ("likely" as const)
+      : null;
+
   return (
     <div className="rounded-2xl border border-zinc-200 bg-white px-6 py-6 shadow-sm transition-colors duration-200 group-hover:border-zinc-300/90">
       {/* 1. Business identity */}
@@ -226,9 +300,23 @@ function SupplierRow({
           </div>
         </div>
         <div className="shrink-0 self-start pt-0.5">
-          {recipientStatusBadge(recipient.status)}
+          {recipientStatusBadgeWithCapability(recipient, topCapabilityScore)}
         </div>
       </div>
+
+      {capabilityEvidence.length > 0 && (
+        <div className="mt-2.5 space-y-1">
+          {capabilityEvidence.map((m) => (
+            <p
+              key={`${m.supplierId}-${m.brand}-${m.subcategory}`}
+              className="rounded-md border border-sky-200/90 bg-sky-50/80 px-2 py-1 text-[11px] leading-snug text-sky-950 sm:text-xs"
+            >
+              <span className="font-medium text-sky-900">Strong match:</span>{" "}
+              Carries {m.brand} for {m.subcategory}
+            </p>
+          ))}
+        </div>
+      )}
 
       {/* 2. Supplier details */}
       <div className="mt-2 space-y-1 border-t border-zinc-100 pt-2 text-sm text-zinc-600">
@@ -272,14 +360,29 @@ function SupplierRow({
               <span>Out of Stock</span>
             </p>
           )}
-          {(recipient.availabilityStatus === "CHECKING" ||
-            recipient.status === "SENT" ||
-            recipient.status === "VIEWED") && (
-            <p className="flex items-center gap-2 font-medium text-amber-700">
-              <Loader2 className="h-5 w-5 shrink-0 animate-spin text-amber-600" aria-hidden />
-              <span>Checking availability...</span>
-            </p>
-          )}
+          {isCheckingAvailability &&
+            (capabilityAvailabilityOverride === "data" ? (
+              <p className="flex items-center gap-2 font-medium text-emerald-800/90">
+                <CheckCircle
+                  className="h-5 w-5 shrink-0 text-emerald-600/85"
+                  aria-hidden
+                />
+                <span>In stock (based on supplier data)</span>
+              </p>
+            ) : capabilityAvailabilityOverride === "likely" ? (
+              <p className="flex items-center gap-2 font-medium text-sky-800/90">
+                <Package
+                  className="h-5 w-5 shrink-0 text-sky-600/85"
+                  aria-hidden
+                />
+                <span>Likely in stock</span>
+              </p>
+            ) : (
+              <p className="flex items-center gap-2 font-medium text-amber-700">
+                <Loader2 className="h-5 w-5 shrink-0 animate-spin text-amber-600" aria-hidden />
+                <span>Checking availability...</span>
+              </p>
+            ))}
 
           {recipient.quantityAvailable && recipient.quantityUnit && (
             <p className="flex items-center gap-2 text-zinc-700">
@@ -333,6 +436,7 @@ function SupplierRow({
 export default function MaterialRequestDetailClient({
   request,
   recipients,
+  capabilityMatches,
 }: MaterialRequestDetailClientProps) {
   const pathname = usePathname();
   const isBuyerApp = pathname?.startsWith("/buyer") ?? false;
@@ -358,6 +462,30 @@ export default function MaterialRequestDetailClient({
     ...recipients.pending,
     ...recipients.closedOut,
   ];
+
+  const recipientsSortedByCapability = [...allRecipients].sort((a, b) => {
+    const scoreA = getScoreForSupplier(a.supplierId, capabilityMatches);
+    const scoreB = getScoreForSupplier(b.supplierId, capabilityMatches);
+
+    if (scoreA !== scoreB) {
+      return scoreB - scoreA;
+    }
+
+    const distanceA =
+      typeof a.distanceMiles === "number" && Number.isFinite(a.distanceMiles)
+        ? a.distanceMiles
+        : Number.POSITIVE_INFINITY;
+    const distanceB =
+      typeof b.distanceMiles === "number" && Number.isFinite(b.distanceMiles)
+        ? b.distanceMiles
+        : Number.POSITIVE_INFINITY;
+
+    if (distanceA !== distanceB) {
+      return distanceA - distanceB;
+    }
+
+    return a.supplierName.localeCompare(b.supplierName);
+  });
 
   const persistedRequestText = request.requestText.trim() || "Your search";
   const locationLine = locationContextLine(request);
@@ -440,12 +568,12 @@ export default function MaterialRequestDetailClient({
           )}
         </header>
 
-        {allRecipients.length > 0 && (
+        {recipientsSortedByCapability.length > 0 && (
           <div className="mt-6 sm:mt-7">
             <Card>
               <CardContent className="p-4">
                 <div className="space-y-4">
-                  {allRecipients.map((recipient) => (
+                  {recipientsSortedByCapability.map((recipient) => (
                     <Link
                       key={recipient.conversationId}
                       href={`/request/${request.id}/supplier/${recipient.supplierId}`}
@@ -458,6 +586,7 @@ export default function MaterialRequestDetailClient({
                         )}
                         requestText={persistedRequestText}
                         categoryLabel={cardCategoryLabel}
+                        capabilityMatches={capabilityMatches}
                       />
                     </Link>
                   ))}

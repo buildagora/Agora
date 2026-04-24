@@ -1,0 +1,16 @@
+[
+  {
+    "supplierId": "gulfeagle_hsv",
+    "supplier": "Gulfeagle Supply",
+    "sourceUrl": "https://www.gulfeaglesupply.com/products/",
+    "supplierProductName": "Products",
+    "canonicalSubcategory": "Metal Roofing",
+    "brands": [
+      "GAF",
+      "CertainTeed",
+      "Owens Corning",
+      "TAMKO",
+      "Atlas"
+    ]
+  }
+]

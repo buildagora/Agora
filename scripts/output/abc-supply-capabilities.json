@@ -1,0 +1,546 @@
+[
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "subcategory": "Asphalt Shingles",
+    "brand": "Atlas",
+    "sourceUrl": "https://www.abcsupply.com/products/steep-slope-roofing/asphalt-shingles/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "subcategory": "Asphalt Shingles",
+    "brand": "CertainTeed",
+    "sourceUrl": "https://www.abcsupply.com/products/steep-slope-roofing/asphalt-shingles/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "subcategory": "Asphalt Shingles",
+    "brand": "GAF",
+    "sourceUrl": "https://www.abcsupply.com/products/steep-slope-roofing/asphalt-shingles/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "subcategory": "Asphalt Shingles",
+    "brand": "IKO",
+    "sourceUrl": "https://www.abcsupply.com/products/steep-slope-roofing/asphalt-shingles/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "subcategory": "Asphalt Shingles",
+    "brand": "Malarkey",
+    "sourceUrl": "https://www.abcsupply.com/products/steep-slope-roofing/asphalt-shingles/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "subcategory": "Asphalt Shingles",
+    "brand": "Owens Corning",
+    "sourceUrl": "https://www.abcsupply.com/products/steep-slope-roofing/asphalt-shingles/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "subcategory": "Asphalt Shingles",
+    "brand": "TAMKO",
+    "sourceUrl": "https://www.abcsupply.com/products/steep-slope-roofing/asphalt-shingles/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "subcategory": "Tile Roofing",
+    "brand": "Crown Roof Tiles",
+    "sourceUrl": "https://www.abcsupply.com/products/steep-slope-roofing/concrete-clay-roof-tiles/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "subcategory": "Tile Roofing",
+    "brand": "Eagle Roofing Products",
+    "sourceUrl": "https://www.abcsupply.com/products/steep-slope-roofing/concrete-clay-roof-tiles/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "subcategory": "Tile Roofing",
+    "brand": "Ludowici",
+    "sourceUrl": "https://www.abcsupply.com/products/steep-slope-roofing/concrete-clay-roof-tiles/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "subcategory": "Tile Roofing",
+    "brand": "Terreal North America",
+    "sourceUrl": "https://www.abcsupply.com/products/steep-slope-roofing/concrete-clay-roof-tiles/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "subcategory": "Tile Roofing",
+    "brand": "Verea",
+    "sourceUrl": "https://www.abcsupply.com/products/steep-slope-roofing/concrete-clay-roof-tiles/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "subcategory": "Tile Roofing",
+    "brand": "Westlake Royal Roofing Solutions",
+    "sourceUrl": "https://www.abcsupply.com/products/steep-slope-roofing/concrete-clay-roof-tiles/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "subcategory": "Wood Roofing",
+    "brand": "Capital Forest Products",
+    "sourceUrl": "https://www.abcsupply.com/products/steep-slope-roofing/cedar-shakes-shingles/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "subcategory": "Wood Roofing",
+    "brand": "Pelican Bay Forest Products",
+    "sourceUrl": "https://www.abcsupply.com/products/steep-slope-roofing/cedar-shakes-shingles/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "subcategory": "Wood Roofing",
+    "brand": "Wolf Creek Cedar Inc",
+    "sourceUrl": "https://www.abcsupply.com/products/steep-slope-roofing/cedar-shakes-shingles/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "subcategory": "Wood Roofing",
+    "brand": "Watkins Sawmills Ltd",
+    "sourceUrl": "https://www.abcsupply.com/products/steep-slope-roofing/cedar-shakes-shingles/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "subcategory": "Metal Roofing",
+    "brand": "ACM - American Construction Metals",
+    "sourceUrl": "https://www.abcsupply.com/products/steep-slope-roofing/metal-roofing/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "subcategory": "Metal Roofing",
+    "brand": "American Roofing Products",
+    "sourceUrl": "https://www.abcsupply.com/products/steep-slope-roofing/metal-roofing/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "subcategory": "Metal Roofing",
+    "brand": "ASC Building Products",
+    "sourceUrl": "https://www.abcsupply.com/products/steep-slope-roofing/metal-roofing/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "subcategory": "Metal Roofing",
+    "brand": "ATAS International, Inc",
+    "sourceUrl": "https://www.abcsupply.com/products/steep-slope-roofing/metal-roofing/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "subcategory": "Metal Roofing",
+    "brand": "Central States Manufacturing, Inc",
+    "sourceUrl": "https://www.abcsupply.com/products/steep-slope-roofing/metal-roofing/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "subcategory": "Metal Roofing",
+    "brand": "CMP - Construction Metal Products",
+    "sourceUrl": "https://www.abcsupply.com/products/steep-slope-roofing/metal-roofing/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "subcategory": "Metal Roofing",
+    "brand": "Decra Metal Roofing",
+    "sourceUrl": "https://www.abcsupply.com/products/steep-slope-roofing/metal-roofing/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "subcategory": "Metal Roofing",
+    "brand": "Fabral",
+    "sourceUrl": "https://www.abcsupply.com/products/steep-slope-roofing/metal-roofing/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "subcategory": "Metal Roofing",
+    "brand": "MBCI",
+    "sourceUrl": "https://www.abcsupply.com/products/steep-slope-roofing/metal-roofing/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "subcategory": "Metal Roofing",
+    "brand": "McElroy Metal",
+    "sourceUrl": "https://www.abcsupply.com/products/steep-slope-roofing/metal-roofing/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "subcategory": "Metal Roofing",
+    "brand": "Metal Sales Manufacturing Corporation",
+    "sourceUrl": "https://www.abcsupply.com/products/steep-slope-roofing/metal-roofing/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "subcategory": "Metal Roofing",
+    "brand": "Millennium Metals",
+    "sourceUrl": "https://www.abcsupply.com/products/steep-slope-roofing/metal-roofing/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "subcategory": "Metal Roofing",
+    "brand": "Nu-Ray",
+    "sourceUrl": "https://www.abcsupply.com/products/steep-slope-roofing/metal-roofing/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "subcategory": "Metal Roofing",
+    "brand": "Petersen Aluminum Corporation",
+    "sourceUrl": "https://www.abcsupply.com/products/steep-slope-roofing/metal-roofing/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "subcategory": "Metal Roofing",
+    "brand": "Sheffield Metals International",
+    "sourceUrl": "https://www.abcsupply.com/products/steep-slope-roofing/metal-roofing/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "subcategory": "Metal Roofing",
+    "brand": "TAMKO",
+    "sourceUrl": "https://www.abcsupply.com/products/steep-slope-roofing/metal-roofing/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "subcategory": "Metal Roofing",
+    "brand": "Thompson Architectural Metals Company",
+    "sourceUrl": "https://www.abcsupply.com/products/steep-slope-roofing/metal-roofing/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "subcategory": "Metal Roofing",
+    "brand": "Tilcor Roofing System",
+    "sourceUrl": "https://www.abcsupply.com/products/steep-slope-roofing/metal-roofing/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "subcategory": "Metal Roofing",
+    "brand": "Union Corrugating Company",
+    "sourceUrl": "https://www.abcsupply.com/products/steep-slope-roofing/metal-roofing/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "subcategory": "Metal Roofing",
+    "brand": "Westlake Royal Roofing Solutions",
+    "sourceUrl": "https://www.abcsupply.com/products/steep-slope-roofing/metal-roofing/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "subcategory": "Metal Roofing",
+    "brand": "Worthouse Metal Roofing Manufacturing",
+    "sourceUrl": "https://www.abcsupply.com/products/steep-slope-roofing/metal-roofing/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "subcategory": "Asphalt Shingles",
+    "brand": "Brava",
+    "sourceUrl": "https://www.abcsupply.com/products/steep-slope-roofing/composite-shingles/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "subcategory": "Asphalt Shingles",
+    "brand": "CeDur",
+    "sourceUrl": "https://www.abcsupply.com/products/steep-slope-roofing/composite-shingles/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "subcategory": "Asphalt Shingles",
+    "brand": "CertainTeed",
+    "sourceUrl": "https://www.abcsupply.com/products/steep-slope-roofing/composite-shingles/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "subcategory": "Asphalt Shingles",
+    "brand": "DaVinci",
+    "sourceUrl": "https://www.abcsupply.com/products/steep-slope-roofing/composite-shingles/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "subcategory": "Asphalt Shingles",
+    "brand": "EcoStar",
+    "sourceUrl": "https://www.abcsupply.com/products/steep-slope-roofing/composite-shingles/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "subcategory": "Asphalt Shingles",
+    "brand": "F-Wave",
+    "sourceUrl": "https://www.abcsupply.com/products/steep-slope-roofing/composite-shingles/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "subcategory": "Slate Roofing",
+    "brand": "American Slate",
+    "sourceUrl": "https://www.abcsupply.com/products/steep-slope-roofing/slate-roof-tiles/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "subcategory": "Slate Roofing",
+    "brand": "Buckingham Slate",
+    "sourceUrl": "https://www.abcsupply.com/products/steep-slope-roofing/slate-roof-tiles/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "subcategory": "Slate Roofing",
+    "brand": "Evergreen Slate Co. Inc",
+    "sourceUrl": "https://www.abcsupply.com/products/steep-slope-roofing/slate-roof-tiles/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "subcategory": "Slate Roofing",
+    "brand": "Newmont Slate Company",
+    "sourceUrl": "https://www.abcsupply.com/products/steep-slope-roofing/slate-roof-tiles/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "subcategory": "Slate Roofing",
+    "brand": "Vermont Slate Company",
+    "sourceUrl": "https://www.abcsupply.com/products/steep-slope-roofing/slate-roof-tiles/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "subcategory": "Low Slope Roofing",
+    "brand": "BITEC",
+    "sourceUrl": "https://www.abcsupply.com/products/low-slope-roofing/single-ply-roofing/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "subcategory": "Low Slope Roofing",
+    "brand": "Carlisle",
+    "sourceUrl": "https://www.abcsupply.com/products/low-slope-roofing/single-ply-roofing/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "subcategory": "Low Slope Roofing",
+    "brand": "DecTec",
+    "sourceUrl": "https://www.abcsupply.com/products/low-slope-roofing/single-ply-roofing/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "subcategory": "Low Slope Roofing",
+    "brand": "Elevate",
+    "sourceUrl": "https://www.abcsupply.com/products/low-slope-roofing/single-ply-roofing/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "subcategory": "Low Slope Roofing",
+    "brand": "GAF",
+    "sourceUrl": "https://www.abcsupply.com/products/low-slope-roofing/single-ply-roofing/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "subcategory": "Low Slope Roofing",
+    "brand": "Henry",
+    "sourceUrl": "https://www.abcsupply.com/products/low-slope-roofing/single-ply-roofing/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "subcategory": "Low Slope Roofing",
+    "brand": "Johns Manville",
+    "sourceUrl": "https://www.abcsupply.com/products/low-slope-roofing/single-ply-roofing/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "subcategory": "Low Slope Roofing",
+    "brand": "Malarkey",
+    "sourceUrl": "https://www.abcsupply.com/products/low-slope-roofing/single-ply-roofing/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "subcategory": "Low Slope Roofing",
+    "brand": "MuleHide",
+    "sourceUrl": "https://www.abcsupply.com/products/low-slope-roofing/single-ply-roofing/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "subcategory": "Low Slope Roofing",
+    "brand": "Versico Roofing Systems",
+    "sourceUrl": "https://www.abcsupply.com/products/low-slope-roofing/single-ply-roofing/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "subcategory": "Low Slope Roofing",
+    "brand": "WeatherBond Roofing Systems",
+    "sourceUrl": "https://www.abcsupply.com/products/low-slope-roofing/single-ply-roofing/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "subcategory": "Metal Roofing",
+    "brand": "ASC Building Products",
+    "sourceUrl": "https://www.abcsupply.com/products/low-slope-roofing/structured-metal-panels/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "subcategory": "Metal Roofing",
+    "brand": "Elevate",
+    "sourceUrl": "https://www.abcsupply.com/products/low-slope-roofing/structured-metal-panels/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "subcategory": "Metal Roofing",
+    "brand": "Fabral Metal Wall and Roof Systems",
+    "sourceUrl": "https://www.abcsupply.com/products/low-slope-roofing/structured-metal-panels/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "subcategory": "Metal Roofing",
+    "brand": "McElroy Metal",
+    "sourceUrl": "https://www.abcsupply.com/products/low-slope-roofing/structured-metal-panels/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "subcategory": "Metal Roofing",
+    "brand": "Metal Sales Manufacturing Corporation",
+    "sourceUrl": "https://www.abcsupply.com/products/low-slope-roofing/structured-metal-panels/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "subcategory": "Metal Roofing",
+    "brand": "Petersen Aluminum Corporation",
+    "sourceUrl": "https://www.abcsupply.com/products/low-slope-roofing/structured-metal-panels/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "subcategory": "Metal Roofing",
+    "brand": "Southeastern Metals",
+    "sourceUrl": "https://www.abcsupply.com/products/low-slope-roofing/structured-metal-panels/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "subcategory": "Metal Roofing",
+    "brand": "Union Corrugating Company",
+    "sourceUrl": "https://www.abcsupply.com/products/low-slope-roofing/structured-metal-panels/",
+    "confidence": "high"
+  }
+]

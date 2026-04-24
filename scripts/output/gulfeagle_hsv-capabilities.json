@@ -1,0 +1,42 @@
+[
+  {
+    "supplierId": "gulfeagle_hsv",
+    "supplier": "Gulfeagle Supply",
+    "subcategory": "Metal Roofing",
+    "brand": "GAF",
+    "sourceUrl": "https://www.gulfeaglesupply.com/products/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "gulfeagle_hsv",
+    "supplier": "Gulfeagle Supply",
+    "subcategory": "Metal Roofing",
+    "brand": "CertainTeed",
+    "sourceUrl": "https://www.gulfeaglesupply.com/products/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "gulfeagle_hsv",
+    "supplier": "Gulfeagle Supply",
+    "subcategory": "Metal Roofing",
+    "brand": "Owens Corning",
+    "sourceUrl": "https://www.gulfeaglesupply.com/products/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "gulfeagle_hsv",
+    "supplier": "Gulfeagle Supply",
+    "subcategory": "Metal Roofing",
+    "brand": "TAMKO",
+    "sourceUrl": "https://www.gulfeaglesupply.com/products/",
+    "confidence": "high"
+  },
+  {
+    "supplierId": "gulfeagle_hsv",
+    "supplier": "Gulfeagle Supply",
+    "subcategory": "Metal Roofing",
+    "brand": "Atlas",
+    "sourceUrl": "https://www.gulfeaglesupply.com/products/",
+    "confidence": "high"
+  }
+]

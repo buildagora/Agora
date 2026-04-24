@@ -253,6 +253,20 @@ model Supplier {
   @@index([city, state])
 }
 
+model SupplierCapability {
+  id           String   @id @default(cuid())
+  supplierId   String
+  subcategory  String
+  brand        String
+  sourceUrl    String
+  confidence   String
+  createdAt    DateTime @default(now())
+
+  @@index([supplierId])
+  @@index([subcategory])
+  @@index([brand])
+}
+
 model SupplierCategoryLink {
   id         String   @id @default(cuid())
   supplierId String

@@ -1,0 +1,142 @@
+[
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "sourceUrl": "https://www.abcsupply.com/products/steep-slope-roofing/asphalt-shingles/",
+    "supplierProductName": "Asphalt Shingles",
+    "canonicalSubcategory": "Asphalt Shingles",
+    "brands": [
+      "Atlas",
+      "CertainTeed",
+      "GAF",
+      "IKO",
+      "Malarkey",
+      "Owens Corning",
+      "TAMKO"
+    ]
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "sourceUrl": "https://www.abcsupply.com/products/steep-slope-roofing/concrete-clay-roof-tiles/",
+    "supplierProductName": "Concrete Clay Roof Tiles",
+    "canonicalSubcategory": "Tile Roofing",
+    "brands": [
+      "Crown Roof Tiles",
+      "Eagle Roofing Products",
+      "Ludowici",
+      "Terreal North America",
+      "Verea",
+      "Westlake Royal Roofing Solutions"
+    ]
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "sourceUrl": "https://www.abcsupply.com/products/steep-slope-roofing/cedar-shakes-shingles/",
+    "supplierProductName": "Cedar Shakes Shingles",
+    "canonicalSubcategory": "Wood Roofing",
+    "brands": [
+      "Capital Forest Products",
+      "Pelican Bay Forest Products",
+      "Wolf Creek Cedar Inc",
+      "Watkins Sawmills Ltd"
+    ]
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "sourceUrl": "https://www.abcsupply.com/products/steep-slope-roofing/metal-roofing/",
+    "supplierProductName": "Metal Roofing",
+    "canonicalSubcategory": "Metal Roofing",
+    "brands": [
+      "ACM - American Construction Metals",
+      "American Roofing Products",
+      "ASC Building Products",
+      "ATAS International, Inc",
+      "Central States Manufacturing, Inc",
+      "CMP - Construction Metal Products",
+      "Decra Metal Roofing",
+      "Fabral",
+      "MBCI",
+      "McElroy Metal",
+      "Metal Sales Manufacturing Corporation",
+      "Millennium Metals",
+      "Nu-Ray",
+      "Petersen Aluminum Corporation",
+      "Sheffield Metals International",
+      "TAMKO",
+      "Thompson Architectural Metals Company",
+      "Tilcor Roofing System",
+      "Union Corrugating Company",
+      "Westlake Royal Roofing Solutions",
+      "Worthouse Metal Roofing Manufacturing"
+    ]
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "sourceUrl": "https://www.abcsupply.com/products/steep-slope-roofing/composite-shingles/",
+    "supplierProductName": "Composite Shingles",
+    "canonicalSubcategory": "Asphalt Shingles",
+    "brands": [
+      "Brava",
+      "CeDur",
+      "CertainTeed",
+      "DaVinci",
+      "EcoStar",
+      "F-Wave"
+    ]
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "sourceUrl": "https://www.abcsupply.com/products/steep-slope-roofing/slate-roof-tiles/",
+    "supplierProductName": "Slate Roof Tiles",
+    "canonicalSubcategory": "Slate Roofing",
+    "brands": [
+      "American Slate",
+      "Buckingham Slate",
+      "Evergreen Slate Co. Inc",
+      "Newmont Slate Company",
+      "Vermont Slate Company"
+    ]
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "sourceUrl": "https://www.abcsupply.com/products/low-slope-roofing/single-ply-roofing/",
+    "supplierProductName": "Single Ply Roofing",
+    "canonicalSubcategory": "Low Slope Roofing",
+    "brands": [
+      "BITEC",
+      "Carlisle",
+      "DecTec",
+      "Elevate",
+      "GAF",
+      "Henry",
+      "Johns Manville",
+      "Malarkey",
+      "MuleHide",
+      "Versico Roofing Systems",
+      "WeatherBond Roofing Systems"
+    ]
+  },
+  {
+    "supplierId": "abc_supply_hsv",
+    "supplier": "ABC Supply",
+    "sourceUrl": "https://www.abcsupply.com/products/low-slope-roofing/structured-metal-panels/",
+    "supplierProductName": "Structured Metal Panels",
+    "canonicalSubcategory": "Metal Roofing",
+    "brands": [
+      "ASC Building Products",
+      "Elevate",
+      "Fabral Metal Wall and Roof Systems",
+      "McElroy Metal",
+      "Metal Sales Manufacturing Corporation",
+      "Petersen Aluminum Corporation",
+      "Southeastern Metals",
+      "Union Corrugating Company"
+    ]
+  }
+]
