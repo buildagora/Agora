@@ -52,7 +52,7 @@ if (process.env.NODE_ENV !== "production") {
     console.error(error.message);
     console.error("=".repeat(60));
     console.error("\n⚠️  Email functionality will not work until configuration is complete.");
-    console.error("   Create .env.local in the agora/ directory with:\n");
+    console.error("   Create .env.local in the repo root with:\n");
     console.error("   RESEND_API_KEY=\"your-resend-api-key\"");
     console.error("   EMAIL_FROM=\"Agora <onboarding@resend.dev>\"\n");
     console.error("   Then restart the dev server.\n");
