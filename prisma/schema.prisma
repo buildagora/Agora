@@ -148,9 +148,10 @@ model PreferredSupplierRule {
 }
 
 model AgentThread {
-  id     String @id @default(cuid())
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id          String  @id @default(cuid())
+  userId      String?
+  user        User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  anonymousId String?
 
   title    String?
   // JSON strings (match existing pattern in your schema)
@@ -162,6 +163,7 @@ model AgentThread {
   updatedAt DateTime @updatedAt
 
   @@index([userId])
+  @@index([anonymousId])
 }
 
 model EmailEvent {

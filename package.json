@@ -56,6 +56,7 @@
     "prebuild": "npm run guard:legacy"
   },
   "dependencies": {
+    "@google/genai": "^1.50.1",
     "@prisma/adapter-pg": "^7.2.0",
     "@prisma/client": "^7.4.2",
     "@radix-ui/react-slot": "^1.2.4",
