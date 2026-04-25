@@ -1,7 +1,8 @@
 "use client";
 
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import SiteFooter from "@/components/layout/SiteFooter";
 import SiteHeader from "@/components/layout/SiteHeader";
 import type {
   ChatAttachmentMeta,
@@ -19,6 +20,25 @@ type StoredLocation = {
   lng?: number;
 };
 
+async function forwardGeocodeQuery(
+  query: string
+): Promise<StoredLocation | null> {
+  try {
+    const res = await fetch("/api/chat/geocode", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query }),
+    });
+    const data = await res.json();
+    if (data?.ok) {
+      return { label: data.label, lat: data.lat, lng: data.lng };
+    }
+  } catch {
+    /* fall through */
+  }
+  return null;
+}
+
 type StreamEvent =
   | { type: "start"; threadId: string }
   | { type: "text"; delta: string }
@@ -26,11 +46,13 @@ type StreamEvent =
   | { type: "error"; code: string; message: string };
 
 export default function ChatClient() {
+  const router = useRouter();
   const [threadId, setThreadId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [pendingUser, setPendingUser] = useState<ChatMessage | null>(null);
   const [streamingText, setStreamingText] = useState<string>("");
   const [isStreaming, setIsStreaming] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
   const [draft, setDraft] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [location, setLocation] = useState<StoredLocation | null>(null);
@@ -83,7 +105,11 @@ export default function ChatClient() {
   const requestBrowserLocation = () => {
     if (!navigator.geolocation) {
       const manual = window.prompt("Enter your city or ZIP:");
-      if (manual && manual.trim()) persistLocation({ label: manual.trim() });
+      if (manual && manual.trim()) {
+        forwardGeocodeQuery(manual.trim()).then((resolved) =>
+          persistLocation(resolved ?? { label: manual.trim() })
+        );
+      }
       return;
     }
     navigator.geolocation.getCurrentPosition(
@@ -105,11 +131,14 @@ export default function ChatClient() {
           persistLocation({ label: `${lat.toFixed(2)}, ${lng.toFixed(2)}`, lat, lng });
         }
       },
-      () => {
+      async () => {
         const manual = window.prompt(
           "Couldn't get your location automatically. Enter your city or ZIP:"
         );
-        if (manual && manual.trim()) persistLocation({ label: manual.trim() });
+        if (manual && manual.trim()) {
+          const resolved = await forwardGeocodeQuery(manual.trim());
+          persistLocation(resolved ?? { label: manual.trim() });
+        }
       },
       { timeout: 8000, maximumAge: 5 * 60 * 1000 }
     );
@@ -255,6 +284,59 @@ export default function ChatClient() {
     setDrawerOpen(false);
   };
 
+  const seeSuppliers = async () => {
+    if (isSearching || isStreaming) return;
+    if (!threadId) {
+      setError("Send a message first.");
+      return;
+    }
+    if (!location?.lat || !location.lng) {
+      setError("Add your location first.");
+      return;
+    }
+    const firstUser = messages.find((m) => m.role === "user");
+    const query = firstUser?.text?.trim();
+    if (!query) {
+      setError("Tell us what you're looking for first.");
+      return;
+    }
+
+    setError(null);
+    setIsSearching(true);
+    try {
+      const res = await fetch("/api/search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          threadId,
+          query,
+          location: {
+            label: location.label,
+            lat: location.lat,
+            lng: location.lng,
+          },
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data?.ok) {
+        throw new Error(data?.message || `HTTP ${res.status}`);
+      }
+      router.push(`/search/${data.threadId}/${data.searchId}`);
+    } catch (e: any) {
+      setError(e?.message || "Search failed");
+      setIsSearching(false);
+    }
+  };
+
+  const canSearch =
+    !!threadId &&
+    messages.length > 0 &&
+    !!location?.lat &&
+    !!location.lng &&
+    !isStreaming &&
+    !isSearching;
+
   const loadThread = async (id: string) => {
     setError(null);
     setDrawerOpen(false);
@@ -335,19 +417,36 @@ export default function ChatClient() {
                 </div>
               )}
 
-              <div className="mb-2 flex items-center justify-between">
+              <div className="mb-2 flex items-center justify-between gap-2">
                 <LocationPill
                   label={location?.label ?? null}
                   onSet={requestBrowserLocation}
                   onClear={() => persistLocation(null)}
                 />
-                <button
-                  type="button"
-                  onClick={startNewChat}
-                  className="text-xs text-zinc-500 transition hover:text-zinc-800"
-                >
-                  New chat
-                </button>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={seeSuppliers}
+                    disabled={!canSearch}
+                    title={
+                      !threadId || messages.length === 0
+                        ? "Send a message first"
+                        : !location?.lat
+                        ? "Add your location first"
+                        : "Find suppliers nearby"
+                    }
+                    className="inline-flex items-center gap-1.5 rounded-full bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-200 disabled:text-zinc-400"
+                  >
+                    See suppliers →
+                  </button>
+                  <button
+                    type="button"
+                    onClick={startNewChat}
+                    className="text-xs text-zinc-500 transition hover:text-zinc-800"
+                  >
+                    New chat
+                  </button>
+                </div>
               </div>
 
               <Composer
@@ -371,37 +470,32 @@ export default function ChatClient() {
       </div>
 
       <SiteFooter />
+
+      {isSearching && <SearchingOverlay location={location?.label ?? ""} />}
     </div>
   );
 }
 
 // ---------------------------------------------------------------------------
 
-function SiteFooter() {
+function SearchingOverlay({ location }: { location: string }) {
   return (
-    <footer className="mt-auto w-full shrink-0 border-t border-zinc-200 bg-white">
-      <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
-        <div className="grid grid-cols-1 items-center gap-6 text-center text-xs leading-relaxed text-zinc-500 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] sm:gap-x-8 sm:gap-y-0 sm:text-[13px]">
-          <p className="sm:justify-self-start sm:text-left">
-            Serving Huntsville &amp; North Alabama
-          </p>
-          <p className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 sm:gap-x-3">
-            <Link href="/how-it-works" className="text-inherit transition hover:opacity-70">
-              How It Works
-            </Link>
-            <span className="select-none text-zinc-300" aria-hidden>|</span>
-            <Link href="/contact" className="text-inherit transition hover:opacity-70">
-              Contact Us
-            </Link>
-            <span className="select-none text-zinc-300" aria-hidden>|</span>
-            <Link href="/legal/terms" className="text-inherit transition hover:opacity-70">
-              Privacy Policy
-            </Link>
-          </p>
-          <p className="sm:justify-self-end sm:text-right">© 2024 Agora</p>
+    <div
+      role="dialog"
+      aria-live="polite"
+      className="fixed inset-0 z-30 flex items-center justify-center bg-white/80 backdrop-blur-sm"
+    >
+      <div className="flex flex-col items-center gap-4 px-6 text-center">
+        <div className="flex items-center gap-1.5" aria-hidden>
+          <span className="h-2 w-2 animate-bounce rounded-full bg-zinc-700 [animation-delay:-0.3s]" />
+          <span className="h-2 w-2 animate-bounce rounded-full bg-zinc-700 [animation-delay:-0.15s]" />
+          <span className="h-2 w-2 animate-bounce rounded-full bg-zinc-700" />
         </div>
+        <p className="text-[15px] text-zinc-800">
+          Finding suppliers{location ? ` in ${location}` : ""}…
+        </p>
       </div>
-    </footer>
+    </div>
   );
 }
 
