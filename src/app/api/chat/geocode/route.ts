@@ -1,24 +1,26 @@
 /**
  * POST /api/chat/geocode
  *
- * Reverse-geocode a lat/lng to a short label like "Knoxville, TN" via Nominatim.
- * The chat composer's location pill calls this to display a friendly name once
- * the browser has granted geolocation.
+ * Two modes:
+ * - Reverse: body { lat, lng }       → { ok, label }
+ * - Forward: body { query: string }  → { ok, label, lat, lng }
  *
- * Request:  { lat: number, lng: number }
- * Response: { ok: true, label: string }  |  { ok: false, code, message }
+ * The chat composer's location pill calls reverse after browser
+ * geolocation, and forward when the user types a city/ZIP manually.
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { reverseGeocode } from "@/lib/chat/geocode.server";
+import { forwardGeocode, reverseGeocode } from "@/lib/chat/geocode.server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+type Body = { lat?: unknown; lng?: unknown; query?: unknown };
+
 export async function POST(req: NextRequest) {
-  let body: { lat?: unknown; lng?: unknown };
+  let body: Body;
   try {
-    body = (await req.json()) as typeof body;
+    body = (await req.json()) as Body;
   } catch {
     return NextResponse.json(
       { ok: false, code: "INVALID_JSON", message: "Body must be JSON" },
@@ -26,11 +28,35 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Forward mode
+  if (typeof body.query === "string" && body.query.trim()) {
+    const result = await forwardGeocode({ query: body.query.trim() });
+    if (!result) {
+      return NextResponse.json(
+        { ok: false, code: "GEOCODE_FAILED", message: "Could not resolve location" },
+        { status: 502 }
+      );
+    }
+    return NextResponse.json({ ok: true, ...result }, { status: 200 });
+  }
+
+  // Reverse mode
   const lat = typeof body.lat === "number" ? body.lat : NaN;
   const lng = typeof body.lng === "number" ? body.lng : NaN;
-  if (!Number.isFinite(lat) || !Number.isFinite(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+  if (
+    !Number.isFinite(lat) ||
+    !Number.isFinite(lng) ||
+    lat < -90 ||
+    lat > 90 ||
+    lng < -180 ||
+    lng > 180
+  ) {
     return NextResponse.json(
-      { ok: false, code: "INVALID_COORDS", message: "lat/lng must be valid numbers" },
+      {
+        ok: false,
+        code: "INVALID_INPUT",
+        message: "Provide either { lat, lng } (reverse) or { query } (forward)",
+      },
       { status: 400 }
     );
   }
@@ -42,6 +68,5 @@ export async function POST(req: NextRequest) {
       { status: 502 }
     );
   }
-
   return NextResponse.json({ ok: true, label: result.label }, { status: 200 });
 }

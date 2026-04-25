@@ -49,6 +49,48 @@ function compactLabel(addr: NominatimAddress): string | null {
   return addr.state ? `${city}, ${addr.state}` : city;
 }
 
+export async function forwardGeocode(args: {
+  query: string;
+}): Promise<{ label: string; lat: number; lng: number } | null> {
+  const params = new URLSearchParams({
+    format: "json",
+    q: args.query,
+    addressdetails: "1",
+    limit: "1",
+    countrycodes: "us",
+  });
+  const url = `https://nominatim.openstreetmap.org/search?${params}`;
+
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      headers: {
+        "User-Agent": "Agora/0.1 (chat forward-geocode)",
+        "Accept-Language": "en",
+      },
+    });
+  } catch {
+    return null;
+  }
+  if (!res.ok) return null;
+
+  let data: Array<{ lat?: string; lon?: string; address?: NominatimAddress }>;
+  try {
+    data = (await res.json()) as typeof data;
+  } catch {
+    return null;
+  }
+  const top = data?.[0];
+  if (!top) return null;
+
+  const lat = Number(top.lat);
+  const lng = Number(top.lon);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+
+  const label = top.address ? compactLabel(top.address) ?? args.query : args.query;
+  return { label, lat, lng };
+}
+
 export async function reverseGeocode(args: {
   lat: number;
   lng: number;
