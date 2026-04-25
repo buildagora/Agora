@@ -1,3 +1,7 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 import type { SupplierCard as SupplierCardData } from "@/lib/search/types";
 
 const STATUS_LABEL = {
@@ -16,7 +20,26 @@ function formatCategory(raw: string): string {
     .join(" & ");
 }
 
-export default function SupplierCard({ card }: { card: SupplierCardData }) {
+export type SupplierCardProps = {
+  card: SupplierCardData;
+  /** Original chat query — sent as `requestText` on the material request. */
+  requestText: string;
+  /**
+   * Category to record on the material request. Falls back to the supplier's
+   * own category if the search couldn't infer one.
+   */
+  searchCategory?: string | null;
+};
+
+export default function SupplierCard({
+  card,
+  requestText,
+  searchCategory,
+}: SupplierCardProps) {
+  const router = useRouter();
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   const dim = card.status === "unlikely";
   const dotColor =
     card.status === "likely"
@@ -24,6 +47,37 @@ export default function SupplierCard({ card }: { card: SupplierCardData }) {
       : card.status === "unknown"
       ? "bg-zinc-400"
       : "bg-zinc-300";
+
+  const sendRequest = async () => {
+    if (submitting) return;
+    setError(null);
+    setSubmitting(true);
+    try {
+      const categoryId =
+        (searchCategory && searchCategory.trim()) || card.category;
+      const res = await fetch("/api/buyer/material-requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          categoryId,
+          requestText,
+          sendMode: "DIRECT",
+          supplierIds: [card.supplierId],
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data?.ok) {
+        throw new Error(data?.message || `HTTP ${res.status}`);
+      }
+      const requestId = data.materialRequestId ?? data.data?.materialRequestId;
+      if (!requestId) throw new Error("No requestId in response");
+      router.push(`/request/${requestId}`);
+    } catch (e: any) {
+      setError(e?.message || "Couldn't send request");
+      setSubmitting(false);
+    }
+  };
 
   return (
     <article
@@ -56,28 +110,41 @@ export default function SupplierCard({ card }: { card: SupplierCardData }) {
         <p className="text-sm leading-relaxed text-zinc-700">{card.note}</p>
       )}
 
-      <footer className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-zinc-500 sm:text-[13px]">
-        {card.phone && (
-          <a
-            href={`tel:${card.phone.replace(/[^\d+]/g, "")}`}
-            className="inline-flex items-center gap-1 text-zinc-700 transition hover:text-zinc-900"
-          >
-            <PhoneIcon className="h-3.5 w-3.5" />
-            {card.phone}
-          </a>
-        )}
-        {card.sourceUrl && (
-          <a
-            href={card.sourceUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-zinc-500 underline-offset-2 transition hover:text-zinc-700 hover:underline"
-          >
-            <LinkIcon className="h-3.5 w-3.5" />
-            source
-          </a>
-        )}
-      </footer>
+      <div className="mt-1 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-zinc-500 sm:text-[13px]">
+          {card.phone && (
+            <a
+              href={`tel:${card.phone.replace(/[^\d+]/g, "")}`}
+              className="inline-flex items-center gap-1 text-zinc-700 transition hover:text-zinc-900"
+            >
+              <PhoneIcon className="h-3.5 w-3.5" />
+              {card.phone}
+            </a>
+          )}
+          {card.sourceUrl && (
+            <a
+              href={card.sourceUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-zinc-500 underline-offset-2 transition hover:text-zinc-700 hover:underline"
+            >
+              <LinkIcon className="h-3.5 w-3.5" />
+              source
+            </a>
+          )}
+        </div>
+
+        <button
+          type="button"
+          onClick={sendRequest}
+          disabled={submitting}
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-zinc-900 px-3.5 py-1.5 text-xs font-medium text-white transition hover:bg-zinc-800 disabled:cursor-wait disabled:bg-zinc-400 sm:text-[13px]"
+        >
+          {submitting ? "Sending…" : "Send request →"}
+        </button>
+      </div>
+
+      {error && <p className="text-xs text-red-600">{error}</p>}
     </article>
   );
 }
