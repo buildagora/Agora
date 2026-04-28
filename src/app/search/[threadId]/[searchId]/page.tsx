@@ -101,11 +101,7 @@ export default async function SearchResultsPage({
             <ul className="grid grid-cols-1 gap-3">
               {search.cards.map((c) => (
                 <li key={c.supplierId}>
-                  <SupplierCard
-                    card={c}
-                    requestText={search.query}
-                    searchCategory={search.category}
-                  />
+                  <SupplierCard card={c} requestText={search.query} />
                 </li>
               ))}
             </ul>

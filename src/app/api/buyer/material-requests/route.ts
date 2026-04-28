@@ -10,6 +10,8 @@ import {
   OPERATOR_MATERIAL_REQUEST_SUBJECT,
   buildOperatorMaterialRequestEmailPayload,
 } from "@/lib/operatorMaterialRequestEmail.server";
+import { sendBuyerMessageToSupplier } from "@/lib/supplierMessaging/sendBuyerMessageToSupplier";
+import { normalizeUsPhone } from "@/lib/sms/format";
 import { trackServerEvent } from "@/lib/analytics/server";
 import { ANALYTICS_EVENTS } from "@/lib/analytics/events";
 
@@ -204,6 +206,15 @@ export async function POST(request: NextRequest) {
 
     const { categoryId, requestText, sendMode, supplierIds } = body;
 
+    // Optional anonymous-buyer contact fields. When initialMessage is provided
+    // we create a real first SupplierMessage and notify the supplier directly
+    // (claimed → email + in-app; unclaimed → onboarding email to Supplier.email).
+    // Otherwise we fall through to the legacy operator-mediated flow.
+    const buyerNameRaw = typeof body.buyerName === "string" ? body.buyerName.trim() : "";
+    const buyerPhoneRaw = typeof body.buyerPhone === "string" ? body.buyerPhone.trim() : "";
+    const initialMessageRaw =
+      typeof body.initialMessage === "string" ? body.initialMessage.trim() : "";
+
     // Validate required fields
     if (!categoryId || typeof categoryId !== "string" || !categoryId.trim()) {
       return fail("BAD_REQUEST", 400, "categoryId is required");
@@ -222,6 +233,27 @@ export async function POST(request: NextRequest) {
       if (!Array.isArray(supplierIds) || supplierIds.length === 0) {
         return fail("BAD_REQUEST", 400, "supplierIds array is required for DIRECT mode");
       }
+    }
+
+    // If the buyer is in the new direct-message flow (any of name/phone/message),
+    // require all three together. Otherwise we keep the operator-mediated path.
+    const hasContactBundle = !!(buyerNameRaw || buyerPhoneRaw || initialMessageRaw);
+    let normalizedPhone: string | null = null;
+    if (hasContactBundle) {
+      if (!buyerNameRaw) {
+        return fail("BAD_REQUEST", 400, "buyerName is required when sending a direct message");
+      }
+      if (!buyerPhoneRaw) {
+        return fail("BAD_REQUEST", 400, "buyerPhone is required when sending a direct message");
+      }
+      if (!initialMessageRaw) {
+        return fail("BAD_REQUEST", 400, "initialMessage is required when sending a direct message");
+      }
+      const phone = normalizeUsPhone(buyerPhoneRaw);
+      if (!phone) {
+        return fail("BAD_REQUEST", 400, "buyerPhone must be a valid US phone number");
+      }
+      normalizedPhone = phone.e164;
     }
 
     // Normalize category ID
@@ -384,6 +416,8 @@ export async function POST(request: NextRequest) {
     const materialRequest = await prisma.materialRequest.create({
       data: {
         buyerId: effectiveBuyer.id,
+        buyerName: hasContactBundle ? buyerNameRaw : null,
+        buyerPhone: normalizedPhone,
         categoryId: normalizedCategoryId,
         requestText: requestText.trim(),
         sendMode,
@@ -464,7 +498,38 @@ export async function POST(request: NextRequest) {
       throw new Error("No recipients were created for this request");
     }
 
+    // If the buyer attached a real message (new direct-contact flow), drop a
+    // first SupplierMessage into each conversation and let the existing helper
+    // dispatch the right notification (claimed → in-app + email; unclaimed →
+    // onboarding email to Supplier.email with the claim deep link).
+    if (hasContactBundle) {
+      for (const r of recipientResults) {
+        try {
+          await sendBuyerMessageToSupplier({
+            prisma,
+            buyer: {
+              id: effectiveBuyer.id,
+              fullName: buyerNameRaw,
+              companyName: null,
+            },
+            supplierId: r.supplierId,
+            conversationId: r.conversationId,
+            messageBody: initialMessageRaw,
+          });
+        } catch (msgError) {
+          // Log but don't fail — operator email below will still go out as backstop.
+          console.error("[BUYER_INITIAL_MESSAGE_DISPATCH_FAILED]", {
+            materialRequestId: materialRequest.id,
+            supplierId: r.supplierId,
+            conversationId: r.conversationId,
+            error: msgError instanceof Error ? msgError.message : String(msgError),
+          });
+        }
+      }
+    }
+
     const buyerDisplayName =
+      (hasContactBundle ? buyerNameRaw : null) ||
       effectiveBuyer?.fullName?.trim() ||
       effectiveBuyer?.companyName?.trim() ||
       "—";

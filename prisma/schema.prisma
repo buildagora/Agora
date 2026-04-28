@@ -420,6 +420,12 @@ model MaterialRequest {
   id              String                     @id @default(cuid())
   buyerId         String
   buyer           User                       @relation(fields: [buyerId], references: [id], onDelete: Cascade)
+  /// Display name typed by an anonymous buyer on the contact-supplier form.
+  /// May be null for legacy rows or operator-mediated requests.
+  buyerName       String?
+  /// E.164 phone number for SMS replies from the supplier. Never exposed
+  /// to suppliers — used only by the SMS sender.
+  buyerPhone      String?
   categoryId      String
   requestText     String
   sendMode        String // NETWORK | DIRECT

@@ -79,7 +79,12 @@ export async function POST(
         materialRequestId: true,
         rfqId: true,
         materialRequest: {
-          select: { id: true, requestText: true, categoryId: true },
+          select: {
+            id: true,
+            requestText: true,
+            categoryId: true,
+            buyerPhone: true,
+          },
         },
         rfq: {
           select: { id: true, title: true, rfqNumber: true },
@@ -185,6 +190,37 @@ export async function POST(
             supplierId: supplier.id,
             error: emailError instanceof Error ? emailError.message : String(emailError),
           });
+        }
+
+        // SMS notification when this is an anonymous-buyer direct-contact thread.
+        // We never expose the buyer's phone to the supplier — only this server-
+        // side path uses it.
+        const buyerPhone = conversation.materialRequest?.buyerPhone;
+        if (buyerPhone) {
+          try {
+            const { sendSms } = await import("@/lib/sms/twilio.server");
+            const { formatBuyerSms } = await import("@/lib/sms/format");
+            const result = await sendSms({
+              to: buyerPhone,
+              body: formatBuyerSms({
+                supplierName,
+                body: messageBody.trim(),
+              }),
+            });
+            if (!result.ok) {
+              console.error("[BUYER_MESSAGE_SMS_FAILED]", {
+                conversationId,
+                supplierId: supplier.id,
+                error: result.error,
+              });
+            }
+          } catch (smsError) {
+            console.error("[BUYER_MESSAGE_SMS_FAILED]", {
+              conversationId,
+              supplierId: supplier.id,
+              error: smsError instanceof Error ? smsError.message : String(smsError),
+            });
+          }
         }
 
         // Create in-app notification with request context for buyer dashboard

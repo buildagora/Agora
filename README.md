@@ -30,7 +30,30 @@ All commands run from the repo root.
    AUTH_SECRET=your-secret-key-at-least-32-characters-long
    RESEND_API_KEY=re_xxxxxxxxxxxxx
    EMAIL_FROM="Agora <onboarding@resend.dev>"
+
+   # Gemini (chat assistant + supplier-search classifier)
+   GEMINI_API_KEY=...
+   GEMINI_MODEL=gemini-2.5-flash
+
+   # Twilio (buyer-supplier SMS — leave SID/TOKEN blank in dev to log SMS to console)
+   TWILIO_ACCOUNT_SID=
+   TWILIO_AUTH_TOKEN=
+   TWILIO_FROM_NUMBER=+15551234567
+   APP_URL=http://localhost:3000
    ```
+
+   **About Twilio:** The buyer-supplier flow sends supplier replies to the buyer
+   as SMS. With `TWILIO_ACCOUNT_SID` empty (default in dev), outbound SMS is
+   logged to the dev console instead of actually sent — full UX works without
+   a real account. Set all three Twilio vars to send for real.
+
+   For **inbound** SMS (buyer texts back into the conversation), you also need
+   to point a Twilio number's webhook at this server:
+   - In dev, expose your local server with `ngrok http 3000`.
+   - In the Twilio console: *Phone Numbers → your number → Messaging → "A message comes in" → Webhook → POST →* `https://<ngrok>.ngrok-free.app/api/sms/inbound`.
+   - Without `TWILIO_AUTH_TOKEN`, signature validation is bypassed (dev only)
+     so `scripts/sim-inbound-sms.ts` can exercise the route without ngrok:
+     `npx tsx scripts/sim-inbound-sms.ts --from "+15555551234" --body "yes please"`.
 
 3. Sync the database schema:
    ```bash
