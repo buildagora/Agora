@@ -256,15 +256,20 @@ model Supplier {
 model SupplierCapability {
   id           String   @id @default(cuid())
   supplierId   String
+  categoryId   String
   subcategory  String
   brand        String
+  productLine  String?
   sourceUrl    String
   confidence   String
+  notes        String?
   createdAt    DateTime @default(now())
 
   @@index([supplierId])
+  @@index([categoryId])
   @@index([subcategory])
   @@index([brand])
+  @@unique([supplierId, categoryId, subcategory, brand, productLine])
 }
 
 model SupplierCategoryLink {
