@@ -185,36 +185,31 @@ function recipientStatusBadge(status: string) {
 const capabilityBadgeBase =
   "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium shrink-0";
 
-/** Top-right badge: override static "Checking" (SENT/VIEWED) when catalog match score is high enough. */
-function recipientStatusBadgeWithCapability(
-  recipient: Recipient,
-  topCapabilityScore: number | null
-) {
-  const isCheckingBadgeStatus =
-    recipient.status === "SENT" || recipient.status === "VIEWED";
-
-  if (isCheckingBadgeStatus) {
-    if (topCapabilityScore != null && topCapabilityScore >= 13) {
-      return (
-        <span
-          className={`${capabilityBadgeBase} bg-emerald-50 text-emerald-800 border border-emerald-200`}
-        >
-          In Stock
-        </span>
-      );
-    }
-    if (topCapabilityScore != null && topCapabilityScore >= 10) {
-      return (
-        <span
-          className={`${capabilityBadgeBase} bg-sky-50 text-sky-800 border border-sky-200`}
-        >
-          Likely In Stock
-        </span>
-      );
-    }
-    return recipientStatusBadge(recipient.status);
+/**
+ * Top-right badge: only verified replies show "In Stock". Catalog capability never implies inventory.
+ */
+function recipientStatusBadgeWithCapability(recipient: Recipient) {
+  if (
+    recipient.status === "REPLIED" ||
+    recipient.availabilityStatus === "IN_STOCK"
+  ) {
+    return (
+      <span
+        className={`${capabilityBadgeBase} bg-emerald-50 text-emerald-800 border border-emerald-200`}
+      >
+        In Stock
+      </span>
+    );
   }
-
+  if (recipient.status === "SENT" || recipient.status === "VIEWED") {
+    return (
+      <span
+        className={`${capabilityBadgeBase} bg-amber-50 text-amber-800 border border-amber-200`}
+      >
+        Checking availability
+      </span>
+    );
+  }
   return recipientStatusBadge(recipient.status);
 }
 
@@ -230,39 +225,95 @@ function getScoreForSupplier(
     : 0;
 }
 
+function evidenceScopeFallback(request: Request): string {
+  const raw = request.categoryId?.trim().toLowerCase();
+  if (!raw) return "your search";
+  if (raw in categoryIdToLabel) {
+    return categoryIdToLabel[raw as keyof typeof categoryIdToLabel];
+  }
+  return raw
+    .replace(/_/g, " ")
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+}
+
+/** Product area: first subcategory on any match, else first productLine, else request category label. */
+function productAreaFromMatches(
+  supplierMatchesSorted: CapabilitySearchResult[],
+  request: Request
+): string {
+  for (const m of supplierMatchesSorted) {
+    const s = m.subcategory?.trim();
+    if (s) return s;
+  }
+  for (const m of supplierMatchesSorted) {
+    const pl = m.productLine?.trim();
+    if (pl) return pl;
+  }
+  return evidenceScopeFallback(request);
+}
+
+/**
+ * Buyer-facing catalog evidence (no inventory claim). Brands capped at 3, then "+ more".
+ */
+function buildSupplierCapabilityEvidenceSummary(
+  supplierMatchesSorted: CapabilitySearchResult[],
+  request: Request
+): string | null {
+  if (supplierMatchesSorted.length === 0) return null;
+
+  const seenBrand = new Set<string>();
+  const brands: string[] = [];
+  for (const m of supplierMatchesSorted) {
+    const b = m.brand?.trim();
+    if (b && !seenBrand.has(b.toLowerCase())) {
+      seenBrand.add(b.toLowerCase());
+      brands.push(b);
+    }
+  }
+
+  const productArea = productAreaFromMatches(supplierMatchesSorted, request);
+  const maxBrands = 3;
+  const listed = brands.slice(0, maxBrands);
+  const brandsPhrase =
+    brands.length > maxBrands
+      ? `${listed.join(", ")} + more`
+      : listed.join(", ");
+
+  if (brands.length > 0) {
+    return `Supplier carries ${productArea} from ${brandsPhrase}.`;
+  }
+  return `Supplier carries ${productArea}.`;
+}
+
 function SupplierRow({
   recipient,
   timeValue,
   requestText,
   categoryLabel,
   capabilityMatches,
+  request,
 }: {
   recipient: Recipient;
   timeValue: string;
   requestText: string;
   categoryLabel: string;
   capabilityMatches?: CapabilitySearchResult[];
+  request: Request;
 }) {
   const supplierMatchesSorted = (capabilityMatches ?? [])
     .filter((m) => m.supplierId === recipient.supplierId)
     .sort((a, b) => b.score - a.score);
 
-  const topCapabilityScore = supplierMatchesSorted[0]?.score ?? null;
-  const capabilityEvidence = supplierMatchesSorted.slice(0, 2);
+  const capabilityEvidenceSummary =
+    buildSupplierCapabilityEvidenceSummary(supplierMatchesSorted, request);
 
   const isCheckingAvailability =
     recipient.availabilityStatus === "CHECKING" ||
     recipient.status === "SENT" ||
     recipient.status === "VIEWED";
-
-  const capabilityAvailabilityOverride =
-    isCheckingAvailability &&
-    topCapabilityScore != null &&
-    topCapabilityScore >= 10
-      ? topCapabilityScore >= 13
-        ? ("data" as const)
-        : ("likely" as const)
-      : null;
 
   return (
     <div className="rounded-2xl border border-zinc-200 bg-white px-6 py-6 shadow-sm transition-colors duration-200 group-hover:border-zinc-300/90">
@@ -300,22 +351,14 @@ function SupplierRow({
           </div>
         </div>
         <div className="shrink-0 self-start pt-0.5">
-          {recipientStatusBadgeWithCapability(recipient, topCapabilityScore)}
+          {recipientStatusBadgeWithCapability(recipient)}
         </div>
       </div>
 
-      {capabilityEvidence.length > 0 && (
-        <div className="mt-2.5 space-y-1">
-          {capabilityEvidence.map((m) => (
-            <p
-              key={`${m.supplierId}-${m.brand}-${m.subcategory}`}
-              className="rounded-md border border-sky-200/90 bg-sky-50/80 px-2 py-1 text-[11px] leading-snug text-sky-950 sm:text-xs"
-            >
-              <span className="font-medium text-sky-900">Strong match:</span>{" "}
-              Carries {m.brand} for {m.subcategory}
-            </p>
-          ))}
-        </div>
+      {capabilityEvidenceSummary && (
+        <p className="mt-2.5 rounded-md border border-sky-200/90 bg-sky-50/80 px-2 py-1.5 text-[11px] leading-snug text-sky-950 sm:text-xs">
+          {capabilityEvidenceSummary}
+        </p>
       )}
 
       {/* 2. Supplier details */}
@@ -360,29 +403,12 @@ function SupplierRow({
               <span>Out of Stock</span>
             </p>
           )}
-          {isCheckingAvailability &&
-            (capabilityAvailabilityOverride === "data" ? (
-              <p className="flex items-center gap-2 font-medium text-emerald-800/90">
-                <CheckCircle
-                  className="h-5 w-5 shrink-0 text-emerald-600/85"
-                  aria-hidden
-                />
-                <span>In stock (based on supplier data)</span>
-              </p>
-            ) : capabilityAvailabilityOverride === "likely" ? (
-              <p className="flex items-center gap-2 font-medium text-sky-800/90">
-                <Package
-                  className="h-5 w-5 shrink-0 text-sky-600/85"
-                  aria-hidden
-                />
-                <span>Likely in stock</span>
-              </p>
-            ) : (
-              <p className="flex items-center gap-2 font-medium text-amber-700">
-                <Loader2 className="h-5 w-5 shrink-0 animate-spin text-amber-600" aria-hidden />
-                <span>Checking availability...</span>
-              </p>
-            ))}
+          {isCheckingAvailability && (
+            <p className="flex items-center gap-2 font-medium text-amber-700">
+              <Loader2 className="h-5 w-5 shrink-0 animate-spin text-amber-600" aria-hidden />
+              <span>Checking availability...</span>
+            </p>
+          )}
 
           {recipient.quantityAvailable && recipient.quantityUnit && (
             <p className="flex items-center gap-2 text-zinc-700">
@@ -587,6 +613,7 @@ export default function MaterialRequestDetailClient({
                         requestText={persistedRequestText}
                         categoryLabel={cardCategoryLabel}
                         capabilityMatches={capabilityMatches}
+                        request={request}
                       />
                     </Link>
                   ))}

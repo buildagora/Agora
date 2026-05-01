@@ -1,6 +1,6 @@
 /**
- * Only use capability rows with real productLine data.
- * Manufacturer/category mappings without productLine are not reliable indicators of actual supplier inventory.
+ * Capability search: product-line text is the strongest signal; brand/subcategory/category
+ * matches provide fallback evidence when product lines are absent.
  */
 
 import { getPrisma } from "@/lib/db.server";
@@ -10,6 +10,7 @@ export type CapabilitySearchResult = {
   categoryId: string;
   subcategory: string;
   brand: string;
+  productLine: string | null;
   sourceUrl: string;
   score: number;
 };
@@ -178,18 +179,17 @@ export async function searchCapabilities(
     orderBy: { createdAt: "desc" },
   });
 
-  // Only use capability rows with real productLine data.
-  // Manufacturer/category mappings without productLine are not reliable indicators of actual supplier inventory.
-  const capabilities = matches.filter((c) => {
-    const pl = c.productLine;
-    return typeof pl === "string" && pl.trim().length > 0;
-  });
+  // Keep both product-line rows AND broader capability rows.
+  // Product-line matches remain strongest, but brand/subcategory/category rows
+  // act as fallback evidence for suppliers that require manual verification.
+  const capabilities = matches;
 
   const scored = capabilities.map((record) => {
     let score = 0;
 
     const categoryId = String((record as any).categoryId || "");
     const plNorm = normalizeText(String((record as any).productLine || ""));
+    const hasProductLine = plNorm.length > 0;
     const subNorm = normalizeText(record.subcategory);
     const brandNorm = normalizeText(record.brand);
     const notesNorm = normalizeText(String((record as any).notes || ""));
@@ -238,18 +238,19 @@ export async function searchCapabilities(
       }
     }
 
-    // 3) brand — third (never substitutes for missing productLine; rows without productLine never reach scoring)
+    // 3) brand — third (weakened if no productLine)
     if (brandNorm === normalizedQuery) {
-      score += 16;
+      score += hasProductLine ? 16 : 6;
     }
 
     for (const term of terms) {
       const t = normalizeText(term);
       if (!t) continue;
+
       if (brandNorm === t) {
-        score += 12;
+        score += hasProductLine ? 12 : 4;
       } else if (brandNorm.includes(t)) {
-        score += 5;
+        score += hasProductLine ? 5 : 2;
       }
     }
 
@@ -292,33 +293,66 @@ export async function searchCapabilities(
     };
   });
 
-  const bestBySupplier = new Map<string, (typeof scored)[number]>();
-  const matchedCategoriesBySupplier = new Map<string, Set<string>>();
-  for (const result of scored) {
-    const matchedCategories =
-      matchedCategoriesBySupplier.get(result.supplierId) ?? new Set<string>();
-    matchedCategories.add(result.categoryId);
-    matchedCategoriesBySupplier.set(result.supplierId, matchedCategories);
+  const ranked = scored
+    .filter((r) => r.score >= 5)
+    .sort((a, b) => compareCandidates(a, b));
 
-    const current = bestBySupplier.get(result.supplierId);
-    if (
-      !current ||
-      compareCandidates(current, result) > 0
-    ) {
-      bestBySupplier.set(result.supplierId, result);
+  const rowsBySupplier = new Map<string, (typeof scored)[number][]>();
+  for (const r of ranked) {
+    const list = rowsBySupplier.get(r.supplierId) ?? [];
+    list.push(r);
+    rowsBySupplier.set(r.supplierId, list);
+  }
+
+  /** Supplier order follows first appearance in global rank (best row per supplier first). */
+  const supplierOrder: string[] = [];
+  const seenSupplierOrder = new Set<string>();
+  for (const r of ranked) {
+    if (!seenSupplierOrder.has(r.supplierId)) {
+      seenSupplierOrder.add(r.supplierId);
+      supplierOrder.push(r.supplierId);
     }
   }
 
-  return Array.from(bestBySupplier.values())
-    .filter((r) => r.score >= 5)
-    .sort((a, b) => compareCandidates(a, b))
-    .slice(0, 10)
-    .map((r) => ({
-      supplierId: r.supplierId,
-      categoryId: r.categoryId,
-      subcategory: r.subcategory,
-      brand: r.brand,
-      sourceUrl: r.sourceUrl,
-      score: r.score,
-    }));
+  const MAX_ROWS_PER_SUPPLIER = 4;
+
+  function rowUniquenessKey(r: (typeof scored)[number]): string {
+    return [
+      normalizeText(String(r.brand ?? "")),
+      normalizeText(
+        String((r as { productLine?: string | null }).productLine ?? "")
+      ),
+      normalizeText(String(r.subcategory ?? "")),
+    ].join("\u0001");
+  }
+
+  const flattened: (typeof scored)[number][] = [];
+  for (const supplierId of supplierOrder) {
+    const supplierRows = rowsBySupplier.get(supplierId) ?? [];
+    const seenKey = new Set<string>();
+    let kept = 0;
+    for (const r of supplierRows) {
+      if (kept >= MAX_ROWS_PER_SUPPLIER) break;
+      const key = rowUniquenessKey(r);
+      if (seenKey.has(key)) continue;
+      seenKey.add(key);
+      flattened.push(r);
+      kept++;
+    }
+  }
+
+  return flattened.map((r) => ({
+    supplierId: r.supplierId,
+    categoryId: r.categoryId,
+    subcategory: r.subcategory,
+    brand: r.brand,
+    productLine: (() => {
+      const s = String(
+        (r as { productLine?: string | null }).productLine ?? ""
+      ).trim();
+      return s.length > 0 ? s : null;
+    })(),
+    sourceUrl: r.sourceUrl,
+    score: r.score,
+  }));
 }

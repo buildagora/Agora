@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import { Clock, MapPin, Phone } from "lucide-react";
 import { getPrisma } from "@/lib/db.rsc";
 import { categoryIdToLabel } from "@/lib/categoryIds";
+import { searchCapabilities } from "@/lib/search/capabilitySearch";
+import { getSearchMode } from "@/lib/search/getSearchMode";
 
 export const revalidate = 0;
 
@@ -167,6 +169,15 @@ export default async function PublicSupplierDetailPage({
     notFound();
   }
 
+  const capabilityMatches = await searchCapabilities(
+    materialRequest.requestText || ""
+  );
+
+  const mode = getSearchMode(
+    materialRequest.requestText || "",
+    capabilityMatches
+  );
+
   const selected = materialRequest.recipients.find((r) => r.supplierId === supplierId);
   if (!selected) {
     notFound();
@@ -282,7 +293,30 @@ export default async function PublicSupplierDetailPage({
         : "Checking"
     : triState(r.deliveryAvailable);
 
-  const availabilityHeadline = checking ? "Checking availability" : avail;
+  const normalizedRequestText = materialRequest.requestText.trim() || cat;
+  const baseProductTitle = normalizedRequestText;
+
+  const productStatusLabel = checking
+    ? "Checking inventory"
+    : avail === "In stock"
+      ? "Verified available"
+      : "Out of stock";
+
+  const broadProductOptions =
+    capabilityMatches.length > 0
+      ? capabilityMatches.slice(0, 4).map((m) => {
+          const parts = [
+            m.brand,
+            m.subcategory,
+            m.productLine,
+          ].filter(Boolean);
+          return parts.join(" ");
+        })
+      : [
+          baseProductTitle,
+          `${baseProductTitle} — Standard option`,
+          `${baseProductTitle} — Premium option`,
+        ];
 
   const responseSubtleVal = checking ? "text-sm text-zinc-600" : "text-sm font-medium text-zinc-800";
 
@@ -405,42 +439,79 @@ export default async function PublicSupplierDetailPage({
         {/* Main answer */}
         <section className="rounded-2xl border border-zinc-200 bg-white px-5 py-5 shadow-sm sm:px-7 sm:py-6">
           <h2 className="text-base font-semibold text-zinc-900 sm:text-lg">
-            Response to your request
+            {mode === "EXACT" ? "Best match for your search" : "Available options"}
           </h2>
-          <div className="mt-5 rounded-xl border border-zinc-100 bg-zinc-50/50 px-4 py-4 sm:px-5 sm:py-5">
-            <p className="text-[11px] font-medium text-zinc-400">Availability</p>
-            <p className="mt-1 text-xl font-semibold tracking-tight text-zinc-900 sm:text-2xl">
-              {availabilityHeadline}
+
+          {mode !== "EXACT" && (
+            <p className="mt-1 text-sm text-zinc-500">
+              Showing product options based on your search
             </p>
-          </div>
-          <dl
-            className={`mt-5 grid grid-cols-2 gap-x-4 gap-y-4 sm:grid-cols-3 sm:gap-x-6 ${checking ? "text-zinc-500" : ""}`}
-          >
-            <div className="min-w-0">
-              <dt className={`text-[11px] font-medium ${checking ? "text-zinc-400" : "text-zinc-400"}`}>
-                Quantity
-              </dt>
-              <dd className={`mt-0.5 min-w-0 truncate sm:whitespace-normal ${responseSubtleVal}`}>
-                {quantityDisplay}
-              </dd>
+          )}
+
+          {mode === "EXACT" && (
+            <p className="mt-1 text-sm text-zinc-500">
+              Showing the closest match to your exact request
+            </p>
+          )}
+
+          {mode !== "EXACT" && (
+            <div className="mt-5 grid gap-4 sm:grid-cols-2">
+              {broadProductOptions.map((title, i) => (
+                <div
+                  key={i}
+                  className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm"
+                >
+                  <div className="h-32 w-full rounded-md bg-gradient-to-br from-zinc-100 to-zinc-200 mb-3 flex items-center justify-center text-xs text-zinc-500">
+                    {title?.split(" ")[0] || "Product"}
+                  </div>
+
+                  <h3 className="text-sm font-semibold text-zinc-900">
+                    {title}
+                  </h3>
+
+                  <p className="mt-1 text-xs text-zinc-500">
+                    <span className="inline-flex items-center rounded-md bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
+  {productStatusLabel}
+</span>
+                  </p>
+
+                  <div className="mt-3 text-sm text-zinc-800">
+                    {priceDisplay}
+                  </div>
+                </div>
+              ))}
             </div>
-            <div className="min-w-0">
-              <dt className="text-[11px] font-medium text-zinc-400">Price</dt>
-              <dd className={`mt-0.5 min-w-0 ${responseSubtleVal}`}>{priceDisplay}</dd>
+          )}
+
+          {mode === "EXACT" && (
+            <div className="mt-5 rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
+              <div className="flex flex-col sm:flex-row gap-5">
+                <div className="h-32 w-full rounded-md bg-gradient-to-br from-zinc-100 to-zinc-200 mb-3 flex items-center justify-center text-xs text-zinc-500">
+                  {baseProductTitle?.split(" ")[0] || "Product"}
+                </div>
+
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-zinc-900">
+                    {baseProductTitle}
+                  </h3>
+
+                  <p className="mt-1 text-sm text-zinc-500">
+                    <span className="inline-flex items-center rounded-md bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
+  {productStatusLabel}
+</span>
+                  </p>
+
+                  <div className="mt-4 text-base font-medium text-zinc-900">
+                    {priceDisplay}
+                  </div>
+
+                  <div className="mt-3 text-sm text-zinc-600">
+                    Quantity: {quantityDisplay}
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="min-w-0">
-              <dt className="text-[11px] font-medium text-zinc-400">Pickup</dt>
-              <dd className={`mt-0.5 ${responseSubtleVal}`}>{pickupDisplay}</dd>
-            </div>
-            <div className="min-w-0">
-              <dt className="text-[11px] font-medium text-zinc-400">Delivery</dt>
-              <dd className={`mt-0.5 ${responseSubtleVal}`}>{deliveryDisplay}</dd>
-            </div>
-            <div className="col-span-2 min-w-0 sm:col-span-1">
-              <dt className="text-[11px] font-medium text-zinc-400">ETA</dt>
-              <dd className={`mt-0.5 ${responseSubtleVal}`}>{etaDisplay}</dd>
-            </div>
-          </dl>
+          )}
         </section>
 
         {/* Supporting context */}
