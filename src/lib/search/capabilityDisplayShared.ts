@@ -137,7 +137,7 @@ const CARRIES_DETAIL_SUFFIX =
 
 /** Plain “Carries … for …” line (no tier prefix). */
 export function formatCapabilityCarriesSummary(
-  match: Pick<CapabilitySearchResult, "brands" | "subcategory">
+  match: { brands: string[]; subcategory: string }
 ): string {
   const brands = match.brands;
   if (brands.length === 0) return "";
@@ -157,10 +157,16 @@ export function getMatchDetailsDisplay(
   match: CapabilitySearchResult | undefined,
   categoryDisplayName: string
 ): MatchDetailsDisplay {
-  if (match && match.brands.length > 0) {
+  const brands = match?.brand?.trim()
+    ? [match.brand.trim()]
+    : [];
+  if (match && brands.length > 0) {
     return {
       variant: "strong",
-      text: `${formatCapabilityCarriesSummary(match)}. ${CARRIES_DETAIL_SUFFIX}`,
+      text: `${formatCapabilityCarriesSummary({
+        brands,
+        subcategory: match.subcategory,
+      })}. ${CARRIES_DETAIL_SUFFIX}`,
     };
   }
   return { variant: "generic", categoryDisplayName };
