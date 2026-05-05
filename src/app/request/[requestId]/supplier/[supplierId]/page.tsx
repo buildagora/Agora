@@ -395,11 +395,14 @@ export default async function PublicSupplierDetailPage({
             const parts = [
               m.brand,
               m.subcategory,
-              m.productLine,
             ].filter(Boolean);
+
+            const title = parts.join(" ");
+
             return {
-              title: parts.join(" "),
+              title,
               imageUrl: null,
+              imageQuery: title,
               price: null,
               productUrl: null,
             };
@@ -408,6 +411,7 @@ export default async function PublicSupplierDetailPage({
             {
               title: baseProductTitle,
               imageUrl: null,
+              imageQuery: baseProductTitle,
               price: null,
               productUrl: null,
             },
@@ -562,10 +566,17 @@ export default async function PublicSupplierDetailPage({
                   className="group block rounded-xl border border-zinc-200 bg-white p-4 shadow-sm transition hover:border-zinc-300 hover:shadow-md"
                 >
                   {(() => {
+                    const optRow = opt as {
+                      title: string;
+                      imageUrl?: string | null;
+                      imageQuery?: string;
+                    };
                     const imageSrc =
                       listingImage ||
-                      opt.imageUrl ||
-                      "/placeholder.png";
+                      optRow.imageUrl ||
+                      (optRow.imageQuery
+                        ? `https://source.unsplash.com/featured/?${encodeURIComponent(optRow.imageQuery)}`
+                        : "/placeholder.png");
                     if (!imageSrc) return null;
                     return (
                   <div className="mb-3 flex h-28 w-full items-center justify-center overflow-hidden rounded-lg bg-zinc-100 text-xs text-zinc-500">

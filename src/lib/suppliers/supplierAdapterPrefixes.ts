@@ -8,6 +8,10 @@ export const SUPPLIER_ADAPTER_PREFIXES = [
   "abc_supply",
   "ferguson",
   "grainger",
+  "cmn90dbjr000404ldzhcsquav",
+  "srs",
+  "gulfeagle",
+  "lansing",
 ] as const;
 
 export type SupplierAdapterPrefix = (typeof SUPPLIER_ADAPTER_PREFIXES)[number];

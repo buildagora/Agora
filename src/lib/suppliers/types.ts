@@ -3,7 +3,11 @@ export type SupplierProductSource =
   | "LOWES"
   | "ABC_SUPPLY"
   | "FERGUSON"
-  | "GRAINGER";
+  | "GRAINGER"
+  | "QXO"
+  | "SRS"
+  | "GULFEAGLE"
+  | "LANSING";
 
 export type SupplierProductResult = {
   supplierId: string;

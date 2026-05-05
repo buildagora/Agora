@@ -4,8 +4,12 @@ import { SUPPLIER_ADAPTER_PREFIXES } from "./supplierAdapterPrefixes";
 import { searchAbcSupply } from "./abcSupply";
 import { searchFerguson } from "./ferguson";
 import { searchGrainger } from "./grainger";
+import { searchGulfeagle } from "./gulfeagle";
 import { searchHomeDepot } from "./homeDepot";
+import { searchLansing } from "./lansing";
 import { searchLowes } from "./lowes";
+import { searchQxo } from "./qxo";
+import { searchSrs } from "./srs";
 
 export type SupplierSearchFn = (query: string) => Promise<SupplierProductResult[]>;
 
@@ -20,6 +24,10 @@ export const supplierSearchRegistry = {
   abc_supply: searchAbcSupply,
   ferguson: searchFerguson,
   grainger: searchGrainger,
+  cmn90dbjr000404ldzhcsquav: searchQxo,
+  srs: searchSrs,
+  gulfeagle: searchGulfeagle,
+  lansing: searchLansing,
 } satisfies Record<SupplierAdapterPrefix, SupplierSearchFn>;
 
 const supplierAdapterApiSource = {
@@ -28,6 +36,10 @@ const supplierAdapterApiSource = {
   abc_supply: "ABC_SUPPLY",
   ferguson: "FERGUSON",
   grainger: "GRAINGER",
+  cmn90dbjr000404ldzhcsquav: "QXO",
+  srs: "SRS",
+  gulfeagle: "GULFEAGLE",
+  lansing: "LANSING",
 } as const satisfies Record<SupplierAdapterPrefix, SupplierProductSource>;
 
 export function findSupplierSearchAdapter(supplierId: string): {

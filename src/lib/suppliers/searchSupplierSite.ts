@@ -268,9 +268,11 @@ export async function searchSupplierSite({
         if (wpImages.length > 0) {
           for (const { src, alt } of wpImages) {
             if (!src) continue;
+
             const title = alt ?? organicTitle;
+
             for (const supplierId of supplierIds) {
-              mapped.push({
+              const row: SupplierProductResult = {
                 supplierId,
                 title,
                 brand: null,
@@ -279,7 +281,10 @@ export async function searchSupplierSite({
                 availability: "Found on supplier site",
                 productUrl: link,
                 source,
-              });
+              };
+
+              mapped.push(row);
+              productResults.push(row);
             }
           }
           continue;
@@ -321,8 +326,57 @@ export async function searchSupplierSite({
       }
     }
 
+    const queryLower = q.toLowerCase();
+    const tokens = queryLower.split(/\s+/).filter(Boolean);
+
+    function scoreRow(row: SupplierProductResult): number {
+      const title = String(row.title || "").toLowerCase();
+      let score = 0;
+
+      if (title.includes(queryLower)) score += 50;
+
+      for (const token of tokens) {
+        if (title.includes(token)) score += 8;
+      }
+
+      const important = [
+        "owens",
+        "corning",
+        "oakridge",
+        "onyx",
+        "black",
+        "architectural",
+        "shingles",
+      ];
+
+      for (const term of important) {
+        if (queryLower.includes(term) && title.includes(term)) {
+          score += 20;
+        }
+      }
+
+      const wantsOwens =
+        queryLower.includes("owens") ||
+        queryLower.includes("corning") ||
+        queryLower.includes("oakridge");
+
+      if (wantsOwens) {
+        const wrongBrands = ["atlas", "gaf", "certainteed", "tamko", "iko"];
+        for (const brand of wrongBrands) {
+          if (title.includes(brand)) score -= 50;
+        }
+      }
+
+      return score;
+    }
+
     const prioritized = productResults.length > 0 ? productResults : categoryResults;
-    const baseRows = prioritized.length > 0 ? prioritized : mapped;
+    const baseRowsRaw =
+      prioritized.length > 0 ? prioritized : mapped;
+    const baseRows = baseRowsRaw
+      .map((row) => ({ row, score: scoreRow(row) }))
+      .sort((a, b) => b.score - a.score)
+      .map((r) => r.row);
     const deduped: SupplierProductResult[] = [];
     const seen = new Set<string>();
     for (const row of baseRows) {
