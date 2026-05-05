@@ -1,7 +1,7 @@
 import { getSerpApiKey } from "@/lib/config/env";
 import type { SupplierProductResult } from "./types";
 
-export async function searchHomeDepot(query: string): Promise<SupplierProductResult[]> {
+export async function searchLowes(query: string): Promise<SupplierProductResult[]> {
   const q = query.trim();
   if (!q) return [];
 
@@ -15,18 +15,18 @@ export async function searchHomeDepot(query: string): Promise<SupplierProductRes
 
     const results = (data.shopping_results || []).slice(0, 6);
 
-    const homeDepotStores = [
-      "home_depot_hsv",
-      "home_depot_madison",
-      "home_depot_south_hsv",
-      "home_depot_north_hsv",
-      "home_depot_west_hsv",
+    const lowesStores = [
+      "lowes_south_hsv",
+      "lowes_hsv",
+      "lowes_north_hsv",
+      "lowes_madison_hsv",
+      "lowes_madison",
     ];
 
     const mapped: SupplierProductResult[] = [];
 
     for (const item of results) {
-      for (const supplierId of homeDepotStores) {
+      for (const supplierId of lowesStores) {
         mapped.push({
           supplierId,
           title: item.title || q,
@@ -35,14 +35,14 @@ export async function searchHomeDepot(query: string): Promise<SupplierProductRes
           price: item.price || null,
           availability: "Available online / check store",
           productUrl: item.link || item.product_link || item.serpapi_immersive_product_api || null,
-          source: "HOME_DEPOT",
+          source: "LOWES",
         });
       }
     }
 
     return mapped;
   } catch (err) {
-    console.error("SerpApi Home Depot search failed:", err);
+    console.error("SerpApi Lowe's search failed:", err);
     return [];
   }
 }

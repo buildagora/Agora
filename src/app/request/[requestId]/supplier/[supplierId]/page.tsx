@@ -5,7 +5,8 @@ import { getPrisma } from "@/lib/db.rsc";
 import { categoryIdToLabel } from "@/lib/categoryIds";
 import { searchCapabilities } from "@/lib/search/capabilitySearch";
 import { getSearchMode } from "@/lib/search/getSearchMode";
-import { searchHomeDepot } from "@/lib/suppliers/homeDepot";
+import { findSupplierSearchAdapter } from "@/lib/suppliers/registry";
+import type { SupplierProductResult } from "@/lib/suppliers/types";
 
 export const revalidate = 0;
 
@@ -118,7 +119,13 @@ export default async function PublicSupplierDetailPage({
   searchParams,
 }: {
   params: Promise<{ requestId: string; supplierId: string }>;
-  searchParams?: Promise<{ q?: string }>;
+  searchParams?: Promise<{
+    q?: string;
+    listingTitle?: string;
+    listingImage?: string;
+    listingPrice?: string;
+    listingUrl?: string;
+  }>;
 }) {
   const { requestId: rawRequestId, supplierId: rawSupplierId } = await params;
   const requestId = rawRequestId?.trim() ?? "";
@@ -130,6 +137,24 @@ export default async function PublicSupplierDetailPage({
     typeof resolvedSearchParams?.q === "string" &&
     resolvedSearchParams.q.trim().length > 0
       ? resolvedSearchParams.q.trim()
+      : null;
+
+  const listingTitle =
+    typeof resolvedSearchParams?.listingTitle === "string" &&
+    resolvedSearchParams.listingTitle.trim().length > 0
+      ? resolvedSearchParams.listingTitle.trim()
+      : null;
+
+  const listingImage =
+    typeof resolvedSearchParams?.listingImage === "string" &&
+    resolvedSearchParams.listingImage.trim().length > 0
+      ? resolvedSearchParams.listingImage.trim()
+      : null;
+
+  const listingPrice =
+    typeof resolvedSearchParams?.listingPrice === "string" &&
+    resolvedSearchParams.listingPrice.trim().length > 0
+      ? resolvedSearchParams.listingPrice.trim()
       : null;
 
   if (!requestId || !supplierId) {
@@ -208,18 +233,21 @@ export default async function PublicSupplierDetailPage({
 
   const capabilityMatches = await searchCapabilities(activeQuery);
 
-  const mode = getSearchMode(activeQuery, capabilityMatches);
+  const mode = listingTitle ? "EXACT" : getSearchMode(activeQuery, capabilityMatches);
 
   const selected = materialRequest.recipients.find((r) => r.supplierId === supplierId);
   if (!selected) {
     notFound();
   }
 
-  const automatedProductResults = supplierId.startsWith("home_depot")
-    ? (await searchHomeDepot(activeQuery)).filter((p) => p.supplierId === supplierId)
+  const adapter = findSupplierSearchAdapter(supplierId);
+  const automatedProductResults: SupplierProductResult[] = adapter
+    ? (await adapter.search(activeQuery)).filter((p) => p.supplierId === supplierId)
     : [];
 
   const automatedProduct = automatedProductResults[0] ?? null;
+
+  const hasAutomatedListings = automatedProductResults.length > 0;
 
   const rows = materialRequest.recipients ?? [];
   const formatRecipient = (r: (typeof rows)[number]) => {
@@ -358,20 +386,25 @@ export default async function PublicSupplierDetailPage({
     return title;
   }
 
-  const displayProductTitle = automatedProduct?.title
-    ? deriveDisplayProduct(automatedProduct.title)
-    : deriveDisplayProduct(baseProductTitle);
+  const displayProductTitle = listingTitle
+    ? listingTitle
+    : automatedProduct?.title
+      ? deriveDisplayProduct(automatedProduct.title)
+      : deriveDisplayProduct(baseProductTitle);
 
   const productImageUrl =
-    automatedProduct?.imageUrl ?? getProductImageUrl(baseProductTitle);
+    listingImage ?? automatedProduct?.imageUrl ?? getProductImageUrl(baseProductTitle);
 
-  const productLink = automatedProduct?.productUrl ?? null;
+  const productPriceDisplay =
+    listingPrice ?? automatedProduct?.price ?? priceDisplay;
 
-  const productStatusLabel = checking
-    ? "Checking inventory"
-    : avail === "In stock"
-      ? "Verified available"
-      : "Out of stock";
+  const productStatusLabel = hasAutomatedListings
+    ? "In stock"
+    : checking
+      ? "Checking inventory"
+      : avail === "In stock"
+        ? "Verified available"
+        : "Out of stock";
 
   const broadProductOptions =
     automatedProductResults.length > 0
@@ -454,9 +487,13 @@ export default async function PublicSupplierDetailPage({
             </div>
             <div className="shrink-0 sm:pt-0.5">
               <span
-                className={`inline-flex items-center rounded-md border px-2.5 py-1 text-xs font-medium ${statusBadgeClasses(r.status)}`}
+                className={`inline-flex items-center rounded-md border px-2.5 py-1 text-xs font-medium ${
+                  hasAutomatedListings
+                    ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                    : statusBadgeClasses(r.status)
+                }`}
               >
-                {statusBadgeLabel(r.status)}
+                {hasAutomatedListings ? "In stock" : statusBadgeLabel(r.status)}
               </span>
             </div>
           </div>
@@ -540,7 +577,7 @@ export default async function PublicSupplierDetailPage({
               {broadProductOptions.map((opt, i) => (
                 <Link
                   key={i}
-                  href={`/request/${materialRequest.id}/supplier/${supplierId}?q=${encodeURIComponent(opt.title)}`}
+                  href={`/request/${materialRequest.id}/supplier/${supplierId}?q=${encodeURIComponent(opt.title)}&listingTitle=${encodeURIComponent(opt.title)}&listingImage=${encodeURIComponent(opt.imageUrl ?? "")}&listingPrice=${encodeURIComponent(opt.price ?? "")}&listingUrl=${encodeURIComponent(opt.productUrl ?? "")}`}
                   className="group block rounded-xl border border-zinc-200 bg-white p-4 shadow-sm transition hover:border-zinc-300 hover:shadow-md"
                 >
                   <div className="mb-3 flex h-28 w-full items-center justify-center overflow-hidden rounded-lg bg-zinc-100 text-xs text-zinc-500">
@@ -624,7 +661,7 @@ export default async function PublicSupplierDetailPage({
                   <div className="mt-4 grid gap-3 rounded-lg border border-zinc-100 bg-zinc-50/60 p-3 text-sm sm:grid-cols-2">
                     <div>
                       <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-400">Price</p>
-                      <p className="mt-0.5 font-semibold text-zinc-900">{priceDisplay}</p>
+                      <p className="mt-0.5 font-semibold text-zinc-900">{productPriceDisplay}</p>
                     </div>
                     <div>
                       <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-400">Quantity</p>
@@ -633,19 +670,10 @@ export default async function PublicSupplierDetailPage({
                   </div>
 
                   <p className="mt-3 text-xs leading-relaxed text-zinc-500">
-                    We&apos;re checking this exact item with {r.supplierName}. Pricing and availability update here once verified.
+                    {hasAutomatedListings
+                      ? "Agora found this listing automatically. Store availability may vary."
+                      : <>We&apos;re checking this exact item with {r.supplierName}. Pricing and availability update here once verified.</>}
                   </p>
-
-                  {productLink && (
-                    <a
-                      href={productLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-4 inline-flex items-center justify-center rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-800"
-                    >
-                      View on supplier site
-                    </a>
-                  )}
                 </div>
               </div>
             </div>

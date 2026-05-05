@@ -23,6 +23,7 @@ import {
   Truck,
   XCircle,
 } from "lucide-react";
+import { isAutomatedSupplierId } from "@/lib/suppliers/supplierAdapterPrefixes";
 
 interface Request {
   id: string;
@@ -185,10 +186,23 @@ function recipientStatusBadge(status: string) {
 const capabilityBadgeBase =
   "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium shrink-0";
 
+function isAutomatedSupplier(supplierId: string): boolean {
+  return isAutomatedSupplierId(supplierId);
+}
+
 /**
  * Top-right badge: only verified replies show "In Stock". Catalog capability never implies inventory.
  */
 function recipientStatusBadgeWithCapability(recipient: Recipient) {
+  if (isAutomatedSupplier(recipient.supplierId)) {
+    return (
+      <span
+        className={`${capabilityBadgeBase} bg-emerald-50 text-emerald-800 border border-emerald-200`}
+      >
+        In Stock
+      </span>
+    );
+  }
   if (
     recipient.status === "REPLIED" ||
     recipient.availabilityStatus === "IN_STOCK"
@@ -403,12 +417,18 @@ function SupplierRow({
               <span>Out of Stock</span>
             </p>
           )}
-          {isCheckingAvailability && (
-            <p className="flex items-center gap-2 font-medium text-amber-700">
-              <Loader2 className="h-5 w-5 shrink-0 animate-spin text-amber-600" aria-hidden />
-              <span>Checking availability...</span>
-            </p>
-          )}
+          {isCheckingAvailability &&
+            (isAutomatedSupplier(recipient.supplierId) ? (
+              <p className="flex items-center gap-2 font-medium text-emerald-700">
+                <CheckCircle className="h-5 w-5 shrink-0 text-emerald-600" aria-hidden />
+                <span>In stock</span>
+              </p>
+            ) : (
+              <p className="flex items-center gap-2 font-medium text-amber-700">
+                <Loader2 className="h-5 w-5 shrink-0 animate-spin text-amber-600" aria-hidden />
+                <span>Checking availability...</span>
+              </p>
+            ))}
 
           {recipient.quantityAvailable && recipient.quantityUnit && (
             <p className="flex items-center gap-2 text-zinc-700">
@@ -490,8 +510,11 @@ export default function MaterialRequestDetailClient({
   ];
 
   const recipientsSortedByCapability = [...allRecipients].sort((a, b) => {
-    const scoreA = getScoreForSupplier(a.supplierId, capabilityMatches);
-    const scoreB = getScoreForSupplier(b.supplierId, capabilityMatches);
+    const automatedA = isAutomatedSupplier(a.supplierId) ? 10000 : 0;
+    const automatedB = isAutomatedSupplier(b.supplierId) ? 10000 : 0;
+
+    const scoreA = automatedA + getScoreForSupplier(a.supplierId, capabilityMatches);
+    const scoreB = automatedB + getScoreForSupplier(b.supplierId, capabilityMatches);
 
     if (scoreA !== scoreB) {
       return scoreB - scoreA;

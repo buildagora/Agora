@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { searchHomeDepot } from "@/lib/suppliers/homeDepot";
+import { findSupplierSearchAdapter } from "@/lib/suppliers/registry";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -17,11 +17,12 @@ export async function GET(request: Request) {
     return NextResponse.json({ results: [] });
   }
 
-  if (supplierId.startsWith("home_depot")) {
-    const results = await searchHomeDepot(q);
+  const adapter = findSupplierSearchAdapter(supplierId);
+  if (adapter) {
+    const results = await adapter.search(q);
     return NextResponse.json({
       supplierId,
-      source: "HOME_DEPOT",
+      source: adapter.apiSource,
       results: results.filter((r) => r.supplierId === supplierId),
     });
   }
