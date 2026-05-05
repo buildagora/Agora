@@ -1,9 +1,11 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Clock, MapPin, Phone } from "lucide-react";
 import { getPrisma } from "@/lib/db.rsc";
 import { categoryIdToLabel } from "@/lib/categoryIds";
 import { searchCapabilities } from "@/lib/search/capabilitySearch";
 import { getSearchMode } from "@/lib/search/getSearchMode";
+import { searchHomeDepot } from "@/lib/suppliers/homeDepot";
 
 export const revalidate = 0;
 
@@ -86,17 +88,49 @@ function statusBadgeClasses(status: string): string {
   );
 }
 
+function getProductImageUrl(title: string): string | null {
+  const q = title.toLowerCase();
+
+  if (q.includes("oakridge") || q.includes("owens corning")) {
+    return "https://images.thdstatic.com/productImages/7c3f2995-2c0b-4a96-a896-4cd4093f44a0/svn/owens-corning-roof-shingles-td30-64_600.jpg";
+  }
+
+  if (q.includes("gaf") || q.includes("hdz") || q.includes("timberline")) {
+    return "https://images.thdstatic.com/productImages/f4c11672-1f00-4c0a-b031-d6a75f1f88c2/svn/gaf-roof-shingles-0489180-64_600.jpg";
+  }
+
+  if (q.includes("landmark") || q.includes("certainteed")) {
+    return null;
+  }
+
+  if (q.includes("shingle")) {
+    return "https://images.thdstatic.com/productImages/f4c11672-1f00-4c0a-b031-d6a75f1f88c2/svn/gaf-roof-shingles-0489180-64_600.jpg";
+  }
+
+  return null;
+}
+
 /**
  * Single-supplier view for a material request (public, same data as results).
  */
 export default async function PublicSupplierDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ requestId: string; supplierId: string }>;
+  searchParams?: Promise<{ q?: string }>;
 }) {
   const { requestId: rawRequestId, supplierId: rawSupplierId } = await params;
   const requestId = rawRequestId?.trim() ?? "";
   const supplierId = rawSupplierId?.trim() ?? "";
+
+  const resolvedSearchParams =
+    searchParams != null ? await searchParams : undefined;
+  const queryOverride =
+    typeof resolvedSearchParams?.q === "string" &&
+    resolvedSearchParams.q.trim().length > 0
+      ? resolvedSearchParams.q.trim()
+      : null;
 
   if (!requestId || !supplierId) {
     notFound();
@@ -169,19 +203,23 @@ export default async function PublicSupplierDetailPage({
     notFound();
   }
 
-  const capabilityMatches = await searchCapabilities(
-    materialRequest.requestText || ""
-  );
+  const activeQuery =
+    (queryOverride || materialRequest.requestText || "").trim();
 
-  const mode = getSearchMode(
-    materialRequest.requestText || "",
-    capabilityMatches
-  );
+  const capabilityMatches = await searchCapabilities(activeQuery);
+
+  const mode = getSearchMode(activeQuery, capabilityMatches);
 
   const selected = materialRequest.recipients.find((r) => r.supplierId === supplierId);
   if (!selected) {
     notFound();
   }
+
+  const automatedProductResults = supplierId.startsWith("home_depot")
+    ? (await searchHomeDepot(activeQuery)).filter((p) => p.supplierId === supplierId)
+    : [];
+
+  const automatedProduct = automatedProductResults[0] ?? null;
 
   const rows = materialRequest.recipients ?? [];
   const formatRecipient = (r: (typeof rows)[number]) => {
@@ -293,8 +331,41 @@ export default async function PublicSupplierDetailPage({
         : "Checking"
     : triState(r.deliveryAvailable);
 
-  const normalizedRequestText = materialRequest.requestText.trim() || cat;
+  const normalizedRequestText =
+    (queryOverride || materialRequest.requestText).trim() || cat;
   const baseProductTitle = normalizedRequestText;
+
+  // Derive a cleaner product name for UI
+  function deriveDisplayProduct(title: string): string {
+    const t = title.toLowerCase();
+
+    if (t.includes("oakridge")) {
+      return "Owens Corning Oakridge Architectural Shingles";
+    }
+
+    if (t.includes("hdz") || t.includes("timberline")) {
+      return "GAF Timberline HDZ Architectural Shingles";
+    }
+
+    if (t.includes("landmark")) {
+      return "CertainTeed Landmark Architectural Shingles";
+    }
+
+    if (t.includes("shingle")) {
+      return "Architectural Roof Shingles";
+    }
+
+    return title;
+  }
+
+  const displayProductTitle = automatedProduct?.title
+    ? deriveDisplayProduct(automatedProduct.title)
+    : deriveDisplayProduct(baseProductTitle);
+
+  const productImageUrl =
+    automatedProduct?.imageUrl ?? getProductImageUrl(baseProductTitle);
+
+  const productLink = automatedProduct?.productUrl ?? null;
 
   const productStatusLabel = checking
     ? "Checking inventory"
@@ -303,20 +374,30 @@ export default async function PublicSupplierDetailPage({
       : "Out of stock";
 
   const broadProductOptions =
-    capabilityMatches.length > 0
-      ? capabilityMatches.slice(0, 4).map((m) => {
-          const parts = [
-            m.brand,
-            m.subcategory,
-            m.productLine,
-          ].filter(Boolean);
-          return parts.join(" ");
-        })
-      : [
-          baseProductTitle,
-          `${baseProductTitle} — Standard option`,
-          `${baseProductTitle} — Premium option`,
-        ];
+    automatedProductResults.length > 0
+      ? automatedProductResults.slice(0, 6)
+      : capabilityMatches.length > 0
+        ? capabilityMatches.slice(0, 4).map((m) => {
+            const parts = [
+              m.brand,
+              m.subcategory,
+              m.productLine,
+            ].filter(Boolean);
+            return {
+              title: parts.join(" "),
+              imageUrl: null,
+              price: null,
+              productUrl: null,
+            };
+          })
+        : [
+            {
+              title: baseProductTitle,
+              imageUrl: null,
+              price: null,
+              productUrl: null,
+            },
+          ];
 
   const responseSubtleVal = checking ? "text-sm text-zinc-600" : "text-sm font-medium text-zinc-800";
 
@@ -456,29 +537,52 @@ export default async function PublicSupplierDetailPage({
 
           {mode !== "EXACT" && (
             <div className="mt-5 grid gap-4 sm:grid-cols-2">
-              {broadProductOptions.map((title, i) => (
-                <div
+              {broadProductOptions.map((opt, i) => (
+                <Link
                   key={i}
-                  className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm"
+                  href={`/request/${materialRequest.id}/supplier/${supplierId}?q=${encodeURIComponent(opt.title)}`}
+                  className="group block rounded-xl border border-zinc-200 bg-white p-4 shadow-sm transition hover:border-zinc-300 hover:shadow-md"
                 >
-                  <div className="h-32 w-full rounded-md bg-gradient-to-br from-zinc-100 to-zinc-200 mb-3 flex items-center justify-center text-xs text-zinc-500">
-                    {title?.split(" ")[0] || "Product"}
+                  <div className="mb-3 flex h-28 w-full items-center justify-center overflow-hidden rounded-lg bg-zinc-100 text-xs text-zinc-500">
+                    {opt.imageUrl ? (
+                      <img
+                        src={opt.imageUrl}
+                        alt={opt.title}
+                        className="h-full w-full object-contain"
+                      />
+                    ) : (
+                      <div className="text-center">
+                        <div className="font-semibold text-zinc-700">
+                          {opt.title?.split(" ")[0] || "Product"}
+                        </div>
+                        <div className="mt-1 text-[10px] text-zinc-400">
+                          Product option
+                        </div>
+                      </div>
+                    )}
                   </div>
 
-                  <h3 className="text-sm font-semibold text-zinc-900">
-                    {title}
+                  <h3 className="line-clamp-2 text-sm font-semibold text-zinc-900">
+                    {opt.title}
                   </h3>
 
-                  <p className="mt-1 text-xs text-zinc-500">
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
                     <span className="inline-flex items-center rounded-md bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
-  {productStatusLabel}
-</span>
-                  </p>
-
-                  <div className="mt-3 text-sm text-zinc-800">
-                    {priceDisplay}
+                      {productStatusLabel}
+                    </span>
+                    <span className="inline-flex items-center rounded-md bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600">
+                      {opt.productUrl ? "Available online" : "Broad match"}
+                    </span>
                   </div>
-                </div>
+
+                  <div className="mt-3 text-sm font-medium text-zinc-900">
+                    {opt.price ?? priceDisplay}
+                  </div>
+
+                  <p className="mt-2 text-xs text-zinc-500">
+                    View this option for more detail
+                  </p>
+                </Link>
               ))}
             </div>
           )}
@@ -486,28 +590,62 @@ export default async function PublicSupplierDetailPage({
           {mode === "EXACT" && (
             <div className="mt-5 rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
               <div className="flex flex-col sm:flex-row gap-5">
-                <div className="h-32 w-full rounded-md bg-gradient-to-br from-zinc-100 to-zinc-200 mb-3 flex items-center justify-center text-xs text-zinc-500">
-                  {baseProductTitle?.split(" ")[0] || "Product"}
-                </div>
+                {productImageUrl ? (
+                  <img
+                    src={productImageUrl}
+                    alt={displayProductTitle}
+                    className="h-44 w-full rounded-lg object-contain bg-white sm:w-48"
+                  />
+                ) : (
+                  <div className="flex h-44 w-full rounded-lg bg-zinc-100 sm:w-48 flex-col items-center justify-center text-xs text-zinc-500">
+                    <span className="font-medium text-zinc-700">
+                      {displayProductTitle?.split(" ")[0] || "Product"}
+                    </span>
+                    <span className="text-[10px] text-zinc-400 mt-1">
+                      Image unavailable
+                    </span>
+                  </div>
+                )}
 
                 <div className="flex-1">
                   <h3 className="text-lg font-semibold text-zinc-900">
-                    {baseProductTitle}
+                    {displayProductTitle}
                   </h3>
 
-                  <p className="mt-1 text-sm text-zinc-500">
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
                     <span className="inline-flex items-center rounded-md bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
-  {productStatusLabel}
-</span>
+                      {productStatusLabel}
+                    </span>
+                    <span className="inline-flex items-center rounded-md bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600">
+                      Exact search
+                    </span>
+                  </div>
+
+                  <div className="mt-4 grid gap-3 rounded-lg border border-zinc-100 bg-zinc-50/60 p-3 text-sm sm:grid-cols-2">
+                    <div>
+                      <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-400">Price</p>
+                      <p className="mt-0.5 font-semibold text-zinc-900">{priceDisplay}</p>
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-400">Quantity</p>
+                      <p className="mt-0.5 font-semibold text-zinc-900">{quantityDisplay}</p>
+                    </div>
+                  </div>
+
+                  <p className="mt-3 text-xs leading-relaxed text-zinc-500">
+                    We&apos;re checking this exact item with {r.supplierName}. Pricing and availability update here once verified.
                   </p>
 
-                  <div className="mt-4 text-base font-medium text-zinc-900">
-                    {priceDisplay}
-                  </div>
-
-                  <div className="mt-3 text-sm text-zinc-600">
-                    Quantity: {quantityDisplay}
-                  </div>
+                  {productLink && (
+                    <a
+                      href={productLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-4 inline-flex items-center justify-center rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-800"
+                    >
+                      View on supplier site
+                    </a>
+                  )}
                 </div>
               </div>
             </div>
