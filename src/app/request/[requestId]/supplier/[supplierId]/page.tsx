@@ -89,28 +89,6 @@ function statusBadgeClasses(status: string): string {
   );
 }
 
-function getProductImageUrl(title: string): string | null {
-  const q = title.toLowerCase();
-
-  if (q.includes("oakridge") || q.includes("owens corning")) {
-    return "https://images.thdstatic.com/productImages/7c3f2995-2c0b-4a96-a896-4cd4093f44a0/svn/owens-corning-roof-shingles-td30-64_600.jpg";
-  }
-
-  if (q.includes("gaf") || q.includes("hdz") || q.includes("timberline")) {
-    return "https://images.thdstatic.com/productImages/f4c11672-1f00-4c0a-b031-d6a75f1f88c2/svn/gaf-roof-shingles-0489180-64_600.jpg";
-  }
-
-  if (q.includes("landmark") || q.includes("certainteed")) {
-    return null;
-  }
-
-  if (q.includes("shingle")) {
-    return "https://images.thdstatic.com/productImages/f4c11672-1f00-4c0a-b031-d6a75f1f88c2/svn/gaf-roof-shingles-0489180-64_600.jpg";
-  }
-
-  return null;
-}
-
 /**
  * Single-supplier view for a material request (public, same data as results).
  */
@@ -392,8 +370,11 @@ export default async function PublicSupplierDetailPage({
       ? deriveDisplayProduct(automatedProduct.title)
       : deriveDisplayProduct(baseProductTitle);
 
-  const productImageUrl =
-    listingImage ?? automatedProduct?.imageUrl ?? getProductImageUrl(baseProductTitle);
+  const imageSrc =
+    listingImage ||
+    automatedProduct?.imageUrl ||
+    "/placeholder.png";
+  if (!imageSrc) return null;
 
   const productPriceDisplay =
     listingPrice ?? automatedProduct?.price ?? priceDisplay;
@@ -580,24 +561,22 @@ export default async function PublicSupplierDetailPage({
                   href={`/request/${materialRequest.id}/supplier/${supplierId}?q=${encodeURIComponent(opt.title)}&listingTitle=${encodeURIComponent(opt.title)}&listingImage=${encodeURIComponent(opt.imageUrl ?? "")}&listingPrice=${encodeURIComponent(opt.price ?? "")}&listingUrl=${encodeURIComponent(opt.productUrl ?? "")}`}
                   className="group block rounded-xl border border-zinc-200 bg-white p-4 shadow-sm transition hover:border-zinc-300 hover:shadow-md"
                 >
+                  {(() => {
+                    const imageSrc =
+                      listingImage ||
+                      opt.imageUrl ||
+                      "/placeholder.png";
+                    if (!imageSrc) return null;
+                    return (
                   <div className="mb-3 flex h-28 w-full items-center justify-center overflow-hidden rounded-lg bg-zinc-100 text-xs text-zinc-500">
-                    {opt.imageUrl ? (
-                      <img
-                        src={opt.imageUrl}
-                        alt={opt.title}
-                        className="h-full w-full object-contain"
-                      />
-                    ) : (
-                      <div className="text-center">
-                        <div className="font-semibold text-zinc-700">
-                          {opt.title?.split(" ")[0] || "Product"}
-                        </div>
-                        <div className="mt-1 text-[10px] text-zinc-400">
-                          Product option
-                        </div>
-                      </div>
-                    )}
+                    <img
+                      src={imageSrc}
+                      alt={opt.title}
+                      className="h-full w-full object-contain"
+                    />
                   </div>
+                    );
+                  })()}
 
                   <h3 className="line-clamp-2 text-sm font-semibold text-zinc-900">
                     {opt.title}
@@ -627,22 +606,11 @@ export default async function PublicSupplierDetailPage({
           {mode === "EXACT" && (
             <div className="mt-5 rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
               <div className="flex flex-col sm:flex-row gap-5">
-                {productImageUrl ? (
-                  <img
-                    src={productImageUrl}
-                    alt={displayProductTitle}
-                    className="h-44 w-full rounded-lg object-contain bg-white sm:w-48"
-                  />
-                ) : (
-                  <div className="flex h-44 w-full rounded-lg bg-zinc-100 sm:w-48 flex-col items-center justify-center text-xs text-zinc-500">
-                    <span className="font-medium text-zinc-700">
-                      {displayProductTitle?.split(" ")[0] || "Product"}
-                    </span>
-                    <span className="text-[10px] text-zinc-400 mt-1">
-                      Image unavailable
-                    </span>
-                  </div>
-                )}
+                <img
+                  src={imageSrc}
+                  alt={displayProductTitle}
+                  className="h-44 w-full rounded-lg object-contain bg-white sm:w-48"
+                />
 
                 <div className="flex-1">
                   <h3 className="text-lg font-semibold text-zinc-900">
