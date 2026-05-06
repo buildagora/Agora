@@ -7,7 +7,17 @@ export type SupplierProductSource =
   | "QXO"
   | "SRS"
   | "GULFEAGLE"
-  | "LANSING";
+  | "LANSING"
+  | "BAKER"
+  | "JOHNSTONE"
+  | "LENNOX"
+  | "MA_SUPPLY"
+  | "MINGLEDORFFS"
+  | "RE_MICHEL"
+  | "SHEARER"
+  | "TRANE"
+  | "WITTICHEN"
+  | "ECMD";
 
 export type SupplierProductResult = {
   supplierId: string;

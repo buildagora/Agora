@@ -2,14 +2,24 @@ import type { SupplierProductResult, SupplierProductSource } from "./types";
 import type { SupplierAdapterPrefix } from "./supplierAdapterPrefixes";
 import { SUPPLIER_ADAPTER_PREFIXES } from "./supplierAdapterPrefixes";
 import { searchAbcSupply } from "./abcSupply";
+import { searchBaker } from "./baker";
+import { searchEcmd } from "./ecmd";
 import { searchFerguson } from "./ferguson";
 import { searchGrainger } from "./grainger";
 import { searchGulfeagle } from "./gulfeagle";
 import { searchHomeDepot } from "./homeDepot";
+import { searchJohnstone } from "./johnstone";
 import { searchLansing } from "./lansing";
+import { searchLennox } from "./lennox";
 import { searchLowes } from "./lowes";
+import { searchMaSupply } from "./maSupply";
+import { searchMingledorffs } from "./mingledorffs";
 import { searchQxo } from "./qxo";
+import { searchReMichel } from "./reMichel";
+import { searchShearer } from "./shearer";
 import { searchSrs } from "./srs";
+import { searchTrane } from "./trane";
+import { searchWittichen } from "./wittichen";
 
 export type SupplierSearchFn = (query: string) => Promise<SupplierProductResult[]>;
 
@@ -28,6 +38,16 @@ export const supplierSearchRegistry = {
   srs: searchSrs,
   gulfeagle: searchGulfeagle,
   lansing: searchLansing,
+  baker: searchBaker,
+  johnstone: searchJohnstone,
+  lennox: searchLennox,
+  ma_supply: searchMaSupply,
+  mingledorffs: searchMingledorffs,
+  re_michel: searchReMichel,
+  shearer: searchShearer,
+  trane: searchTrane,
+  wittichen: searchWittichen,
+  ecmd: searchEcmd,
 } satisfies Record<SupplierAdapterPrefix, SupplierSearchFn>;
 
 const supplierAdapterApiSource = {
@@ -40,6 +60,16 @@ const supplierAdapterApiSource = {
   srs: "SRS",
   gulfeagle: "GULFEAGLE",
   lansing: "LANSING",
+  baker: "BAKER",
+  johnstone: "JOHNSTONE",
+  lennox: "LENNOX",
+  ma_supply: "MA_SUPPLY",
+  mingledorffs: "MINGLEDORFFS",
+  re_michel: "RE_MICHEL",
+  shearer: "SHEARER",
+  trane: "TRANE",
+  wittichen: "WITTICHEN",
+  ecmd: "ECMD",
 } as const satisfies Record<SupplierAdapterPrefix, SupplierProductSource>;
 
 export function findSupplierSearchAdapter(supplierId: string): {

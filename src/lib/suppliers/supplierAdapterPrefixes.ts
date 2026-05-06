@@ -12,6 +12,16 @@ export const SUPPLIER_ADAPTER_PREFIXES = [
   "srs",
   "gulfeagle",
   "lansing",
+  "baker",
+  "johnstone",
+  "lennox",
+  "ma_supply",
+  "mingledorffs",
+  "re_michel",
+  "shearer",
+  "trane",
+  "wittichen",
+  "ecmd",
 ] as const;
 
 export type SupplierAdapterPrefix = (typeof SUPPLIER_ADAPTER_PREFIXES)[number];
