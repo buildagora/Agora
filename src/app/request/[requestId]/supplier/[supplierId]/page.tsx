@@ -218,6 +218,9 @@ export default async function PublicSupplierDetailPage({
   if (!selected) {
     notFound();
   }
+  const supplierCapabilityMatches = capabilityMatches.filter(
+    (m) => m.supplierId === supplierId,
+  );
 
   const supplierDomain = selected.supplier.domain ?? null;
 
@@ -408,10 +411,11 @@ export default async function PublicSupplierDetailPage({
   const broadProductOptions =
     automatedProductResults.length > 0
       ? automatedProductResults.slice(0, 6)
-      : capabilityMatches.length > 0
-        ? capabilityMatches.slice(0, 4).map((m) => {
+      : supplierCapabilityMatches.length > 0
+        ? supplierCapabilityMatches.slice(0, 4).map((m) => {
             const parts = [
               m.brand,
+              m.productLine,
               m.subcategory,
             ].filter(Boolean);
 
@@ -422,18 +426,10 @@ export default async function PublicSupplierDetailPage({
               imageUrl: null,
               imageQuery: title,
               price: null,
-              productUrl: null,
+              productUrl: m.sourceUrl ?? null,
             };
           })
-        : [
-            {
-              title: baseProductTitle,
-              imageUrl: null,
-              imageQuery: baseProductTitle,
-              price: null,
-              productUrl: null,
-            },
-          ];
+        : [];
 
   const responseSubtleVal = checking ? "text-sm text-zinc-600" : "text-sm font-medium text-zinc-800";
 
@@ -576,6 +572,11 @@ export default async function PublicSupplierDetailPage({
           )}
 
           {mode !== "EXACT" && (
+            broadProductOptions.length === 0 ? (
+              <div className="mt-5 rounded-xl border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-600">
+                We do not have verified product listings for this supplier yet. Contact the supplier directly or check back as Agora verifies availability.
+              </div>
+            ) : (
             <div className="mt-5 grid gap-4 sm:grid-cols-2">
               {broadProductOptions.map((opt, i) => (
                 <Link
@@ -629,6 +630,7 @@ export default async function PublicSupplierDetailPage({
                 </Link>
               ))}
             </div>
+            )
           )}
 
           {mode === "EXACT" && (
