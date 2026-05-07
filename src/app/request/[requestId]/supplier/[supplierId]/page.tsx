@@ -580,7 +580,7 @@ export default async function PublicSupplierDetailPage({
               {broadProductOptions.map((opt, i) => (
                 <Link
                   key={i}
-                  href={`/request/${materialRequest.id}/supplier/${supplierId}?q=${encodeURIComponent(opt.title)}&listingTitle=${encodeURIComponent(opt.title)}&listingImage=${encodeURIComponent(opt.imageUrl ?? "")}&listingPrice=${encodeURIComponent(opt.price ?? "")}&listingUrl=${encodeURIComponent(opt.productUrl ?? "")}`}
+                  href={`/request/${materialRequest.id}/supplier/${supplierId}?q=${encodeURIComponent(opt.title)}`}
                   className="group block rounded-xl border border-zinc-200 bg-white p-4 shadow-sm transition hover:border-zinc-300 hover:shadow-md"
                 >
                   {(() => {
@@ -590,7 +590,6 @@ export default async function PublicSupplierDetailPage({
                       imageQuery?: string;
                     };
                     const imageSrc =
-                      listingImage ||
                       optRow.imageUrl ||
                       (optRow.imageQuery
                         ? `https://source.unsplash.com/featured/?${encodeURIComponent(optRow.imageQuery)}`
