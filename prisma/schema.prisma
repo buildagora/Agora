@@ -225,6 +225,7 @@ enum ContactSource {
 model Supplier {
   id        String   @id @default(cuid())
   name      String
+  domain    String?
   category  String
   street    String
   city      String

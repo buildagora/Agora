@@ -17,7 +17,8 @@ export type SupplierProductSource =
   | "SHEARER"
   | "TRANE"
   | "WITTICHEN"
-  | "ECMD";
+  | "ECMD"
+  | "GENERIC";
 
 export type SupplierProductResult = {
   supplierId: string;

@@ -180,6 +180,7 @@ export default async function PublicSupplierDetailPage({
             select: {
               id: true,
               name: true,
+              domain: true,
               street: true,
               city: true,
               state: true,
@@ -218,10 +219,27 @@ export default async function PublicSupplierDetailPage({
     notFound();
   }
 
+  const supplierDomain = selected.supplier.domain ?? null;
+
+  let automatedProductResults: SupplierProductResult[] = [];
+
   const adapter = findSupplierSearchAdapter(supplierId);
-  const automatedProductResults: SupplierProductResult[] = adapter
-    ? (await adapter.search(activeQuery)).filter((p) => p.supplierId === supplierId)
-    : [];
+
+  if (adapter) {
+    automatedProductResults = (await adapter.search(activeQuery)).filter(
+      (p) => p.supplierId === supplierId,
+    );
+  } else if (supplierDomain) {
+    const { searchSupplierSite } = await import("@/lib/suppliers/searchSupplierSite");
+
+    automatedProductResults = await searchSupplierSite({
+      query: activeQuery,
+      domain: supplierDomain,
+      supplierIds: [supplierId],
+      source: "GENERIC",
+      logLabel: selected.supplier.name || "Supplier",
+    });
+  }
 
   const automatedProduct = automatedProductResults[0] ?? null;
 

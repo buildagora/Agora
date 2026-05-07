@@ -26,6 +26,17 @@ type SerpShoppingResult = {
   thumbnail?: string;
 };
 
+function isSameDomain(url: string, domain: string): boolean {
+  try {
+    const host = new URL(url).hostname.replace("www.", "");
+    const normalizedDomain = domain.replace("www.", "");
+
+    return host === normalizedDomain || host.endsWith(`.${normalizedDomain}`);
+  } catch {
+    return false;
+  }
+}
+
 async function fetchGoogleImageFallback({
   title,
   supplierName,
@@ -231,7 +242,12 @@ export async function searchSupplierSite({
     const res = await fetch(url);
     const data = await res.json();
 
-    const organic = (data.organic_results || []).slice(0, 15);
+    const organicRaw = (data.organic_results || []).slice(0, 20);
+
+    const organic = organicRaw.filter((item: any) => {
+      if (!item.link) return false;
+      return isSameDomain(item.link, domain);
+    });
     const inlineImages: SerpInlineImage[] = data.inline_images || [];
     const shoppingResults: SerpShoppingResult[] = data.shopping_results || [];
 
@@ -241,6 +257,7 @@ export async function searchSupplierSite({
 
     for (const item of organic) {
       const link = item.link;
+      if (!isSameDomain(link, domain)) continue;
       if (
         !link ||
         link.includes("api.") ||
@@ -372,7 +389,7 @@ export async function searchSupplierSite({
 
     const prioritized = productResults.length > 0 ? productResults : categoryResults;
     const baseRowsRaw =
-      prioritized.length > 0 ? prioritized : mapped;
+      prioritized.length > 0 ? prioritized : categoryResults;
     const baseRows = baseRowsRaw
       .map((row) => ({ row, score: scoreRow(row) }))
       .sort((a, b) => b.score - a.score)
@@ -384,6 +401,10 @@ export async function searchSupplierSite({
       if (seen.has(key)) continue;
       seen.add(key);
       deduped.push(row);
+    }
+
+    if (deduped.length === 0) {
+      return [];
     }
 
     return deduped;
