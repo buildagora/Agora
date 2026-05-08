@@ -37,14 +37,70 @@ function isSameDomain(url: string, domain: string): boolean {
   }
 }
 
+function pathnameLower(link: string): string {
+  try {
+    return new URL(link).pathname.toLowerCase();
+  } catch {
+    return "";
+  }
+}
+
+/** Broader than /product/ only — e.g. /p/slug, /products/, sku-like paths. */
+function isProductPath(link: string): boolean {
+  const path = pathnameLower(link);
+  if (!path) return false;
+
+  if (
+    path.includes("/product/") ||
+    path.includes("/products/") ||
+    path.includes("/item/") ||
+    path.includes("/items/") ||
+    path.includes("/sku/") ||
+    path.includes("/skus/")
+  ) {
+    return true;
+  }
+
+  if (/\/p\/[^/]+/.test(path)) return true;
+  if (path.includes("/buy/") || path.includes("/detail/")) return true;
+
+  const segments = path.split("/").filter(Boolean);
+  const last = segments[segments.length - 1] ?? "";
+  if (last.includes("-") && last.length > 12 && /[a-z]/.test(last) && /\d/.test(last)) {
+    return true;
+  }
+  if (/\d{6,}/.test(path)) return true;
+
+  return false;
+}
+
+/** Broader than /category/ only — e.g. /c/, /shop/, browse. */
+function isCategoryPath(link: string): boolean {
+  const path = pathnameLower(link);
+  if (!path) return false;
+
+  return (
+    path.includes("/category/") ||
+    path.includes("/categories/") ||
+    path.includes("/c/") ||
+    path.includes("/shop/") ||
+    path.includes("/search") ||
+    path.includes("/browse/") ||
+    path.includes("/catalog/") ||
+    path.includes("/department/")
+  );
+}
+
 async function fetchGoogleImageFallback({
   title,
   supplierName,
+  domain,
   source,
   apiKey,
 }: {
   title: string;
   supplierName: string;
+  domain: string;
   source: SupplierProductSource;
   apiKey: string;
 }): Promise<string | null> {
@@ -55,12 +111,33 @@ async function fetchGoogleImageFallback({
     if (!res.ok) return null;
     const data = await res.json();
     const images = data.images_results || [];
+    const normalizedDomain = domain.toLowerCase().replace(/^www\./, "");
+    const domainRoot = normalizedDomain.split(".")[0] || normalizedDomain;
 
     for (const img of images) {
-      const src = (img.source || "").toLowerCase();
+      const src = String(img.source || "").toLowerCase();
       const imageUrl = img.original || img.thumbnail || null;
       if (!imageUrl) continue;
 
+      // Primary gate: image source must match the supplier domain/brand.
+      let matchesDomain = false;
+      if (src) {
+        matchesDomain =
+          src.includes(normalizedDomain) ||
+          (domainRoot.length > 2 && src.includes(domainRoot));
+        if (!matchesDomain) {
+          try {
+            const host = new URL(src).hostname.toLowerCase().replace(/^www\./, "");
+            matchesDomain =
+              host === normalizedDomain || host.endsWith(`.${normalizedDomain}`);
+          } catch {
+            // keep string-based match result
+          }
+        }
+      }
+      if (matchesDomain) return imageUrl;
+
+      // Keep existing stricter supplier-specific checks as fallback.
       if (source === "FERGUSON" && src.includes("ferguson")) return imageUrl;
       if (source === "GRAINGER" && src.includes("grainger")) return imageUrl;
     }
@@ -275,8 +352,8 @@ export async function searchSupplierSite({
         continue;
       }
 
-      const isProduct = link.includes("/product/");
-      const isCategory = link.includes("/category/");
+      const isProduct = isProductPath(link);
+      const isCategory = !isProduct && isCategoryPath(link);
 
       const organicTitle = item.title || q;
 
@@ -317,6 +394,7 @@ export async function searchSupplierSite({
         imageUrl = await fetchGoogleImageFallback({
           title: organicTitle,
           supplierName: logLabel,
+          domain,
           source,
           apiKey,
         });
@@ -387,9 +465,30 @@ export async function searchSupplierSite({
       return score;
     }
 
-    const prioritized = productResults.length > 0 ? productResults : categoryResults;
-    const baseRowsRaw =
-      prioritized.length > 0 ? prioritized : categoryResults;
+    const rowDedupeKey = (row: SupplierProductResult) =>
+      `${row.supplierId}|${row.title}|${row.productUrl ?? ""}|${row.imageUrl ?? ""}`;
+
+    const mergeSeen = new Set<string>();
+    const baseRowsRaw: SupplierProductResult[] = [];
+    for (const row of productResults) {
+      const k = rowDedupeKey(row);
+      if (mergeSeen.has(k)) continue;
+      mergeSeen.add(k);
+      baseRowsRaw.push(row);
+    }
+    for (const row of categoryResults) {
+      const k = rowDedupeKey(row);
+      if (mergeSeen.has(k)) continue;
+      mergeSeen.add(k);
+      baseRowsRaw.push(row);
+    }
+    for (const row of mapped) {
+      const k = rowDedupeKey(row);
+      if (mergeSeen.has(k)) continue;
+      mergeSeen.add(k);
+      baseRowsRaw.push(row);
+    }
+
     const baseRows = baseRowsRaw
       .map((row) => ({ row, score: scoreRow(row) }))
       .sort((a, b) => b.score - a.score)
