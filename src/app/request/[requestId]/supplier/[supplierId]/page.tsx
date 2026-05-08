@@ -6,6 +6,7 @@ import { categoryIdToLabel } from "@/lib/categoryIds";
 import { searchCapabilities } from "@/lib/search/capabilitySearch";
 import { getSearchMode } from "@/lib/search/getSearchMode";
 import { findSupplierSearchAdapter } from "@/lib/suppliers/registry";
+import { SUPPLIER_STATUS_TEXT } from "@/lib/suppliers/statusText";
 import type { SupplierProductResult } from "@/lib/suppliers/types";
 
 export const revalidate = 0;
@@ -308,6 +309,14 @@ export default async function PublicSupplierDetailPage({
   const cat = categoryLabel(materialRequest.categoryId);
   const avail = availabilitySummary(r);
   const checking = avail === "Checking";
+  const supplierDiscoveryState =
+    hasAutomatedListings
+      ? "AUTOMATED_DISCOVERY"
+      : avail === "In stock"
+        ? "VERIFIED_IN_STOCK"
+        : avail === "Out of stock"
+          ? "OUT_OF_STOCK"
+          : "CHECKING";
 
   const cityState = [selected.supplier.city, selected.supplier.state]
     .filter((s) => typeof s === "string" && s.trim().length > 0)
@@ -400,13 +409,29 @@ export default async function PublicSupplierDetailPage({
   const productPriceDisplay =
     listingPrice ?? automatedProduct?.price ?? priceDisplay;
 
-  const productStatusLabel = hasAutomatedListings
-    ? "Supplier listing found"
-    : checking
-      ? "Checking availability"
-      : avail === "In stock"
-        ? "In stock"
-        : "Out of stock";
+  const productStatusLabel =
+    supplierDiscoveryState === "AUTOMATED_DISCOVERY"
+      ? SUPPLIER_STATUS_TEXT.catalogMatch
+      : supplierDiscoveryState === "VERIFIED_IN_STOCK"
+        ? SUPPLIER_STATUS_TEXT.inStock
+        : supplierDiscoveryState === "OUT_OF_STOCK"
+          ? SUPPLIER_STATUS_TEXT.outOfStock
+          : SUPPLIER_STATUS_TEXT.checkingAvailability;
+  const supplierStatusBadgeText =
+    supplierDiscoveryState === "AUTOMATED_DISCOVERY"
+      ? SUPPLIER_STATUS_TEXT.carriesThis
+      : supplierDiscoveryState === "VERIFIED_IN_STOCK"
+        ? SUPPLIER_STATUS_TEXT.inStock
+        : supplierDiscoveryState === "OUT_OF_STOCK"
+          ? SUPPLIER_STATUS_TEXT.outOfStock
+          : SUPPLIER_STATUS_TEXT.checkingAvailability;
+  const supplierStatusBadgeClass =
+    supplierDiscoveryState === "AUTOMATED_DISCOVERY" ||
+    supplierDiscoveryState === "VERIFIED_IN_STOCK"
+      ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+      : supplierDiscoveryState === "OUT_OF_STOCK"
+        ? "bg-orange-50 text-orange-800 border-orange-200"
+        : "bg-amber-50 text-amber-800 border-amber-200";
 
   const broadProductOptions =
     automatedProductResults.length > 0
@@ -486,13 +511,9 @@ export default async function PublicSupplierDetailPage({
             </div>
             <div className="shrink-0 sm:pt-0.5">
               <span
-                className={`inline-flex items-center rounded-md border px-2.5 py-1 text-xs font-medium ${
-                  hasAutomatedListings
-                    ? "bg-emerald-50 text-emerald-800 border-emerald-200"
-                    : statusBadgeClasses(r.status)
-                }`}
+                className={`inline-flex items-center rounded-md border px-2.5 py-1 text-xs font-medium ${supplierStatusBadgeClass}`}
               >
-                {hasAutomatedListings ? "Carries this" : statusBadgeLabel(r.status)}
+                {supplierStatusBadgeText}
               </span>
             </div>
           </div>
@@ -616,7 +637,7 @@ export default async function PublicSupplierDetailPage({
                       {productStatusLabel}
                     </span>
                     <span className="inline-flex items-center rounded-md bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600">
-                      {opt.productUrl ? "Product listing" : "Category listing"}
+                      {opt.productUrl ? SUPPLIER_STATUS_TEXT.supplierCatalog : SUPPLIER_STATUS_TEXT.categoryListing}
                     </span>
                   </div>
 
@@ -652,7 +673,9 @@ export default async function PublicSupplierDetailPage({
                       {productStatusLabel}
                     </span>
                     <span className="inline-flex items-center rounded-md bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600">
-                      Exact search
+                      {supplierDiscoveryState === "AUTOMATED_DISCOVERY"
+                        ? SUPPLIER_STATUS_TEXT.supplierCarriesThisItem
+                        : "Exact search"}
                     </span>
                   </div>
 
@@ -668,7 +691,7 @@ export default async function PublicSupplierDetailPage({
                   </div>
 
                   <p className="mt-3 text-xs leading-relaxed text-zinc-500">
-                    {hasAutomatedListings
+                    {supplierDiscoveryState === "AUTOMATED_DISCOVERY"
                       ? "Agora found this listing automatically. Store availability may vary."
                       : <>We&apos;re checking this exact item with {r.supplierName}. Pricing and availability update here once verified.</>}
                   </p>
