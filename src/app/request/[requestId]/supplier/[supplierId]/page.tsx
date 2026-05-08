@@ -135,6 +135,11 @@ export default async function PublicSupplierDetailPage({
     resolvedSearchParams.listingPrice.trim().length > 0
       ? resolvedSearchParams.listingPrice.trim()
       : null;
+  const listingUrl =
+    typeof resolvedSearchParams?.listingUrl === "string" &&
+    resolvedSearchParams.listingUrl.trim().length > 0
+      ? resolvedSearchParams.listingUrl.trim()
+      : null;
 
   if (!requestId || !supplierId) {
     notFound();
@@ -211,20 +216,27 @@ export default async function PublicSupplierDetailPage({
   const activeQuery =
     (queryOverride || materialRequest.requestText || "").trim();
 
-  const capabilityMatches = await searchCapabilities(activeQuery);
+  // Transitional legacy support:
+  // `capabilitySearch` comes from earlier manually-seeded inference.
+  // Keep it only for search-mode inference + fallback option cards until full live-retrieval migration.
+  const legacyCapabilityInferenceMatches = await searchCapabilities(activeQuery);
 
-  const mode = listingTitle ? "EXACT" : getSearchMode(activeQuery, capabilityMatches);
+  const mode = listingTitle
+    ? "EXACT"
+    : getSearchMode(activeQuery, legacyCapabilityInferenceMatches);
 
   const selected = materialRequest.recipients.find((r) => r.supplierId === supplierId);
   if (!selected) {
     notFound();
   }
-  const supplierCapabilityMatches = capabilityMatches.filter(
+  // Supplier-scoped legacy fallback only (never cross-supplier).
+  const supplierLegacyCapabilityMatches = legacyCapabilityInferenceMatches.filter(
     (m) => m.supplierId === supplierId,
   );
 
   const supplierDomain = selected.supplier.domain ?? null;
 
+  // Live retrieval is the source of truth for supplier listings.
   let automatedProductResults: SupplierProductResult[] = [];
 
   const adapter = findSupplierSearchAdapter(supplierId);
@@ -436,8 +448,8 @@ export default async function PublicSupplierDetailPage({
   const broadProductOptions =
     automatedProductResults.length > 0
       ? automatedProductResults.slice(0, 6)
-      : supplierCapabilityMatches.length > 0
-        ? supplierCapabilityMatches.slice(0, 4).map((m) => {
+      : supplierLegacyCapabilityMatches.length > 0
+        ? supplierLegacyCapabilityMatches.slice(0, 4).map((m) => {
             const parts = [
               m.brand,
               m.productLine,
@@ -455,6 +467,41 @@ export default async function PublicSupplierDetailPage({
             };
           })
         : [];
+
+  const normalizeOptionTitle = (title: string | null | undefined) =>
+    String(title || "")
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, " ");
+
+  type ProductOptionLinkData = {
+    title: string;
+    imageUrl?: string | null;
+    price?: string | null;
+  };
+
+  const buildOptionHref = (opt: ProductOptionLinkData): string => {
+    const params = new URLSearchParams();
+    params.set("q", opt.title);
+    params.set("listingTitle", opt.title);
+    if (opt.imageUrl) params.set("listingImage", opt.imageUrl);
+    if (opt.price) params.set("listingPrice", opt.price);
+    return `/request/${materialRequest.id}/supplier/${supplierId}?${params.toString()}`;
+  };
+
+  const focusedListingTitle = listingTitle ?? automatedProduct?.title ?? null;
+
+  const relatedSupplierOptions =
+    mode === "EXACT"
+      ? automatedProductResults
+          .filter((opt) => {
+            const sameTitle =
+              normalizeOptionTitle(opt.title) ===
+              normalizeOptionTitle(focusedListingTitle);
+            return !sameTitle;
+          })
+          .slice(0, 4)
+      : [];
 
   const responseSubtleVal = checking ? "text-sm text-zinc-600" : "text-sm font-medium text-zinc-800";
 
@@ -602,7 +649,11 @@ export default async function PublicSupplierDetailPage({
               {broadProductOptions.map((opt, i) => (
                 <Link
                   key={i}
-                  href={`/request/${materialRequest.id}/supplier/${supplierId}?q=${encodeURIComponent(opt.title)}`}
+                  href={buildOptionHref({
+                    title: opt.title,
+                    imageUrl: opt.imageUrl ?? null,
+                    price: opt.price ?? null,
+                  })}
                   className="group block rounded-xl border border-zinc-200 bg-white p-4 shadow-sm transition hover:border-zinc-300 hover:shadow-md"
                 >
                   {(() => {
@@ -637,7 +688,7 @@ export default async function PublicSupplierDetailPage({
                       {productStatusLabel}
                     </span>
                     <span className="inline-flex items-center rounded-md bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600">
-                      {opt.productUrl ? SUPPLIER_STATUS_TEXT.supplierCatalog : SUPPLIER_STATUS_TEXT.categoryListing}
+                      {SUPPLIER_STATUS_TEXT.catalogMatch}
                     </span>
                   </div>
 
@@ -695,8 +746,44 @@ export default async function PublicSupplierDetailPage({
                       ? "Agora found this listing automatically. Store availability may vary."
                       : <>We&apos;re checking this exact item with {r.supplierName}. Pricing and availability update here once verified.</>}
                   </p>
+
                 </div>
               </div>
+
+              {relatedSupplierOptions.length > 0 && (
+                <div className="mt-6 border-t border-zinc-100 pt-5">
+                  <h4 className="text-sm font-semibold text-zinc-900">
+                    Other options from this supplier
+                  </h4>
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                    {relatedSupplierOptions.map((opt, i) => (
+                      <Link
+                        key={`${opt.title}-${opt.productUrl ?? i}`}
+                        href={buildOptionHref({
+                          title: opt.title,
+                          imageUrl: opt.imageUrl ?? null,
+                          price: opt.price ?? null,
+                        })}
+                        className="group block rounded-lg border border-zinc-200 bg-white p-3 shadow-sm transition hover:border-zinc-300 hover:shadow-md"
+                      >
+                        <div className="mb-2 flex h-20 w-full items-center justify-center overflow-hidden rounded-md bg-zinc-100">
+                          <img
+                            src={opt.imageUrl || "/placeholder.png"}
+                            alt={opt.title}
+                            className="h-full w-full object-contain"
+                          />
+                        </div>
+                        <h5 className="line-clamp-2 text-sm font-medium text-zinc-900">
+                          {opt.title}
+                        </h5>
+                        <p className="mt-1 text-xs text-zinc-600">
+                          {opt.price ?? "Pricing varies"}
+                        </p>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </section>
