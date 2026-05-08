@@ -51,6 +51,7 @@ interface Request {
 interface Recipient {
   supplierId: string;
   supplierName: string;
+  domain?: string | null;
   conversationId: string;
   status: string;
   sentAt: string;
@@ -191,8 +192,11 @@ function recipientStatusBadge(status: string) {
 const capabilityBadgeBase =
   "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium shrink-0";
 
-function isAutomatedSupplier(supplierId: string): boolean {
-  return isAutomatedSupplierId(supplierId);
+function isAutomatedSupplier(recipient: Recipient): boolean {
+  return (
+    isAutomatedSupplierId(recipient.supplierId) ||
+    Boolean(recipient.domain)
+  );
 }
 
 /**
@@ -217,7 +221,7 @@ function recipientStatusBadgeWithCapability(recipient: Recipient) {
       </span>
     );
   }
-  if (isAutomatedSupplier(recipient.supplierId)) {
+  if (isAutomatedSupplier(recipient)) {
     return (
       <span
         className={`${capabilityBadgeBase} bg-emerald-50 text-emerald-800 border border-emerald-200`}
@@ -429,7 +433,7 @@ function SupplierRow({
             </p>
           )}
           {isCheckingAvailability &&
-            (isAutomatedSupplier(recipient.supplierId) ? (
+            (isAutomatedSupplier(recipient) ? (
               <p className="flex items-center gap-2 font-medium text-emerald-700">
                 <CheckCircle className="h-5 w-5 shrink-0 text-emerald-600" aria-hidden />
                 <span>{SUPPLIER_STATUS_TEXT.carriesThis}</span>
@@ -521,8 +525,8 @@ export default function MaterialRequestDetailClient({
   ];
 
   const recipientsSortedByCapability = [...allRecipients].sort((a, b) => {
-    const automatedA = isAutomatedSupplier(a.supplierId) ? 10000 : 0;
-    const automatedB = isAutomatedSupplier(b.supplierId) ? 10000 : 0;
+    const automatedA = isAutomatedSupplier(a) ? 10000 : 0;
+    const automatedB = isAutomatedSupplier(b) ? 10000 : 0;
 
     const scoreA = automatedA + getScoreForSupplier(a.supplierId, capabilityMatches);
     const scoreB = automatedB + getScoreForSupplier(b.supplierId, capabilityMatches);
