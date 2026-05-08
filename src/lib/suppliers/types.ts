@@ -1,3 +1,5 @@
+import type { SearchResultType } from "@/lib/search/classification/resultTypes";
+
 export type SupplierProductSource =
   | "HOME_DEPOT"
   | "LOWES"
@@ -29,4 +31,7 @@ export type SupplierProductResult = {
   productUrl?: string | null;
   source: SupplierProductSource;
   availability?: string | null;
+  classification?: SearchResultType;
+  score?: number;
+  rankingSignals?: string[];
 };

@@ -1,4 +1,7 @@
 import { getSerpApiKey } from "@/lib/config/env";
+import { classifyUrl } from "@/lib/search/classification/classifyUrl";
+import type { SearchResultType } from "@/lib/search/classification/resultTypes";
+import { rankOrganicResults } from "@/lib/search/organic/rankOrganicResults";
 import type { SupplierProductResult, SupplierProductSource } from "./types";
 
 export type SearchSupplierSiteParams = {
@@ -37,57 +40,11 @@ function isSameDomain(url: string, domain: string): boolean {
   }
 }
 
-function pathnameLower(link: string): string {
-  try {
-    return new URL(link).pathname.toLowerCase();
-  } catch {
-    return "";
-  }
-}
-
-/** Broader than /product/ only — e.g. /p/slug, /products/, sku-like paths. */
-function isProductPath(link: string): boolean {
-  const path = pathnameLower(link);
-  if (!path) return false;
-
-  if (
-    path.includes("/product/") ||
-    path.includes("/products/") ||
-    path.includes("/item/") ||
-    path.includes("/items/") ||
-    path.includes("/sku/") ||
-    path.includes("/skus/")
-  ) {
-    return true;
-  }
-
-  if (/\/p\/[^/]+/.test(path)) return true;
-  if (path.includes("/buy/") || path.includes("/detail/")) return true;
-
-  const segments = path.split("/").filter(Boolean);
-  const last = segments[segments.length - 1] ?? "";
-  if (last.includes("-") && last.length > 12 && /[a-z]/.test(last) && /\d/.test(last)) {
-    return true;
-  }
-  if (/\d{6,}/.test(path)) return true;
-
-  return false;
-}
-
-/** Broader than /category/ only — e.g. /c/, /shop/, browse. */
-function isCategoryPath(link: string): boolean {
-  const path = pathnameLower(link);
-  if (!path) return false;
-
+function isExcludedByResultType(resultType: SearchResultType): boolean {
   return (
-    path.includes("/category/") ||
-    path.includes("/categories/") ||
-    path.includes("/c/") ||
-    path.includes("/shop/") ||
-    path.includes("/search") ||
-    path.includes("/browse/") ||
-    path.includes("/catalog/") ||
-    path.includes("/department/")
+    resultType === "BLOG_PAGE" ||
+    resultType === "DOCUMENTATION_PAGE" ||
+    resultType === "UNKNOWN"
   );
 }
 
@@ -247,6 +204,13 @@ function normalizeImgSrc(src: string, pageUrl: string): string {
   return u;
 }
 
+function normalizeTitleForDedupe(title: string | null | undefined): string {
+  return String(title || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+}
+
 /**
  * Parse `<img>` tags whose `class` contains `wp-post-image`; returns resolved src + alt.
  */
@@ -335,25 +299,13 @@ export async function searchSupplierSite({
     for (const item of organic) {
       const link = item.link;
       if (!isSameDomain(link, domain)) continue;
-      if (
-        !link ||
-        link.includes("api.") ||
-        link.includes("/api/") ||
-        link.includes("dar-step-service") ||
-        link.includes("/content/") ||
-        link.includes("/news") ||
-        link.includes("/news-events") ||
-        link.includes("/blog") ||
-        link.includes("/contractor-center") ||
-        link.includes("announcement") ||
-        link.includes("price-increase") ||
-        link.includes("trends")
-      ) {
-        continue;
-      }
+      const resultType = classifyUrl(link);
+      if (isExcludedByResultType(resultType)) continue;
 
-      const isProduct = isProductPath(link);
-      const isCategory = !isProduct && isCategoryPath(link);
+      const isProduct = resultType === "PRODUCT_PAGE";
+      const isCategory =
+        !isProduct &&
+        (resultType === "CATEGORY_PAGE" || resultType === "SEARCH_PAGE");
 
       const organicTitle = item.title || q;
 
@@ -375,6 +327,7 @@ export async function searchSupplierSite({
                 availability: "Found on supplier site",
                 productUrl: link,
                 source,
+                classification: resultType,
               };
 
               mapped.push(row);
@@ -411,6 +364,7 @@ export async function searchSupplierSite({
           availability: "Found on supplier site",
           productUrl: link,
           source,
+          classification: resultType,
         };
         mapped.push(row);
         if (isProduct) {
@@ -421,52 +375,8 @@ export async function searchSupplierSite({
       }
     }
 
-    const queryLower = q.toLowerCase();
-    const tokens = queryLower.split(/\s+/).filter(Boolean);
-
-    function scoreRow(row: SupplierProductResult): number {
-      const title = String(row.title || "").toLowerCase();
-      let score = 0;
-
-      if (title.includes(queryLower)) score += 50;
-
-      for (const token of tokens) {
-        if (title.includes(token)) score += 8;
-      }
-
-      const important = [
-        "owens",
-        "corning",
-        "oakridge",
-        "onyx",
-        "black",
-        "architectural",
-        "shingles",
-      ];
-
-      for (const term of important) {
-        if (queryLower.includes(term) && title.includes(term)) {
-          score += 20;
-        }
-      }
-
-      const wantsOwens =
-        queryLower.includes("owens") ||
-        queryLower.includes("corning") ||
-        queryLower.includes("oakridge");
-
-      if (wantsOwens) {
-        const wrongBrands = ["atlas", "gaf", "certainteed", "tamko", "iko"];
-        for (const brand of wrongBrands) {
-          if (title.includes(brand)) score -= 50;
-        }
-      }
-
-      return score;
-    }
-
     const rowDedupeKey = (row: SupplierProductResult) =>
-      `${row.supplierId}|${row.title}|${row.productUrl ?? ""}|${row.imageUrl ?? ""}`;
+      `${row.supplierId}|${normalizeTitleForDedupe(row.title)}|${row.productUrl ?? ""}`;
 
     const mergeSeen = new Set<string>();
     const baseRowsRaw: SupplierProductResult[] = [];
@@ -489,14 +399,11 @@ export async function searchSupplierSite({
       baseRowsRaw.push(row);
     }
 
-    const baseRows = baseRowsRaw
-      .map((row) => ({ row, score: scoreRow(row) }))
-      .sort((a, b) => b.score - a.score)
-      .map((r) => r.row);
+    const baseRows = rankOrganicResults(baseRowsRaw, q);
     const deduped: SupplierProductResult[] = [];
     const seen = new Set<string>();
     for (const row of baseRows) {
-      const key = `${row.supplierId}|${row.title}|${row.productUrl ?? ""}|${row.imageUrl ?? ""}`;
+      const key = `${row.supplierId}|${normalizeTitleForDedupe(row.title)}|${row.productUrl ?? ""}`;
       if (seen.has(key)) continue;
       seen.add(key);
       deduped.push(row);

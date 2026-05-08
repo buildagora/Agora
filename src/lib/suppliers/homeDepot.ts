@@ -1,65 +1,7 @@
 import { getSerpApiKey } from "@/lib/config/env";
+import { rankShoppingResults } from "@/lib/search/shopping/rankShoppingResults";
+import type { ShoppingResultItem } from "@/lib/search/shopping/types";
 import type { SupplierProductResult } from "./types";
-
-type ShoppingResultItem = {
-  title?: string;
-  brand?: string | null;
-  thumbnail?: string;
-  serpapi_thumbnail?: string;
-  images?: Array<{ thumbnail?: string; original?: string }>;
-  link?: string;
-  product_link?: string;
-  serpapi_immersive_product_api?: string;
-  price?: string;
-};
-
-function scoreShoppingItem(item: ShoppingResultItem, query: string): number {
-  const title = String(item.title || "").toLowerCase();
-  const queryLower = query.toLowerCase();
-  const tokens = queryLower.split(/\s+/).filter(Boolean);
-
-  let score = 0;
-
-  if (title.includes(queryLower)) score += 50;
-
-  for (const token of tokens) {
-    if (title.includes(token)) score += 8;
-  }
-
-  const importantTerms = [
-    "owens",
-    "corning",
-    "oakridge",
-    "onyx",
-    "black",
-    "duration",
-    "architectural",
-    "shingles",
-    "shingle",
-    "metal",
-    "roofing",
-    "ridge",
-    "vent",
-  ];
-
-  for (const term of importantTerms) {
-    if (queryLower.includes(term) && title.includes(term)) score += 15;
-  }
-
-  const wrongBrands = ["atlas", "gaf", "certainteed", "tamko", "iko"];
-  const wantsOwens =
-    queryLower.includes("owens") ||
-    queryLower.includes("corning") ||
-    queryLower.includes("oakridge");
-
-  if (wantsOwens) {
-    for (const brand of wrongBrands) {
-      if (title.includes(brand)) score -= 40;
-    }
-  }
-
-  return score;
-}
 
 export async function searchHomeDepot(query: string): Promise<SupplierProductResult[]> {
   const q = query.trim();
@@ -73,11 +15,10 @@ export async function searchHomeDepot(query: string): Promise<SupplierProductRes
     const res = await fetch(url);
     const data = await res.json();
 
-    const results = ((data.shopping_results || []) as ShoppingResultItem[])
-      .map((item) => ({ item, score: scoreShoppingItem(item, q) }))
-      .sort((a, b) => b.score - a.score)
-      .map((row) => row.item)
-      .slice(0, 6);
+    const results = rankShoppingResults(
+      (data.shopping_results || []) as ShoppingResultItem[],
+      q,
+    ).slice(0, 6);
 
     const homeDepotStores = [
       "home_depot_hsv",
@@ -89,7 +30,8 @@ export async function searchHomeDepot(query: string): Promise<SupplierProductRes
 
     const mapped: SupplierProductResult[] = [];
 
-    for (const item of results) {
+    for (const result of results) {
+      const item = result.item;
       for (const supplierId of homeDepotStores) {
         mapped.push({
           supplierId,
@@ -105,6 +47,8 @@ export async function searchHomeDepot(query: string): Promise<SupplierProductRes
           availability: "Available online / check store",
           productUrl: item.link || item.product_link || item.serpapi_immersive_product_api || null,
           source: "HOME_DEPOT",
+          score: result.score,
+          rankingSignals: result.rankingSignals,
         });
       }
     }
