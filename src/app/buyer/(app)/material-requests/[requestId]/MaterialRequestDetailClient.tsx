@@ -11,6 +11,11 @@ import { useIsMobileMd } from "@/hooks/useIsMobileMd";
 import { categoryIdToLabel } from "@/lib/categoryIds";
 import type { CapabilitySearchResult } from "@/lib/search/capabilitySearch";
 import {
+  isVerifiedInStock,
+  isVerifiedOutOfStock,
+  SUPPLIER_STATUS_TEXT,
+} from "@/lib/suppliers/statusText";
+import {
   Boxes,
   CheckCircle,
   Clock,
@@ -194,27 +199,21 @@ function isAutomatedSupplier(supplierId: string): boolean {
  * Top-right badge: only verified replies show "In Stock". Catalog capability never implies inventory.
  */
 function recipientStatusBadgeWithCapability(recipient: Recipient) {
-  if (
-    recipient.status === "REPLIED" ||
-    recipient.availabilityStatus === "IN_STOCK"
-  ) {
+  if (isVerifiedInStock(recipient.status, recipient.availabilityStatus)) {
     return (
       <span
         className={`${capabilityBadgeBase} bg-emerald-50 text-emerald-800 border border-emerald-200`}
       >
-        In stock
+        {SUPPLIER_STATUS_TEXT.inStock}
       </span>
     );
   }
-  if (
-    recipient.status === "OUT_OF_STOCK" ||
-    recipient.availabilityStatus === "OUT_OF_STOCK"
-  ) {
+  if (isVerifiedOutOfStock(recipient.status, recipient.availabilityStatus)) {
     return (
       <span
         className={`${capabilityBadgeBase} bg-orange-50 text-orange-800 border border-orange-200`}
       >
-        Out of stock
+        {SUPPLIER_STATUS_TEXT.outOfStock}
       </span>
     );
   }
@@ -223,7 +222,7 @@ function recipientStatusBadgeWithCapability(recipient: Recipient) {
       <span
         className={`${capabilityBadgeBase} bg-emerald-50 text-emerald-800 border border-emerald-200`}
       >
-        Carries this
+        {SUPPLIER_STATUS_TEXT.carriesThis}
       </span>
     );
   }
@@ -232,7 +231,7 @@ function recipientStatusBadgeWithCapability(recipient: Recipient) {
       <span
         className={`${capabilityBadgeBase} bg-amber-50 text-amber-800 border border-amber-200`}
       >
-        Checking availability
+        {SUPPLIER_STATUS_TEXT.checkingAvailability}
       </span>
     );
   }
@@ -417,28 +416,28 @@ function SupplierRow({
         </p>
 
         <div className="space-y-1.5 text-sm text-zinc-800">
-          {(recipient.availabilityStatus === "IN_STOCK" || recipient.status === "REPLIED") && (
+          {isVerifiedInStock(recipient.status, recipient.availabilityStatus) && (
             <p className="flex items-center gap-2 font-medium text-emerald-700">
               <CheckCircle className="h-5 w-5 shrink-0 text-emerald-600" aria-hidden />
-              <span>In stock</span>
+              <span>{SUPPLIER_STATUS_TEXT.inStock}</span>
             </p>
           )}
-          {(recipient.availabilityStatus === "OUT_OF_STOCK" || recipient.status === "OUT_OF_STOCK") && (
+          {isVerifiedOutOfStock(recipient.status, recipient.availabilityStatus) && (
             <p className="flex items-center gap-2 font-medium text-orange-700">
               <XCircle className="h-5 w-5 shrink-0 text-orange-600" aria-hidden />
-              <span>Out of stock</span>
+              <span>{SUPPLIER_STATUS_TEXT.outOfStock}</span>
             </p>
           )}
           {isCheckingAvailability &&
             (isAutomatedSupplier(recipient.supplierId) ? (
               <p className="flex items-center gap-2 font-medium text-emerald-700">
                 <CheckCircle className="h-5 w-5 shrink-0 text-emerald-600" aria-hidden />
-                <span>Carries this</span>
+                <span>{SUPPLIER_STATUS_TEXT.carriesThis}</span>
               </p>
             ) : (
               <p className="flex items-center gap-2 font-medium text-amber-700">
                 <Loader2 className="h-5 w-5 shrink-0 animate-spin text-amber-600" aria-hidden />
-                <span>Checking availability</span>
+                <span>{SUPPLIER_STATUS_TEXT.checkingAvailability}</span>
               </p>
             ))}
 
