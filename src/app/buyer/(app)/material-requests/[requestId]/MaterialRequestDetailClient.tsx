@@ -194,15 +194,6 @@ function isAutomatedSupplier(supplierId: string): boolean {
  * Top-right badge: only verified replies show "In Stock". Catalog capability never implies inventory.
  */
 function recipientStatusBadgeWithCapability(recipient: Recipient) {
-  if (isAutomatedSupplier(recipient.supplierId)) {
-    return (
-      <span
-        className={`${capabilityBadgeBase} bg-emerald-50 text-emerald-800 border border-emerald-200`}
-      >
-        In Stock
-      </span>
-    );
-  }
   if (
     recipient.status === "REPLIED" ||
     recipient.availabilityStatus === "IN_STOCK"
@@ -211,7 +202,28 @@ function recipientStatusBadgeWithCapability(recipient: Recipient) {
       <span
         className={`${capabilityBadgeBase} bg-emerald-50 text-emerald-800 border border-emerald-200`}
       >
-        In Stock
+        In stock
+      </span>
+    );
+  }
+  if (
+    recipient.status === "OUT_OF_STOCK" ||
+    recipient.availabilityStatus === "OUT_OF_STOCK"
+  ) {
+    return (
+      <span
+        className={`${capabilityBadgeBase} bg-orange-50 text-orange-800 border border-orange-200`}
+      >
+        Out of stock
+      </span>
+    );
+  }
+  if (isAutomatedSupplier(recipient.supplierId)) {
+    return (
+      <span
+        className={`${capabilityBadgeBase} bg-emerald-50 text-emerald-800 border border-emerald-200`}
+      >
+        Carries this
       </span>
     );
   }
@@ -408,25 +420,25 @@ function SupplierRow({
           {(recipient.availabilityStatus === "IN_STOCK" || recipient.status === "REPLIED") && (
             <p className="flex items-center gap-2 font-medium text-emerald-700">
               <CheckCircle className="h-5 w-5 shrink-0 text-emerald-600" aria-hidden />
-              <span>In Stock</span>
+              <span>In stock</span>
             </p>
           )}
           {(recipient.availabilityStatus === "OUT_OF_STOCK" || recipient.status === "OUT_OF_STOCK") && (
             <p className="flex items-center gap-2 font-medium text-orange-700">
               <XCircle className="h-5 w-5 shrink-0 text-orange-600" aria-hidden />
-              <span>Out of Stock</span>
+              <span>Out of stock</span>
             </p>
           )}
           {isCheckingAvailability &&
             (isAutomatedSupplier(recipient.supplierId) ? (
               <p className="flex items-center gap-2 font-medium text-emerald-700">
                 <CheckCircle className="h-5 w-5 shrink-0 text-emerald-600" aria-hidden />
-                <span>In stock</span>
+                <span>Carries this</span>
               </p>
             ) : (
               <p className="flex items-center gap-2 font-medium text-amber-700">
                 <Loader2 className="h-5 w-5 shrink-0 animate-spin text-amber-600" aria-hidden />
-                <span>Checking availability...</span>
+                <span>Checking availability</span>
               </p>
             ))}
 

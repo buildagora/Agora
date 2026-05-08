@@ -401,11 +401,11 @@ export default async function PublicSupplierDetailPage({
     listingPrice ?? automatedProduct?.price ?? priceDisplay;
 
   const productStatusLabel = hasAutomatedListings
-    ? "In stock"
+    ? "Supplier listing found"
     : checking
-      ? "Checking inventory"
+      ? "Checking availability"
       : avail === "In stock"
-        ? "Verified available"
+        ? "In stock"
         : "Out of stock";
 
   const broadProductOptions =
@@ -492,7 +492,7 @@ export default async function PublicSupplierDetailPage({
                     : statusBadgeClasses(r.status)
                 }`}
               >
-                {hasAutomatedListings ? "In stock" : statusBadgeLabel(r.status)}
+                {hasAutomatedListings ? "Carries this" : statusBadgeLabel(r.status)}
               </span>
             </div>
           </div>
@@ -616,7 +616,7 @@ export default async function PublicSupplierDetailPage({
                       {productStatusLabel}
                     </span>
                     <span className="inline-flex items-center rounded-md bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600">
-                      {opt.productUrl ? "Available online" : "Broad match"}
+                      {opt.productUrl ? "Product listing" : "Category listing"}
                     </span>
                   </div>
 
