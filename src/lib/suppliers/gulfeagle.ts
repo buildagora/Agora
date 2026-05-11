@@ -1,51 +1,12 @@
-import { getSerpApiKey } from "@/lib/config/env";
-import { rankShoppingResults } from "@/lib/search/shopping/rankShoppingResults";
-import type { ShoppingResultItem } from "@/lib/search/shopping/types";
-import type { SupplierProductResult } from "./types";
+import { searchSupplierSite } from "./searchSupplierSite";
 
-export async function searchGulfeagle(query: string): Promise<SupplierProductResult[]> {
-  const q = query.trim();
-  if (!q) return [];
-
-  const apiKey = getSerpApiKey();
-  const biased = `${q} Gulfeagle Supply`;
-  const url = `https://serpapi.com/search.json?engine=google_shopping&q=${encodeURIComponent(biased)}&api_key=${apiKey}`;
-
-  try {
-    const res = await fetch(url);
-    const data = await res.json();
-
-    const results = rankShoppingResults(
-      (data.shopping_results || []) as ShoppingResultItem[],
-      q,
-    ).slice(0, 6);
-
-    const mapped: SupplierProductResult[] = [];
-
-    for (const result of results) {
-      const item = result.item;
-      mapped.push({
-        supplierId: "gulfeagle_hsv",
-        title: item.title || q,
-        brand: item.brand || null,
-        imageUrl:
-          item.thumbnail ||
-          item.serpapi_thumbnail ||
-          item.images?.[0]?.thumbnail ||
-          item.images?.[0]?.original ||
-          null,
-        price: item.price || null,
-        availability: "Available online / check store",
-        productUrl: item.link || item.product_link || item.serpapi_immersive_product_api || null,
-        source: "GULFEAGLE",
-        score: result.score,
-        rankingSignals: result.rankingSignals,
-      });
-    }
-
-    return mapped;
-  } catch (err) {
-    console.error("SerpApi Gulfeagle Supply search failed:", err);
-    return [];
-  }
+export async function searchGulfeagle(query: string) {
+  return searchSupplierSite({
+    query,
+    domain: "gulfeaglesupply.com",
+    supplierIds: ["gulfeagle_hsv"],
+    source: "GULFEAGLE",
+    logLabel: "Gulfeagle Supply",
+    extractImagesFromPage: true,
+  });
 }

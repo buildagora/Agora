@@ -21,10 +21,10 @@ export function rankOrganicResults(
     .sort((a, b) => b.score - a.score)
     .map((r) => r.row);
 
-  // Keep fallback behavior for hard queries, but suppress obvious junk
-  // once there is at least one positively-scored result.
+  // Only surface organic rows with real query relevance. When every row is
+  // non-positive, treat the set as unusable rather than showing weak pages.
   const hasPositiveScore = rankedRows.some((row) => (row.score ?? 0) > 0);
-  if (!hasPositiveScore) return rankedRows;
+  if (!hasPositiveScore) return [];
 
   return rankedRows.filter((row) => (row.score ?? 0) > 0);
 }

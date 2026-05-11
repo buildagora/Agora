@@ -6,14 +6,18 @@ import { searchBaker } from "./baker";
 import { searchEcmd } from "./ecmd";
 import { searchFerguson } from "./ferguson";
 import { searchGrainger } from "./grainger";
+import { searchGulfeagle } from "./gulfeagle";
 import { searchHomeDepot } from "./homeDepot";
 import { searchJohnstone } from "./johnstone";
+import { searchLansing } from "./lansing";
 import { searchLennox } from "./lennox";
 import { searchLowes } from "./lowes";
 import { searchMaSupply } from "./maSupply";
 import { searchMingledorffs } from "./mingledorffs";
+import { searchQxo } from "./qxo";
 import { searchReMichel } from "./reMichel";
 import { searchShearer } from "./shearer";
+import { searchSrs } from "./srs";
 import { searchTrane } from "./trane";
 import { searchWittichen } from "./wittichen";
 
@@ -33,6 +37,10 @@ export const supplierSearchRegistry = {
   abc_supply: searchAbcSupply,
   ferguson: searchFerguson,
   grainger: searchGrainger,
+  cmn90dbjr000404ldzhcsquav: searchQxo,
+  srs: searchSrs,
+  gulfeagle: searchGulfeagle,
+  lansing: searchLansing,
   baker: searchBaker,
   johnstone: searchJohnstone,
   lennox: searchLennox,
@@ -51,6 +59,10 @@ const supplierAdapterApiSource = {
   abc_supply: "ABC_SUPPLY",
   ferguson: "FERGUSON",
   grainger: "GRAINGER",
+  cmn90dbjr000404ldzhcsquav: "QXO",
+  srs: "SRS",
+  gulfeagle: "GULFEAGLE",
+  lansing: "LANSING",
   baker: "BAKER",
   johnstone: "JOHNSTONE",
   lennox: "LENNOX",
