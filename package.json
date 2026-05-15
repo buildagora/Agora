@@ -43,6 +43,7 @@
     "foundation:check": "bash scripts/foundation-check.sh",
     "guard:legacy": "bash scripts/forbid-legacy-foundation.sh",
     "smoke": "node scripts/smoke.mjs",
+    "import:capabilities": "tsx scripts/import-capabilities.ts",
     "db:migrate:apply": "node scripts/apply-migration.js",
     "dev:reset": "NODE_ENV=development npx tsx scripts/dev-hard-reset.ts",
     "purge:dev": "NODE_ENV=development npx tsx scripts/dev-hard-reset.ts",

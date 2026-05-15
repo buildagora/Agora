@@ -1,7 +1,13 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Clock, MapPin, Phone } from "lucide-react";
 import { getPrisma } from "@/lib/db.rsc";
 import { categoryIdToLabel } from "@/lib/categoryIds";
+import { searchCapabilities } from "@/lib/search/capabilitySearch";
+import { getSearchMode } from "@/lib/search/getSearchMode";
+import { findSupplierSearchAdapter } from "@/lib/suppliers/registry";
+import { SUPPLIER_STATUS_TEXT } from "@/lib/suppliers/statusText";
+import type { SupplierProductResult } from "@/lib/suppliers/types";
 
 export const revalidate = 0;
 
@@ -89,12 +95,51 @@ function statusBadgeClasses(status: string): string {
  */
 export default async function PublicSupplierDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ requestId: string; supplierId: string }>;
+  searchParams?: Promise<{
+    q?: string;
+    listingTitle?: string;
+    listingImage?: string;
+    listingPrice?: string;
+    listingUrl?: string;
+  }>;
 }) {
   const { requestId: rawRequestId, supplierId: rawSupplierId } = await params;
   const requestId = rawRequestId?.trim() ?? "";
   const supplierId = rawSupplierId?.trim() ?? "";
+
+  const resolvedSearchParams =
+    searchParams != null ? await searchParams : undefined;
+  const queryOverride =
+    typeof resolvedSearchParams?.q === "string" &&
+    resolvedSearchParams.q.trim().length > 0
+      ? resolvedSearchParams.q.trim()
+      : null;
+
+  const listingTitle =
+    typeof resolvedSearchParams?.listingTitle === "string" &&
+    resolvedSearchParams.listingTitle.trim().length > 0
+      ? resolvedSearchParams.listingTitle.trim()
+      : null;
+
+  const listingImage =
+    typeof resolvedSearchParams?.listingImage === "string" &&
+    resolvedSearchParams.listingImage.trim().length > 0
+      ? resolvedSearchParams.listingImage.trim()
+      : null;
+
+  const listingPrice =
+    typeof resolvedSearchParams?.listingPrice === "string" &&
+    resolvedSearchParams.listingPrice.trim().length > 0
+      ? resolvedSearchParams.listingPrice.trim()
+      : null;
+  const listingUrl =
+    typeof resolvedSearchParams?.listingUrl === "string" &&
+    resolvedSearchParams.listingUrl.trim().length > 0
+      ? resolvedSearchParams.listingUrl.trim()
+      : null;
 
   if (!requestId || !supplierId) {
     notFound();
@@ -141,6 +186,7 @@ export default async function PublicSupplierDetailPage({
             select: {
               id: true,
               name: true,
+              domain: true,
               street: true,
               city: true,
               state: true,
@@ -167,10 +213,53 @@ export default async function PublicSupplierDetailPage({
     notFound();
   }
 
+  const activeQuery =
+    (queryOverride || materialRequest.requestText || "").trim();
+
+  // Transitional legacy support:
+  // `capabilitySearch` comes from earlier manually-seeded inference.
+  // Keep it only for search-mode inference + fallback option cards until full live-retrieval migration.
+  const legacyCapabilityInferenceMatches = await searchCapabilities(activeQuery);
+
+  const mode = listingTitle
+    ? "EXACT"
+    : getSearchMode(activeQuery, legacyCapabilityInferenceMatches);
+
   const selected = materialRequest.recipients.find((r) => r.supplierId === supplierId);
   if (!selected) {
     notFound();
   }
+  // Supplier-scoped legacy fallback only (never cross-supplier).
+  const supplierLegacyCapabilityMatches = legacyCapabilityInferenceMatches.filter(
+    (m) => m.supplierId === supplierId,
+  );
+
+  const supplierDomain = selected.supplier.domain ?? null;
+
+  // Live retrieval is the source of truth for supplier listings.
+  let automatedProductResults: SupplierProductResult[] = [];
+
+  const adapter = findSupplierSearchAdapter(supplierId);
+
+  if (adapter) {
+    automatedProductResults = (await adapter.search(activeQuery)).filter(
+      (p) => p.supplierId === supplierId,
+    );
+  } else if (supplierDomain) {
+    const { searchSupplierSite } = await import("@/lib/suppliers/searchSupplierSite");
+
+    automatedProductResults = await searchSupplierSite({
+      query: activeQuery,
+      domain: supplierDomain,
+      supplierIds: [supplierId],
+      source: "GENERIC",
+      logLabel: selected.supplier.name || "Supplier",
+    });
+  }
+
+  const automatedProduct = automatedProductResults[0] ?? null;
+
+  const hasAutomatedListings = automatedProductResults.length > 0;
 
   const rows = materialRequest.recipients ?? [];
   const formatRecipient = (r: (typeof rows)[number]) => {
@@ -232,6 +321,14 @@ export default async function PublicSupplierDetailPage({
   const cat = categoryLabel(materialRequest.categoryId);
   const avail = availabilitySummary(r);
   const checking = avail === "Checking";
+  const supplierDiscoveryState =
+    hasAutomatedListings
+      ? "AUTOMATED_DISCOVERY"
+      : avail === "In stock"
+        ? "VERIFIED_IN_STOCK"
+        : avail === "Out of stock"
+          ? "OUT_OF_STOCK"
+          : "CHECKING";
 
   const cityState = [selected.supplier.city, selected.supplier.state]
     .filter((s) => typeof s === "string" && s.trim().length > 0)
@@ -282,7 +379,129 @@ export default async function PublicSupplierDetailPage({
         : "Checking"
     : triState(r.deliveryAvailable);
 
-  const availabilityHeadline = checking ? "Checking availability" : avail;
+  const normalizedRequestText =
+    (queryOverride || materialRequest.requestText).trim() || cat;
+  const baseProductTitle = normalizedRequestText;
+
+  // Derive a cleaner product name for UI
+  function deriveDisplayProduct(title: string): string {
+    const t = title.toLowerCase();
+
+    if (t.includes("oakridge")) {
+      return "Owens Corning Oakridge Architectural Shingles";
+    }
+
+    if (t.includes("hdz") || t.includes("timberline")) {
+      return "GAF Timberline HDZ Architectural Shingles";
+    }
+
+    if (t.includes("landmark")) {
+      return "CertainTeed Landmark Architectural Shingles";
+    }
+
+    if (t.includes("shingle")) {
+      return "Architectural Roof Shingles";
+    }
+
+    return title;
+  }
+
+  const displayProductTitle = listingTitle
+    ? listingTitle
+    : automatedProduct?.title
+      ? deriveDisplayProduct(automatedProduct.title)
+      : deriveDisplayProduct(baseProductTitle);
+
+  const imageSrc =
+    listingImage ||
+    automatedProduct?.imageUrl ||
+    "/placeholder.png";
+  if (!imageSrc) return null;
+
+  const productPriceDisplay =
+    listingPrice ?? automatedProduct?.price ?? priceDisplay;
+
+  const productStatusLabel =
+    supplierDiscoveryState === "AUTOMATED_DISCOVERY"
+      ? SUPPLIER_STATUS_TEXT.catalogMatch
+      : supplierDiscoveryState === "VERIFIED_IN_STOCK"
+        ? SUPPLIER_STATUS_TEXT.inStock
+        : supplierDiscoveryState === "OUT_OF_STOCK"
+          ? SUPPLIER_STATUS_TEXT.outOfStock
+          : SUPPLIER_STATUS_TEXT.checkingAvailability;
+  const supplierStatusBadgeText =
+    supplierDiscoveryState === "AUTOMATED_DISCOVERY"
+      ? SUPPLIER_STATUS_TEXT.carriesThis
+      : supplierDiscoveryState === "VERIFIED_IN_STOCK"
+        ? SUPPLIER_STATUS_TEXT.inStock
+        : supplierDiscoveryState === "OUT_OF_STOCK"
+          ? SUPPLIER_STATUS_TEXT.outOfStock
+          : SUPPLIER_STATUS_TEXT.checkingAvailability;
+  const supplierStatusBadgeClass =
+    supplierDiscoveryState === "AUTOMATED_DISCOVERY" ||
+    supplierDiscoveryState === "VERIFIED_IN_STOCK"
+      ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+      : supplierDiscoveryState === "OUT_OF_STOCK"
+        ? "bg-orange-50 text-orange-800 border-orange-200"
+        : "bg-amber-50 text-amber-800 border-amber-200";
+
+  const broadProductOptions =
+    automatedProductResults.length > 0
+      ? automatedProductResults.slice(0, 6)
+      : supplierLegacyCapabilityMatches.length > 0
+        ? supplierLegacyCapabilityMatches.slice(0, 4).map((m) => {
+            const parts = [
+              m.brand,
+              m.productLine,
+              m.subcategory,
+            ].filter(Boolean);
+
+            const title = parts.join(" ");
+
+            return {
+              title,
+              imageUrl: null,
+              imageQuery: title,
+              price: null,
+              productUrl: m.sourceUrl ?? null,
+            };
+          })
+        : [];
+
+  const normalizeOptionTitle = (title: string | null | undefined) =>
+    String(title || "")
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, " ");
+
+  type ProductOptionLinkData = {
+    title: string;
+    imageUrl?: string | null;
+    price?: string | null;
+  };
+
+  const buildOptionHref = (opt: ProductOptionLinkData): string => {
+    const params = new URLSearchParams();
+    params.set("q", opt.title);
+    params.set("listingTitle", opt.title);
+    if (opt.imageUrl) params.set("listingImage", opt.imageUrl);
+    if (opt.price) params.set("listingPrice", opt.price);
+    return `/request/${materialRequest.id}/supplier/${supplierId}?${params.toString()}`;
+  };
+
+  const focusedListingTitle = listingTitle ?? automatedProduct?.title ?? null;
+
+  const relatedSupplierOptions =
+    mode === "EXACT"
+      ? automatedProductResults
+          .filter((opt) => {
+            const sameTitle =
+              normalizeOptionTitle(opt.title) ===
+              normalizeOptionTitle(focusedListingTitle);
+            return !sameTitle;
+          })
+          .slice(0, 4)
+      : [];
 
   const responseSubtleVal = checking ? "text-sm text-zinc-600" : "text-sm font-medium text-zinc-800";
 
@@ -339,9 +558,9 @@ export default async function PublicSupplierDetailPage({
             </div>
             <div className="shrink-0 sm:pt-0.5">
               <span
-                className={`inline-flex items-center rounded-md border px-2.5 py-1 text-xs font-medium ${statusBadgeClasses(r.status)}`}
+                className={`inline-flex items-center rounded-md border px-2.5 py-1 text-xs font-medium ${supplierStatusBadgeClass}`}
               >
-                {statusBadgeLabel(r.status)}
+                {supplierStatusBadgeText}
               </span>
             </div>
           </div>
@@ -405,42 +624,168 @@ export default async function PublicSupplierDetailPage({
         {/* Main answer */}
         <section className="rounded-2xl border border-zinc-200 bg-white px-5 py-5 shadow-sm sm:px-7 sm:py-6">
           <h2 className="text-base font-semibold text-zinc-900 sm:text-lg">
-            Response to your request
+            {mode === "EXACT" ? "Best match for your search" : "Available options"}
           </h2>
-          <div className="mt-5 rounded-xl border border-zinc-100 bg-zinc-50/50 px-4 py-4 sm:px-5 sm:py-5">
-            <p className="text-[11px] font-medium text-zinc-400">Availability</p>
-            <p className="mt-1 text-xl font-semibold tracking-tight text-zinc-900 sm:text-2xl">
-              {availabilityHeadline}
+
+          {mode !== "EXACT" && (
+            <p className="mt-1 text-sm text-zinc-500">
+              Showing product options based on your search
             </p>
-          </div>
-          <dl
-            className={`mt-5 grid grid-cols-2 gap-x-4 gap-y-4 sm:grid-cols-3 sm:gap-x-6 ${checking ? "text-zinc-500" : ""}`}
-          >
-            <div className="min-w-0">
-              <dt className={`text-[11px] font-medium ${checking ? "text-zinc-400" : "text-zinc-400"}`}>
-                Quantity
-              </dt>
-              <dd className={`mt-0.5 min-w-0 truncate sm:whitespace-normal ${responseSubtleVal}`}>
-                {quantityDisplay}
-              </dd>
+          )}
+
+          {mode === "EXACT" && (
+            <p className="mt-1 text-sm text-zinc-500">
+              Showing the closest match to your exact request
+            </p>
+          )}
+
+          {mode !== "EXACT" && (
+            broadProductOptions.length === 0 ? (
+              <div className="mt-5 rounded-xl border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-600">
+                We do not have verified product listings for this supplier yet. Contact the supplier directly or check back as Agora verifies availability.
+              </div>
+            ) : (
+            <div className="mt-5 grid gap-4 sm:grid-cols-2">
+              {broadProductOptions.map((opt, i) => (
+                <Link
+                  key={i}
+                  href={buildOptionHref({
+                    title: opt.title,
+                    imageUrl: opt.imageUrl ?? null,
+                    price: opt.price ?? null,
+                  })}
+                  className="group block rounded-xl border border-zinc-200 bg-white p-4 shadow-sm transition hover:border-zinc-300 hover:shadow-md"
+                >
+                  {(() => {
+                    const optRow = opt as {
+                      title: string;
+                      imageUrl?: string | null;
+                      imageQuery?: string;
+                    };
+                    const imageSrc =
+                      optRow.imageUrl ||
+                      (optRow.imageQuery
+                        ? `https://source.unsplash.com/featured/?${encodeURIComponent(optRow.imageQuery)}`
+                        : "/placeholder.png");
+                    if (!imageSrc) return null;
+                    return (
+                  <div className="mb-3 flex h-28 w-full items-center justify-center overflow-hidden rounded-lg bg-zinc-100 text-xs text-zinc-500">
+                    <img
+                      src={imageSrc}
+                      alt={opt.title}
+                      className="h-full w-full object-contain"
+                    />
+                  </div>
+                    );
+                  })()}
+
+                  <h3 className="line-clamp-2 text-sm font-semibold text-zinc-900">
+                    {opt.title}
+                  </h3>
+
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <span className="inline-flex items-center rounded-md bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
+                      {productStatusLabel}
+                    </span>
+                    <span className="inline-flex items-center rounded-md bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600">
+                      {SUPPLIER_STATUS_TEXT.catalogMatch}
+                    </span>
+                  </div>
+
+                  <div className="mt-3 text-sm font-medium text-zinc-900">
+                    {opt.price ?? priceDisplay}
+                  </div>
+
+                  <p className="mt-2 text-xs text-zinc-500">
+                    View this option for more detail
+                  </p>
+                </Link>
+              ))}
             </div>
-            <div className="min-w-0">
-              <dt className="text-[11px] font-medium text-zinc-400">Price</dt>
-              <dd className={`mt-0.5 min-w-0 ${responseSubtleVal}`}>{priceDisplay}</dd>
+            )
+          )}
+
+          {mode === "EXACT" && (
+            <div className="mt-5 rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
+              <div className="flex flex-col sm:flex-row gap-5">
+                <img
+                  src={imageSrc}
+                  alt={displayProductTitle}
+                  className="h-44 w-full rounded-lg object-contain bg-white sm:w-48"
+                />
+
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-zinc-900">
+                    {displayProductTitle}
+                  </h3>
+
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <span className="inline-flex items-center rounded-md bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
+                      {productStatusLabel}
+                    </span>
+                    <span className="inline-flex items-center rounded-md bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600">
+                      {supplierDiscoveryState === "AUTOMATED_DISCOVERY"
+                        ? SUPPLIER_STATUS_TEXT.supplierCarriesThisItem
+                        : "Exact search"}
+                    </span>
+                  </div>
+
+                  <div className="mt-4 grid gap-3 rounded-lg border border-zinc-100 bg-zinc-50/60 p-3 text-sm sm:grid-cols-2">
+                    <div>
+                      <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-400">Price</p>
+                      <p className="mt-0.5 font-semibold text-zinc-900">{productPriceDisplay}</p>
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-400">Quantity</p>
+                      <p className="mt-0.5 font-semibold text-zinc-900">{quantityDisplay}</p>
+                    </div>
+                  </div>
+
+                  <p className="mt-3 text-xs leading-relaxed text-zinc-500">
+                    {supplierDiscoveryState === "AUTOMATED_DISCOVERY"
+                      ? "Agora found this listing automatically. Store availability may vary."
+                      : <>We&apos;re checking this exact item with {r.supplierName}. Pricing and availability update here once verified.</>}
+                  </p>
+
+                </div>
+              </div>
+
+              {relatedSupplierOptions.length > 0 && (
+                <div className="mt-6 border-t border-zinc-100 pt-5">
+                  <h4 className="text-sm font-semibold text-zinc-900">
+                    Other options from this supplier
+                  </h4>
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                    {relatedSupplierOptions.map((opt, i) => (
+                      <Link
+                        key={`${opt.title}-${opt.productUrl ?? i}`}
+                        href={buildOptionHref({
+                          title: opt.title,
+                          imageUrl: opt.imageUrl ?? null,
+                          price: opt.price ?? null,
+                        })}
+                        className="group block rounded-lg border border-zinc-200 bg-white p-3 shadow-sm transition hover:border-zinc-300 hover:shadow-md"
+                      >
+                        <div className="mb-2 flex h-20 w-full items-center justify-center overflow-hidden rounded-md bg-zinc-100">
+                          <img
+                            src={opt.imageUrl || "/placeholder.png"}
+                            alt={opt.title}
+                            className="h-full w-full object-contain"
+                          />
+                        </div>
+                        <h5 className="line-clamp-2 text-sm font-medium text-zinc-900">
+                          {opt.title}
+                        </h5>
+                        <p className="mt-1 text-xs text-zinc-600">
+                          {opt.price ?? "Pricing varies"}
+                        </p>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
-            <div className="min-w-0">
-              <dt className="text-[11px] font-medium text-zinc-400">Pickup</dt>
-              <dd className={`mt-0.5 ${responseSubtleVal}`}>{pickupDisplay}</dd>
-            </div>
-            <div className="min-w-0">
-              <dt className="text-[11px] font-medium text-zinc-400">Delivery</dt>
-              <dd className={`mt-0.5 ${responseSubtleVal}`}>{deliveryDisplay}</dd>
-            </div>
-            <div className="col-span-2 min-w-0 sm:col-span-1">
-              <dt className="text-[11px] font-medium text-zinc-400">ETA</dt>
-              <dd className={`mt-0.5 ${responseSubtleVal}`}>{etaDisplay}</dd>
-            </div>
-          </dl>
+          )}
         </section>
 
         {/* Supporting context */}

@@ -84,6 +84,7 @@ export default async function PublicRequestPage({
             select: {
               id: true,
               name: true,
+              domain: true,
               street: true,
               city: true,
               state: true,
@@ -190,6 +191,7 @@ export default async function PublicRequestPage({
     return {
       supplierId: r.supplierId,
       supplierName: r.supplier.name,
+      domain: r.supplier.domain ?? null,
       conversationId: r.conversationId,
       status: r.status,
       sentAt: r.sentAt.toISOString(),
