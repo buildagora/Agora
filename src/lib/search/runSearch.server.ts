@@ -1,19 +1,26 @@
 /**
  * Supplier search orchestrator.
  *
- * Approach: classify the user's query into a supplier category via a fast
- * Gemini call (no grounding), then filter DB suppliers by that category +
- * distance from the user. No per-supplier Google verification — that turned
- * out to be too slow (~25s) and didn't change which suppliers matched, only
- * how they were decorated.
+ * Pipeline:
+ *   chat (Gemini) refines the user's intent into a specific query
+ *      → user taps "See suppliers"
+ *      → THIS runs: capability lookup (main's searchCapabilities) → group
+ *        per supplier → distance filter → ranked SupplierCards
  *
- * If classification returns null (query doesn't fit any category), we fall
- * back to showing all nearby suppliers, sorted by distance.
+ * No more Gemini classification in the search path. The capability table
+ * (SupplierCapability) is the curated source of truth for "what does this
+ * supplier carry" — much more accurate than inferring a category from prose,
+ * and roughly free at runtime.
+ *
+ * Per-supplier site search (the slow `searchSupplierSite` adapter that hits
+ * supplier websites via SerpAPI) is deliberately NOT called here — it's
+ * 5-15s per supplier and would balloon latency. A follow-up step can enrich
+ * the top-N cards with live product pages.
  *
  * Persistence shape inside `AgentThread.meta`:
  *   {
- *     "location": { label, lat, lng },         // most-recent location used
- *     "searches": { [searchId]: SearchResult } // history of searches for the thread
+ *     "location": { label, lat, lng },
+ *     "searches": { [searchId]: SearchResult }
  *   }
  */
 
@@ -21,7 +28,10 @@ import "server-only";
 import { randomUUID } from "node:crypto";
 import { getPrisma } from "@/lib/db.server";
 import { haversineMiles } from "./distance";
-import { classifyQueryToCategory } from "@/lib/ai/geminiClassify.server";
+import {
+  searchCapabilities,
+  type CapabilitySearchResult,
+} from "./capabilitySearch";
 import type { SearchResult, SupplierCard } from "./types";
 
 const RADIUS_MILES = 25;
@@ -42,10 +52,6 @@ function parseMeta(raw: string | null): ThreadMeta {
   }
 }
 
-/**
- * Persist the latest location used by a thread, so future searches and the
- * client can reload it.
- */
 export async function persistThreadLocation(args: {
   threadId: string;
   location: { label: string; lat: number; lng: number };
@@ -96,10 +102,54 @@ async function persistSearch(args: {
   });
 }
 
-/**
- * Run a supplier search. Synchronous: returns once classification +
- * filter is done. Expected latency ~1-2s.
- */
+/** Per-supplier aggregation of capability hits. */
+type SupplierAggregate = {
+  best: CapabilitySearchResult;
+  brands: Set<string>;
+  productLines: Set<string>;
+};
+
+function aggregateBySupplier(
+  matches: CapabilitySearchResult[]
+): Map<string, SupplierAggregate> {
+  const out = new Map<string, SupplierAggregate>();
+  for (const m of matches) {
+    const existing = out.get(m.supplierId);
+    if (!existing) {
+      out.set(m.supplierId, {
+        best: m,
+        brands: new Set(m.brand ? [m.brand] : []),
+        productLines: new Set(m.productLine ? [m.productLine] : []),
+      });
+      continue;
+    }
+    if (m.score > existing.best.score) existing.best = m;
+    if (m.brand) existing.brands.add(m.brand);
+    if (m.productLine) existing.productLines.add(m.productLine);
+  }
+  return out;
+}
+
+function buildMatchNote(agg: SupplierAggregate): string | undefined {
+  const productLines = Array.from(agg.productLines);
+  const brands = Array.from(agg.brands);
+  if (productLines.length > 0) {
+    const head = productLines[0];
+    const extra = productLines.length - 1;
+    return extra > 0
+      ? `Carries ${head} +${extra} more product line${extra === 1 ? "" : "s"}`
+      : `Carries ${head}`;
+  }
+  if (brands.length > 0) {
+    const head = brands[0];
+    const extra = brands.length - 1;
+    return extra > 0
+      ? `Carries ${head} +${extra} more brand${extra === 1 ? "" : "s"}`
+      : `Carries ${head}`;
+  }
+  return undefined;
+}
+
 export async function runSearch(args: {
   threadId: string;
   query: string;
@@ -111,34 +161,36 @@ export async function runSearch(args: {
   const maxResults = args.maxResults ?? MAX_RESULTS;
   const searchId = randomUUID();
   const createdAt = new Date().toISOString();
-  const prisma = getPrisma();
 
-  // 1. Pull distinct categories from DB so the classifier knows the actual
-  //    universe (and we don't hardcode something that drifts).
-  const distinct = await prisma.supplier.findMany({
-    distinct: ["category"],
-    select: { category: true },
-  });
-  const categories = Array.from(
-    new Set(distinct.map((d) => d.category.toLowerCase().trim()).filter(Boolean))
-  ).sort();
+  // 1. Capability lookup against curated SupplierCapability table
+  const matches = await searchCapabilities(args.query);
+  const bySupplier = aggregateBySupplier(matches);
 
-  // 2. Classify (best-effort — null = no category match, fall through to all)
-  let classifiedCategory: string | null = null;
-  let classifyError: string | undefined;
-  try {
-    const result = await classifyQueryToCategory({
+  if (bySupplier.size === 0) {
+    const empty: SearchResult = {
+      searchId,
+      threadId: args.threadId,
       query: args.query,
-      categories,
-    });
-    classifiedCategory = result.category;
-  } catch (err: any) {
-    classifyError = err?.message ?? "Classification failed";
+      category: null,
+      location: args.location,
+      radiusMiles,
+      status: "complete",
+      cards: [],
+      createdAt,
+    };
+    await persistSearch({ threadId: args.threadId, search: empty });
+    return empty;
   }
 
-  // 3. Pull candidates: by category if classified, else all suppliers with coords
-  const all = await prisma.supplier.findMany({
-    where: { latitude: { not: null }, longitude: { not: null } },
+  // 2. Load full supplier records (need coords for distance, contact for cards)
+  const prisma = getPrisma();
+  const supplierIds = Array.from(bySupplier.keys());
+  const suppliers = await prisma.supplier.findMany({
+    where: {
+      id: { in: supplierIds },
+      latitude: { not: null },
+      longitude: { not: null },
+    },
     select: {
       id: true,
       name: true,
@@ -152,43 +204,49 @@ export async function runSearch(args: {
     },
   });
 
-  const filtered = classifiedCategory
-    ? all.filter((s) => s.category.toLowerCase().trim() === classifiedCategory)
-    : all;
+  // 3. Distance filter + assemble cards with score for sorting
+  type Scored = SupplierCard & { _score: number };
+  const scoredCards: Scored[] = [];
+  for (const s of suppliers) {
+    const distance = haversineMiles(
+      { lat: args.location.lat, lng: args.location.lng },
+      { lat: s.latitude!, lng: s.longitude! }
+    );
+    if (distance > radiusMiles) continue;
+    const agg = bySupplier.get(s.id)!;
+    scoredCards.push({
+      supplierId: s.id,
+      name: s.name,
+      category: s.category,
+      street: s.street,
+      city: s.city,
+      state: s.state,
+      phone: s.phone,
+      distanceMiles: Math.round(distance * 10) / 10,
+      note: buildMatchNote(agg),
+      sourceUrl: agg.best.sourceUrl || undefined,
+      _score: agg.best.score,
+    });
+  }
 
-  // 4. Distance filter + sort + cap
-  const cards: SupplierCard[] = filtered
-    .map((s) => ({
-      supplier: s,
-      distanceMiles: haversineMiles(
-        { lat: args.location.lat, lng: args.location.lng },
-        { lat: s.latitude!, lng: s.longitude! }
-      ),
-    }))
-    .filter((x) => x.distanceMiles <= radiusMiles)
-    .sort((a, b) => a.distanceMiles - b.distanceMiles)
+  // 4. Sort by capability score DESC, then distance ASC; cap to maxResults.
+  scoredCards.sort((a, b) => {
+    if (b._score !== a._score) return b._score - a._score;
+    return a.distanceMiles - b.distanceMiles;
+  });
+  const cards: SupplierCard[] = scoredCards
     .slice(0, maxResults)
-    .map((x) => ({
-      supplierId: x.supplier.id,
-      name: x.supplier.name,
-      category: x.supplier.category,
-      street: x.supplier.street,
-      city: x.supplier.city,
-      state: x.supplier.state,
-      phone: x.supplier.phone,
-      distanceMiles: Math.round(x.distanceMiles * 10) / 10,
-    }));
+    .map(({ _score, ...rest }) => rest);
 
   const result: SearchResult = {
     searchId,
     threadId: args.threadId,
     query: args.query,
-    category: classifiedCategory,
+    category: null,
     location: args.location,
     radiusMiles,
-    status: classifyError ? "error" : "complete",
+    status: "complete",
     cards,
-    error: classifyError,
     createdAt,
   };
   await persistSearch({ threadId: args.threadId, search: result });
