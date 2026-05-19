@@ -37,6 +37,20 @@ import type { SearchResult, SupplierCard } from "./types";
 const RADIUS_MILES = 25;
 const MAX_RESULTS = 25;
 
+/**
+ * Broad-catalog retailers — capabilities are too vast to model in
+ * SupplierCapability. We surface them as "live-search" cards: the supplier
+ * detail page calls their adapter at click time (Google Shopping for these
+ * two), so we don't need any DB capability data to include them.
+ */
+const BROAD_CATALOG_PREFIXES = ["home_depot", "lowes"] as const;
+type BroadCatalogPrefix = (typeof BROAD_CATALOG_PREFIXES)[number];
+
+const BROAD_CATALOG_LABEL: Record<BroadCatalogPrefix, string> = {
+  home_depot: "Home Depot",
+  lowes: "Lowe's",
+};
+
 type ThreadMeta = {
   location?: { label: string; lat: number; lng: number };
   searches?: Record<string, SearchResult>;
@@ -128,6 +142,70 @@ function aggregateBySupplier(
     if (m.productLine) existing.productLines.add(m.productLine);
   }
   return out;
+}
+
+/**
+ * Find the single closest store within radius for each broad-catalog chain,
+ * skipping any supplier already in the capability-matched results.
+ */
+async function loadClosestBigBoxCards(args: {
+  location: { label: string; lat: number; lng: number };
+  radiusMiles: number;
+  excludeIds: Set<string>;
+}): Promise<SupplierCard[]> {
+  const prisma = getPrisma();
+  const candidates = await prisma.supplier.findMany({
+    where: {
+      OR: BROAD_CATALOG_PREFIXES.map((p) => ({ id: { startsWith: p } })),
+      latitude: { not: null },
+      longitude: { not: null },
+    },
+    select: {
+      id: true,
+      name: true,
+      category: true,
+      street: true,
+      city: true,
+      state: true,
+      latitude: true,
+      longitude: true,
+      phone: true,
+    },
+  });
+
+  // Compute distance, group by prefix, keep the nearest of each (still skipping any
+  // that already appear in capability-matched results).
+  const bestByPrefix = new Map<BroadCatalogPrefix, { card: SupplierCard; distance: number }>();
+  for (const s of candidates) {
+    if (args.excludeIds.has(s.id)) continue;
+    const prefix = BROAD_CATALOG_PREFIXES.find((p) => s.id.startsWith(p));
+    if (!prefix) continue;
+    const distance = haversineMiles(
+      { lat: args.location.lat, lng: args.location.lng },
+      { lat: s.latitude!, lng: s.longitude! }
+    );
+    if (distance > args.radiusMiles) continue;
+    const current = bestByPrefix.get(prefix);
+    if (current && current.distance <= distance) continue;
+    bestByPrefix.set(prefix, {
+      distance,
+      card: {
+        supplierId: s.id,
+        name: s.name,
+        category: s.category,
+        street: s.street,
+        city: s.city,
+        state: s.state,
+        phone: s.phone,
+        distanceMiles: Math.round(distance * 10) / 10,
+        note: `Searches ${BROAD_CATALOG_LABEL[prefix]} catalog live`,
+      },
+    });
+  }
+
+  return Array.from(bestByPrefix.values())
+    .sort((a, b) => a.distance - b.distance)
+    .map((x) => x.card);
 }
 
 function buildMatchNote(agg: SupplierAggregate): string | undefined {
@@ -234,9 +312,23 @@ export async function runSearch(args: {
     if (b._score !== a._score) return b._score - a._score;
     return a.distanceMiles - b.distanceMiles;
   });
-  const cards: SupplierCard[] = scoredCards
+  const capabilityCards: SupplierCard[] = scoredCards
     .slice(0, maxResults)
     .map(({ _score, ...rest }) => rest);
+
+  // 5. Always append the closest big-box retailer per brand (Home Depot,
+  // Lowe's) within radius — their catalogs are too broad to model in
+  // SupplierCapability, but their adapter delivers real product results
+  // on the supplier detail page. Cap at 1 store per chain to keep the
+  // results focused.
+  const includedIds = new Set(capabilityCards.map((c) => c.supplierId));
+  const liveCards = await loadClosestBigBoxCards({
+    location: args.location,
+    radiusMiles,
+    excludeIds: includedIds,
+  });
+
+  const cards: SupplierCard[] = [...capabilityCards, ...liveCards];
 
   const result: SearchResult = {
     searchId,
