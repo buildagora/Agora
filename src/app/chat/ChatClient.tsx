@@ -102,46 +102,74 @@ export default function ChatClient() {
     }
   };
 
-  const requestBrowserLocation = () => {
-    if (!navigator.geolocation) {
-      const manual = window.prompt("Enter your city or ZIP:");
-      if (manual && manual.trim()) {
-        forwardGeocodeQuery(manual.trim()).then((resolved) =>
-          persistLocation(resolved ?? { label: manual.trim() })
-        );
+  /**
+   * Resolve a usable location for the search. If we already have one cached,
+   * returns it immediately. Otherwise prompts the browser for geolocation
+   * and falls back to a manual prompt. Returns the resolved location or
+   * null if the user declined and didn't enter anything manually.
+   *
+   * Used both by the location pill click handler (fire-and-forget) and by
+   * the "See suppliers" flow (awaited, so the search runs as soon as a
+   * location is available).
+   */
+  const ensureLocation = (): Promise<StoredLocation | null> => {
+    if (location?.lat && location.lng) return Promise.resolve(location);
+
+    return new Promise<StoredLocation | null>((resolve) => {
+      const manualFallback = async (
+        promptText = "Enter your city or ZIP:"
+      ) => {
+        const manual = window.prompt(promptText);
+        if (!manual || !manual.trim()) {
+          resolve(null);
+          return;
+        }
+        const resolved =
+          (await forwardGeocodeQuery(manual.trim())) ?? { label: manual.trim() };
+        persistLocation(resolved);
+        resolve(resolved);
+      };
+
+      if (!navigator.geolocation) {
+        void manualFallback();
+        return;
       }
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const { latitude: lat, longitude: lng } = pos.coords;
-        try {
-          const res = await fetch("/api/chat/geocode", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ lat, lng }),
-          });
-          const data = await res.json();
-          const label =
-            data?.ok && typeof data.label === "string"
-              ? data.label
-              : `${lat.toFixed(2)}, ${lng.toFixed(2)}`;
-          persistLocation({ label, lat, lng });
-        } catch {
-          persistLocation({ label: `${lat.toFixed(2)}, ${lng.toFixed(2)}`, lat, lng });
-        }
-      },
-      async () => {
-        const manual = window.prompt(
-          "Couldn't get your location automatically. Enter your city or ZIP:"
-        );
-        if (manual && manual.trim()) {
-          const resolved = await forwardGeocodeQuery(manual.trim());
-          persistLocation(resolved ?? { label: manual.trim() });
-        }
-      },
-      { timeout: 8000, maximumAge: 5 * 60 * 1000 }
-    );
+
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          const { latitude: lat, longitude: lng } = pos.coords;
+          let label: string;
+          try {
+            const res = await fetch("/api/chat/geocode", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ lat, lng }),
+            });
+            const data = await res.json();
+            label =
+              data?.ok && typeof data.label === "string"
+                ? data.label
+                : `${lat.toFixed(2)}, ${lng.toFixed(2)}`;
+          } catch {
+            label = `${lat.toFixed(2)}, ${lng.toFixed(2)}`;
+          }
+          const resolved: StoredLocation = { label, lat, lng };
+          persistLocation(resolved);
+          resolve(resolved);
+        },
+        async () => {
+          await manualFallback(
+            "Couldn't get your location automatically. Enter your city or ZIP:"
+          );
+        },
+        { timeout: 8000, maximumAge: 5 * 60 * 1000 }
+      );
+    });
+  };
+
+  /** Click handler for the location pill — fire-and-forget. */
+  const requestBrowserLocation = () => {
+    void ensureLocation();
   };
 
   const addFiles = (incoming: FileList | null) => {
@@ -290,10 +318,6 @@ export default function ChatClient() {
       setError("Send a message first.");
       return;
     }
-    if (!location?.lat || !location.lng) {
-      setError("Add your location first.");
-      return;
-    }
     const firstUser = messages.find((m) => m.role === "user");
     const query = firstUser?.text?.trim();
     if (!query) {
@@ -302,6 +326,20 @@ export default function ChatClient() {
     }
 
     setError(null);
+
+    // Make sure we have a location with coords. ensureLocation prompts the
+    // browser geolocation API and falls back to a manual prompt; on mobile
+    // this means the buyer can tap "See suppliers" without first having
+    // tapped "Add location" — the location request happens inline.
+    let loc: StoredLocation | null = location;
+    if (!loc?.lat || !loc.lng) {
+      loc = await ensureLocation();
+      if (!loc?.lat || !loc.lng) {
+        setError("We need your location to find nearby suppliers.");
+        return;
+      }
+    }
+
     setIsSearching(true);
     try {
       const res = await fetch("/api/search", {
@@ -312,9 +350,9 @@ export default function ChatClient() {
           threadId,
           query,
           location: {
-            label: location.label,
-            lat: location.lat,
-            lng: location.lng,
+            label: loc.label,
+            lat: loc.lat,
+            lng: loc.lng,
           },
         }),
       });
@@ -329,11 +367,11 @@ export default function ChatClient() {
     }
   };
 
+  // Button is enabled whenever there's a chat in progress; location is
+  // handled inline by seeSuppliers when tapped.
   const canSearch =
     !!threadId &&
     messages.length > 0 &&
-    !!location?.lat &&
-    !!location.lng &&
     !isStreaming &&
     !isSearching;
 
