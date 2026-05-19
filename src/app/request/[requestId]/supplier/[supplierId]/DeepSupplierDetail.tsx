@@ -8,6 +8,63 @@ import { getSearchMode } from "@/lib/search/getSearchMode";
 import { findSupplierSearchAdapter } from "@/lib/suppliers/registry";
 import { SUPPLIER_STATUS_TEXT } from "@/lib/suppliers/statusText";
 import type { SupplierProductResult } from "@/lib/suppliers/types";
+import BackToSearchLink, { buildSearchBackHref } from "./BackToSearchLink";
+
+/**
+ * Wrapper that renders either an in-app Next Link (drill into a focused
+ * listing on this same supplier page) OR an external `<a target="_blank">`
+ * (open the retailer's product page directly). External-link mode is used
+ * for big-box retailers where the buyer expects to go straight to the
+ * retailer's site for stock and checkout.
+ */
+function ProductOptionLink({
+  supplierId,
+  productUrl,
+  fallbackHref,
+  className,
+  children,
+}: {
+  supplierId: string;
+  productUrl: string | null;
+  fallbackHref: string;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  if (isBigBoxSupplier(supplierId) && productUrl) {
+    return (
+      <a
+        href={productUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={className}
+      >
+        {children}
+      </a>
+    );
+  }
+  return (
+    <Link href={fallbackHref} className={className}>
+      {children}
+    </Link>
+  );
+}
+
+function ExternalArrow({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="M7 17 17 7M10 7h7v7" />
+    </svg>
+  );
+}
 
 export const revalidate = 0;
 
@@ -76,6 +133,24 @@ function availabilitySummary(r: {
   return "Checking";
 }
 
+/**
+ * Big-box retailers' adapters return real product pages on the retailer's
+ * own site (homedepot.com, lowes.com). For those suppliers we want product
+ * cards to open the retailer page directly — users have a familiar checkout
+ * + inventory experience there. For everyone else, keep in-app drill-down.
+ */
+const BIG_BOX_SUPPLIER_PREFIXES = ["home_depot", "lowes"];
+
+function isBigBoxSupplier(supplierId: string): boolean {
+  return BIG_BOX_SUPPLIER_PREFIXES.some((p) => supplierId.startsWith(p));
+}
+
+function bigBoxLabelForSupplier(supplierId: string): string | null {
+  if (supplierId.startsWith("home_depot")) return "Home Depot";
+  if (supplierId.startsWith("lowes")) return "Lowe's";
+  return null;
+}
+
 function statusBadgeClasses(status: string): string {
   const colors: Record<string, string> = {
     REPLIED: "bg-emerald-50 text-emerald-800 border border-emerald-200",
@@ -104,6 +179,8 @@ export default async function PublicSupplierDetailPage({
     listingImage?: string;
     listingPrice?: string;
     listingUrl?: string;
+    fromThread?: string;
+    fromSearch?: string;
   }>;
 }) {
   const { requestId: rawRequestId, supplierId: rawSupplierId } = await params;
@@ -140,6 +217,11 @@ export default async function PublicSupplierDetailPage({
     resolvedSearchParams.listingUrl.trim().length > 0
       ? resolvedSearchParams.listingUrl.trim()
       : null;
+
+  const backHref = buildSearchBackHref(
+    resolvedSearchParams?.fromThread,
+    resolvedSearchParams?.fromSearch
+  );
 
   if (!requestId || !supplierId) {
     notFound();
@@ -516,6 +598,7 @@ export default async function PublicSupplierDetailPage({
   return (
     <div className="min-h-screen bg-zinc-50 px-4 py-5 pb-12 sm:px-6 sm:py-6 lg:px-8">
       <div className="mx-auto max-w-5xl space-y-4 sm:space-y-5">
+        {backHref && <BackToSearchLink href={backHref} />}
         <p className="text-xs leading-relaxed text-zinc-500 sm:text-sm">
           Result for: &quot;{materialRequest.requestText.trim() || "—"}&quot;
         </p>
@@ -647,9 +730,11 @@ export default async function PublicSupplierDetailPage({
             ) : (
             <div className="mt-5 grid gap-4 sm:grid-cols-2">
               {broadProductOptions.map((opt, i) => (
-                <Link
+                <ProductOptionLink
                   key={i}
-                  href={buildOptionHref({
+                  supplierId={supplierId}
+                  productUrl={(opt as { productUrl?: string | null }).productUrl ?? null}
+                  fallbackHref={buildOptionHref({
                     title: opt.title,
                     imageUrl: opt.imageUrl ?? null,
                     price: opt.price ?? null,
@@ -696,10 +781,17 @@ export default async function PublicSupplierDetailPage({
                     {opt.price ?? priceDisplay}
                   </div>
 
-                  <p className="mt-2 text-xs text-zinc-500">
-                    View this option for more detail
+                  <p className="mt-2 inline-flex items-center gap-1 text-xs text-zinc-500">
+                    {isBigBoxSupplier(supplierId) &&
+                    (opt as { productUrl?: string | null }).productUrl
+                      ? `View on ${bigBoxLabelForSupplier(supplierId)}`
+                      : "View this option for more detail"}
+                    {isBigBoxSupplier(supplierId) &&
+                      (opt as { productUrl?: string | null }).productUrl && (
+                        <ExternalArrow className="h-3 w-3" />
+                      )}
                   </p>
-                </Link>
+                </ProductOptionLink>
               ))}
             </div>
             )
@@ -747,6 +839,19 @@ export default async function PublicSupplierDetailPage({
                       : <>We&apos;re checking this exact item with {r.supplierName}. Pricing and availability update here once verified.</>}
                   </p>
 
+                  {isBigBoxSupplier(supplierId) &&
+                    (listingUrl ?? automatedProduct?.productUrl) && (
+                      <a
+                        href={listingUrl ?? automatedProduct?.productUrl ?? "#"}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-800"
+                      >
+                        View on {bigBoxLabelForSupplier(supplierId)}
+                        <ExternalArrow className="h-3.5 w-3.5" />
+                      </a>
+                    )}
+
                 </div>
               </div>
 
@@ -757,9 +862,11 @@ export default async function PublicSupplierDetailPage({
                   </h4>
                   <div className="mt-3 grid gap-3 sm:grid-cols-2">
                     {relatedSupplierOptions.map((opt, i) => (
-                      <Link
+                      <ProductOptionLink
                         key={`${opt.title}-${opt.productUrl ?? i}`}
-                        href={buildOptionHref({
+                        supplierId={supplierId}
+                        productUrl={opt.productUrl ?? null}
+                        fallbackHref={buildOptionHref({
                           title: opt.title,
                           imageUrl: opt.imageUrl ?? null,
                           price: opt.price ?? null,
@@ -779,7 +886,7 @@ export default async function PublicSupplierDetailPage({
                         <p className="mt-1 text-xs text-zinc-600">
                           {opt.price ?? "Pricing varies"}
                         </p>
-                      </Link>
+                      </ProductOptionLink>
                     ))}
                   </div>
                 </div>
