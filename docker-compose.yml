@@ -1,0 +1,30 @@
+# Local dev infrastructure for Agora.
+# Spin up: docker compose up -d
+# Stop:    docker compose stop
+# Wipe:    docker compose down -v  (deletes the volume too)
+
+services:
+  postgres:
+    # Pin to 17 so it matches Neon's server version — keeps pg_dump/pg_restore
+    # compatible when cloning from Neon to local.
+    image: postgres:17
+    container_name: agora-pg
+    restart: unless-stopped
+    ports:
+      # host port 5433 → container 5432, since the dev VM already has a system
+      # postgres on host:5432. Update DATABASE_URL accordingly.
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: peyton
+      POSTGRES_PASSWORD: agora_dev
+      POSTGRES_DB: agora_local
+    volumes:
+      - agora-pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U peyton -d agora_local"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  agora-pg-data:
