@@ -50,3 +50,7 @@ scripts/.agora-db-lock.json
 
 # vestigial sqlite file from earlier prototype
 dev.db
+
+# local dev caches: SerpAPI responses, pg_dump artifacts, anything in scripts/cache
+scripts/cache/
+*.dump
