@@ -27,6 +27,7 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
 import { getPrisma } from "@/lib/db.server";
+import { classifyQueryToCategory } from "@/lib/ai/classifyQuery";
 import { haversineMiles } from "./distance";
 import {
   searchCapabilities,
@@ -240,8 +241,29 @@ export async function runSearch(args: {
   const searchId = randomUUID();
   const createdAt = new Date().toISOString();
 
-  // 1. Capability lookup against curated SupplierCapability table
-  const matches = await searchCapabilities(args.query);
+  // 1a. Classify the query to a canonical category (cheap Gemini call, no
+  // grounding). Used to gate capability matches so "Pine" doesn't match
+  // landscaping Pinestraw, "Wood" doesn't match cabinet-shop Paint Grade
+  // Wood, etc. Returns null if the model can't classify — in which case
+  // we fall through unfiltered.
+  const inferredCategory = await classifyQueryToCategory(args.query);
+
+  // 1b. Capability lookup against curated SupplierCapability table
+  const rawMatches = await searchCapabilities(args.query);
+
+  // 1c. Gate by inferred category. If the gate would leave us with zero
+  // matches, fall back to unfiltered (better to show loose matches than
+  // an empty results page when the classifier guessed wrong).
+  let matches: CapabilitySearchResult[];
+  if (inferredCategory) {
+    const gated = rawMatches.filter(
+      (m) => m.categoryId.toLowerCase() === inferredCategory
+    );
+    matches = gated.length > 0 ? gated : rawMatches;
+  } else {
+    matches = rawMatches;
+  }
+
   const bySupplier = aggregateBySupplier(matches);
 
   if (bySupplier.size === 0) {
@@ -249,7 +271,7 @@ export async function runSearch(args: {
       searchId,
       threadId: args.threadId,
       query: args.query,
-      category: null,
+      category: inferredCategory,
       location: args.location,
       radiusMiles,
       status: "complete",
@@ -334,7 +356,7 @@ export async function runSearch(args: {
     searchId,
     threadId: args.threadId,
     query: args.query,
-    category: null,
+    category: inferredCategory,
     location: args.location,
     radiusMiles,
     status: "complete",
