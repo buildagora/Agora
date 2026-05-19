@@ -28,12 +28,20 @@ import "server-only";
 import { randomUUID } from "node:crypto";
 import { getPrisma } from "@/lib/db.server";
 import { classifyQueryToCategory } from "@/lib/ai/classifyQuery";
+import { findSupplierSearchAdapter } from "@/lib/suppliers/registry";
 import { haversineMiles } from "./distance";
 import {
   searchCapabilities,
   type CapabilitySearchResult,
 } from "./capabilitySearch";
 import type { SearchResult, SupplierCard } from "./types";
+
+/**
+ * Top-N nearest cards to pre-warm SerpAPI cache for. Higher = more chance the
+ * user's first click is instant; also more SerpAPI cost per chat search even
+ * if the user never clicks. 3 is conservative.
+ */
+const PREWARM_TOP_N = 3;
 
 const RADIUS_MILES = 25;
 const MAX_RESULTS = 25;
@@ -143,6 +151,65 @@ function aggregateBySupplier(
     if (m.productLine) existing.productLines.add(m.productLine);
   }
   return out;
+}
+
+/**
+ * Run each card's per-supplier search in parallel against SerpAPI to warm
+ * the disk cache (src/lib/serpCache/server.ts). Each call goes through the
+ * same code path the supplier detail page will use, so the URLs — and
+ * therefore the cache keys — match exactly.
+ *
+ * Errors per supplier are swallowed independently so one bad supplier
+ * doesn't block the others' pre-warm.
+ */
+async function prewarmSupplierSearchCache(
+  cards: SupplierCard[],
+  query: string
+): Promise<void> {
+  if (cards.length === 0 || !query.trim()) return;
+
+  // Need supplier domains for any non-adapter card. One query covers all.
+  const prisma = getPrisma();
+  const supplierDomains = new Map<string, string | null>();
+  const supplierRows = await prisma.supplier.findMany({
+    where: { id: { in: cards.map((c) => c.supplierId) } },
+    select: { id: true, domain: true, name: true },
+  });
+  const supplierNames = new Map<string, string>();
+  for (const s of supplierRows) {
+    supplierDomains.set(s.id, s.domain);
+    supplierNames.set(s.id, s.name);
+  }
+
+  await Promise.all(
+    cards.map(async (card) => {
+      try {
+        const adapter = findSupplierSearchAdapter(card.supplierId);
+        if (adapter) {
+          await adapter.search(query);
+          return;
+        }
+        const domain = supplierDomains.get(card.supplierId);
+        if (!domain) return;
+        const { searchSupplierSite } = await import(
+          "@/lib/suppliers/searchSupplierSite"
+        );
+        await searchSupplierSite({
+          query,
+          domain,
+          supplierIds: [card.supplierId],
+          source: "GENERIC",
+          logLabel: supplierNames.get(card.supplierId) ?? "Supplier",
+        });
+      } catch (err) {
+        console.warn(
+          `[prewarm] ${card.supplierId} failed: ${
+            err instanceof Error ? err.message : String(err)
+          }`
+        );
+      }
+    })
+  );
 }
 
 /**
@@ -363,6 +430,17 @@ export async function runSearch(args: {
   const cards: SupplierCard[] = [...capabilityCards, ...liveCards]
     .sort((a, b) => a.distanceMiles - b.distanceMiles)
     .slice(0, maxResults);
+
+  // 6. Pre-warm SerpAPI cache for the top N cards. The supplier detail page
+  // calls the same adapter/searchSupplierSite path with the same query, so
+  // by the time the buyer clicks one of these cards the cache is hot and
+  // the detail page renders in ~0.1s instead of 5-15s. Fire-and-forget so
+  // the chat search response isn't delayed.
+  prewarmSupplierSearchCache(cards.slice(0, PREWARM_TOP_N), args.query).catch(
+    () => {
+      /* swallow — pre-warm failure just means a cache miss on click */
+    }
+  );
 
   const result: SearchResult = {
     searchId,
