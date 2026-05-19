@@ -21,6 +21,16 @@ export const metadata: Metadata = {
   title: "Agora",
   description:
     "Chat-driven supplier discovery for construction materials. Tell us what you need; we'll show local suppliers that carry it.",
+  // Stop iOS Safari from auto-wrapping phone numbers / addresses / emails
+  // in `tel:` / `geo:` / `mailto:` links — that DOM rewrite runs after the
+  // initial parse but before React hydrates, causing hydration mismatches
+  // wherever we render those as plain text (supplier hero, address line,
+  // operator notes, etc.).
+  formatDetection: {
+    telephone: false,
+    address: false,
+    email: false,
+  },
 };
 
 /**
