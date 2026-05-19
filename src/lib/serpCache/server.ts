@@ -17,7 +17,10 @@
  * silently falls through to a direct fetch — never throws on cache errors.
  */
 
-import "server-only";
+// Note: no `import "server-only"`. The cache module is Node-only (uses fs)
+// but is also imported from CLI scripts under scripts/, so the runtime guard
+// would needlessly block legitimate use. The Node-only deps below mean the
+// browser can't load this anyway.
 import { createHash } from "node:crypto";
 import {
   existsSync,
