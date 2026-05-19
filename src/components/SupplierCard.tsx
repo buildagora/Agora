@@ -1,4 +1,7 @@
-import Link from "next/link";
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 import type { SupplierCard as SupplierCardData } from "@/lib/search/types";
 
 const STATUS_LABEL = {
@@ -19,21 +22,32 @@ function formatCategory(raw: string): string {
 
 export type SupplierCardProps = {
   card: SupplierCardData;
-  /** Original chat query — passed through as ?q= to prefill the contact form. */
-  requestText?: string;
+  /** Used to build the select-supplier endpoint URL. */
+  threadId: string;
+  /** Used to build the select-supplier endpoint URL. */
+  searchId: string;
 };
 
 /**
- * Layout note: we want the entire card to be a click target that navigates
- * to /contact-supplier/[id], BUT the inner phone and source links must
- * remain individually tappable. We can't nest `<a>` inside `<Link>` (illegal
- * HTML), so we use the "layered link" pattern — the navigation Link is an
- * absolutely-positioned sibling of the visible content, behind it in the
- * stacking context. Inner anchors get `relative z-10` so they sit above
- * the link and capture their own clicks. Anything else on the card has no
- * click handler, so its hits fall through to the underlying Link.
+ * Layout note: the whole card is a click target that, on click, POSTs to the
+ * select-supplier endpoint to create a MaterialRequest, then navigates to
+ * /request/[materialRequestId]/supplier/[supplierId] (main's rich SerpAPI-
+ * backed detail page). Inner phone and source links must still be
+ * individually tappable.
+ *
+ * Layered-link pattern: the navigation control is an absolutely-positioned
+ * `<button>` sibling of the visible content (at z-0), and inner anchors get
+ * `relative z-10` so they sit above the button and capture their own clicks.
  */
-export default function SupplierCard({ card, requestText = "" }: SupplierCardProps) {
+export default function SupplierCard({
+  card,
+  threadId,
+  searchId,
+}: SupplierCardProps) {
+  const router = useRouter();
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   const dim = card.status === "unlikely";
   const dotColor =
     card.status === "likely"
@@ -42,21 +56,47 @@ export default function SupplierCard({ card, requestText = "" }: SupplierCardPro
       ? "bg-zinc-400"
       : "bg-zinc-300";
 
-  const href = `/contact-supplier/${card.supplierId}${
-    requestText ? `?q=${encodeURIComponent(requestText)}` : ""
-  }`;
+  const handleSelect = async () => {
+    if (submitting) return;
+    setError(null);
+    setSubmitting(true);
+    try {
+      const res = await fetch(
+        `/api/search/${encodeURIComponent(threadId)}/${encodeURIComponent(searchId)}/select-supplier`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ supplierId: card.supplierId }),
+        },
+      );
+      const data = await res.json();
+      if (!res.ok || !data?.ok) {
+        throw new Error(data?.message || `HTTP ${res.status}`);
+      }
+      router.push(
+        `/request/${encodeURIComponent(data.materialRequestId)}/supplier/${encodeURIComponent(card.supplierId)}`,
+      );
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Couldn't open supplier";
+      setError(message);
+      setSubmitting(false);
+    }
+  };
 
   return (
     <article
       className={`group relative flex flex-col gap-2 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm transition-shadow hover:border-zinc-300 hover:shadow-md focus-within:border-zinc-300 focus-within:shadow-md ${
         dim ? "opacity-70" : ""
-      }`}
+      } ${submitting ? "opacity-60" : ""}`}
     >
-      {/* Stretched cover link — sibling of the visible content, not a parent. */}
-      <Link
-        href={href}
-        aria-label={`Message ${card.name}`}
-        className="absolute inset-0 z-0 rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900"
+      {/* Stretched cover button — sibling of the visible content. */}
+      <button
+        type="button"
+        onClick={handleSelect}
+        disabled={submitting}
+        aria-label={`See products at ${card.name}`}
+        className="absolute inset-0 z-0 rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900 disabled:cursor-wait"
       />
 
       <header className="relative flex items-start justify-between gap-3">
@@ -86,6 +126,12 @@ export default function SupplierCard({ card, requestText = "" }: SupplierCardPro
         </p>
       )}
 
+      {error && (
+        <p className="relative text-xs text-red-600" role="alert">
+          {error}
+        </p>
+      )}
+
       <footer className="relative mt-1 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-zinc-500 sm:text-[13px]">
           {card.phone && (
@@ -111,7 +157,7 @@ export default function SupplierCard({ card, requestText = "" }: SupplierCardPro
         </div>
 
         <span className="text-xs text-zinc-500 transition group-hover:text-zinc-900 sm:text-[13px]">
-          Message →
+          {submitting ? "Opening…" : "See products →"}
         </span>
       </footer>
     </article>
