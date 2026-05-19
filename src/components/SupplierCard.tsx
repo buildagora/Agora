@@ -137,13 +137,20 @@ export default function SupplierCard({
         className="absolute inset-0 z-0 rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-zinc-900 disabled:cursor-wait"
       />
 
+      {/*
+        Avatar + content sit visually on top of the cover button in document
+        order. `pointer-events-none` lets clicks pass through to the button
+        below; the error message is the only thing inside that we'd want
+        clickable, and it's a passive `<p role=alert>` (no handler), so
+        blocking pointer events on it is fine.
+      */}
       <SupplierAvatar
         name={card.name}
         logoUrl={card.logoUrl}
         live={isLive}
       />
 
-      <div className="relative flex min-w-0 flex-1 flex-col gap-2">
+      <div className="pointer-events-none relative flex min-w-0 flex-1 flex-col gap-2">
         <header className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <h3 className="truncate text-[17px] font-semibold text-zinc-900 group-hover:underline group-hover:underline-offset-2 sm:text-[18px]">
@@ -207,7 +214,7 @@ function SupplierAvatar({
   const [broken, setBroken] = useState(false);
   if (logoUrl && !broken) {
     return (
-      <div className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-zinc-50 ring-1 ring-zinc-200 sm:h-14 sm:w-14">
+      <div className="pointer-events-none relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-zinc-50 ring-1 ring-zinc-200 sm:h-14 sm:w-14">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={logoUrl}
@@ -221,7 +228,7 @@ function SupplierAvatar({
   }
   return (
     <div
-      className={`relative flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-sm font-semibold ring-1 sm:h-14 sm:w-14 sm:text-base ${
+      className={`pointer-events-none relative flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-sm font-semibold ring-1 sm:h-14 sm:w-14 sm:text-base ${
         live
           ? "bg-sky-50 text-sky-700 ring-sky-200"
           : "bg-zinc-50 text-zinc-600 ring-zinc-200"
