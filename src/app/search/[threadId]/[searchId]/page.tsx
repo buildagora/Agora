@@ -71,11 +71,11 @@ export default async function SearchResultsPage({
       <main className="flex-1 px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
         <div className="mx-auto w-full max-w-3xl">
           <div className="mb-6 flex items-start justify-between gap-4">
-            <div>
-              <h1 className="text-[22px] font-normal leading-snug text-zinc-900 sm:text-[26px]">
+            <div className="min-w-0">
+              <h1 className="text-[22px] font-semibold tracking-tight text-zinc-900 sm:text-[26px]">
                 Suppliers for &ldquo;{search.query}&rdquo;
               </h1>
-              <p className="mt-1 text-sm text-zinc-500">
+              <p className="mt-1.5 text-[13px] text-zinc-600 sm:text-sm">
                 {count > 0
                   ? subtitle
                   : `No suppliers found within ${search.radiusMiles} miles of ${search.location.label}`}
@@ -83,7 +83,7 @@ export default async function SearchResultsPage({
             </div>
             <Link
               href="/"
-              className="shrink-0 rounded-full border border-zinc-200 px-3 py-1.5 text-xs text-zinc-600 transition hover:bg-zinc-50 hover:text-zinc-900 sm:text-[13px]"
+              className="shrink-0 rounded-full border border-zinc-200 bg-white px-3.5 py-1.5 text-[13px] font-medium text-zinc-700 shadow-sm transition hover:border-zinc-300 hover:bg-zinc-50 hover:text-zinc-900"
             >
               ← New search
             </Link>
@@ -126,11 +126,11 @@ function formatCategory(raw: string): string {
 
 function EmptyResults({ radiusMiles }: { radiusMiles: number }) {
   return (
-    <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-6 py-10 text-center">
-      <p className="text-sm text-zinc-700">
+    <div className="rounded-2xl border border-zinc-200 bg-zinc-50/60 px-6 py-12 text-center">
+      <p className="text-[15px] font-medium text-zinc-800">
         No suppliers found within {radiusMiles} miles.
       </p>
-      <p className="mt-2 text-xs text-zinc-500">
+      <p className="mt-1.5 text-[13px] text-zinc-600">
         Try a different location, or expand your search radius.
       </p>
     </div>

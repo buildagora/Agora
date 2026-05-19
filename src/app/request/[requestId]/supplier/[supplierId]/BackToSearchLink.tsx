@@ -11,7 +11,7 @@ export default function BackToSearchLink({ href }: { href: string }) {
   return (
     <Link
       href={href}
-      className="-ml-1 mb-4 inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900 sm:text-[15px]"
+      className="-ml-1 mb-4 inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-[13px] font-medium text-zinc-700 transition hover:bg-zinc-100 hover:text-zinc-900 sm:text-sm"
     >
       <svg
         viewBox="0 0 24 24"
