@@ -1,6 +1,7 @@
 import { getSerpApiKey } from "@/lib/config/env";
 import { rankShoppingResults } from "@/lib/search/shopping/rankShoppingResults";
 import type { ShoppingResultItem } from "@/lib/search/shopping/types";
+import { cachedSerpFetch } from "@/lib/serpCache/server";
 import type { SupplierProductResult } from "./types";
 
 /** Huntsville market ZIP for delivery / localization (SerpApi `delivery_zip`). */
@@ -196,8 +197,8 @@ export async function searchHomeDepot(query: string): Promise<SupplierProductRes
   const url = buildHomeDepotSearchUrl(q, apiKey);
 
   try {
-    const res = await fetch(url);
-    const data = (await res.json()) as Record<string, unknown>;
+    const res = await cachedSerpFetch(url);
+    const data = await res.json();
 
     const rawProducts = extractHomeDepotProducts(data);
     if (rawProducts.length === 0) {

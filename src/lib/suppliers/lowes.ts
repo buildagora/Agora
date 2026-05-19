@@ -1,6 +1,7 @@
 import { getSerpApiKey } from "@/lib/config/env";
 import { rankShoppingResults } from "@/lib/search/shopping/rankShoppingResults";
 import type { ShoppingResultItem } from "@/lib/search/shopping/types";
+import { cachedSerpFetch } from "@/lib/serpCache/server";
 import type { SupplierProductResult } from "./types";
 
 export async function searchLowes(query: string): Promise<SupplierProductResult[]> {
@@ -12,7 +13,7 @@ export async function searchLowes(query: string): Promise<SupplierProductResult[
   const url = `https://serpapi.com/search.json?engine=google_shopping&q=${encodeURIComponent(q)}&api_key=${apiKey}`;
 
   try {
-    const res = await fetch(url);
+    const res = await cachedSerpFetch(url);
     const data = await res.json();
 
     const results = rankShoppingResults(

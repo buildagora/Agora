@@ -2,6 +2,7 @@ import { getSerpApiKey } from "@/lib/config/env";
 import { classifyUrl } from "@/lib/search/classification/classifyUrl";
 import type { SearchResultType } from "@/lib/search/classification/resultTypes";
 import { rankOrganicResults } from "@/lib/search/organic/rankOrganicResults";
+import { cachedSerpFetch } from "@/lib/serpCache/server";
 import type { SupplierProductResult, SupplierProductSource } from "./types";
 
 export type SearchSupplierSiteParams = {
@@ -64,7 +65,7 @@ async function fetchGoogleImageFallback({
   try {
     const query = `${title} ${supplierName}`;
     const url = `https://serpapi.com/search.json?engine=google_images&q=${encodeURIComponent(query)}&api_key=${apiKey}`;
-    const res = await fetch(url);
+    const res = await cachedSerpFetch(url);
     if (!res.ok) return null;
     const data = await res.json();
     const images = data.images_results || [];
@@ -280,7 +281,7 @@ export async function searchSupplierSite({
   const url = `https://serpapi.com/search.json?engine=google&q=${encodeURIComponent(qParam)}&api_key=${apiKey}`;
 
   try {
-    const res = await fetch(url);
+    const res = await cachedSerpFetch(url);
     const data = await res.json();
 
     const organicRaw = (data.organic_results || []).slice(0, 20);
