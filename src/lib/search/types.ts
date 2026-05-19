@@ -19,6 +19,16 @@ export type SupplierCard = {
   note?: string;
   /** Optional — URL cited as the source. */
   sourceUrl?: string;
+  /** Supplier's logo URL when present in the DB (mostly populated). */
+  logoUrl?: string | null;
+  /** Kind of card — drives visual treatment. */
+  kind?: "capability" | "live-catalog";
+  /**
+   * Match confidence for capability cards (derived from score). For
+   * live-catalog cards we leave this undefined and rely on `kind` for the
+   * visual distinction.
+   */
+  confidence?: "high" | "medium" | "low";
 };
 
 export type SearchResult = {
