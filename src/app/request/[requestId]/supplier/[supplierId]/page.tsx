@@ -19,6 +19,7 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import SiteFooter from "@/components/layout/SiteFooter";
 import SiteHeader from "@/components/layout/SiteHeader";
+import ImageWithFallback from "@/components/ImageWithFallback";
 import { getPrisma } from "@/lib/db.rsc";
 import BackToSearchLink, { buildSearchBackHref } from "./BackToSearchLink";
 import DeepSupplierDetail from "./DeepSupplierDetail";
@@ -107,20 +108,17 @@ function ShellWithSupplier({
 
           {/* Real supplier hero — name, logo, address */}
           <div className="mb-6 flex items-start gap-4">
-            {supplier.logoUrl ? (
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-zinc-50 ring-1 ring-zinc-200 sm:h-16 sm:w-16">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={supplier.logoUrl}
-                  alt=""
-                  className="h-full w-full object-contain p-1"
-                />
-              </div>
-            ) : (
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-zinc-50 text-base font-semibold text-zinc-600 ring-1 ring-zinc-200 sm:h-16 sm:w-16">
-                {initials || "?"}
-              </div>
-            )}
+            <ImageWithFallback
+              src={supplier.logoUrl}
+              alt={supplier.name}
+              className="h-14 w-14 shrink-0 rounded-xl bg-zinc-50 object-contain p-1 ring-1 ring-zinc-200 sm:h-16 sm:w-16"
+              fallback={
+                <span className="text-base font-semibold text-zinc-600">
+                  {initials || "?"}
+                </span>
+              }
+              fallbackContainerClassName="flex items-center justify-center bg-zinc-50 ring-1 ring-zinc-200"
+            />
             <div className="min-w-0 flex-1 pt-1">
               <h1 className="truncate text-xl font-semibold text-zinc-900 sm:text-2xl">
                 {supplier.name}

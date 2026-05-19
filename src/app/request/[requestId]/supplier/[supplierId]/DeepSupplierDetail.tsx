@@ -9,6 +9,7 @@ import { findSupplierSearchAdapter } from "@/lib/suppliers/registry";
 import { SUPPLIER_STATUS_TEXT } from "@/lib/suppliers/statusText";
 import type { SupplierProductResult } from "@/lib/suppliers/types";
 import BackToSearchLink, { buildSearchBackHref } from "./BackToSearchLink";
+import ImageWithFallback from "@/components/ImageWithFallback";
 
 /**
  * Wrapper that renders either an in-app Next Link (drill into a focused
@@ -607,19 +608,17 @@ export default async function PublicSupplierDetailPage({
         <section className="overflow-hidden rounded-2xl border border-zinc-200 bg-white px-5 py-5 shadow-sm sm:px-6 sm:py-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div className="flex min-w-0 flex-1 gap-4">
-              <div className="flex h-16 w-28 shrink-0 items-center justify-center rounded-xl border border-zinc-200 bg-white">
-                {r.logoUrl ? (
-                  <img
-                    src={r.logoUrl}
-                    alt={r.supplierName}
-                    className="max-h-12 max-w-[96px] object-contain"
-                  />
-                ) : (
+              <ImageWithFallback
+                src={r.logoUrl}
+                alt={r.supplierName}
+                className="h-16 w-28 shrink-0 rounded-xl border border-zinc-200 bg-white object-contain p-2"
+                fallback={
                   <span className="text-base font-semibold text-zinc-500">
                     {r.supplierName.slice(0, 2).toUpperCase()}
                   </span>
-                )}
-              </div>
+                }
+                fallbackContainerClassName="flex items-center justify-center bg-white"
+              />
               <div className="min-w-0 flex-1">
                 <h1 className="text-xl font-bold tracking-tight text-zinc-900 sm:text-2xl">
                   {r.supplierName}
@@ -752,15 +751,12 @@ export default async function PublicSupplierDetailPage({
                       (optRow.imageQuery
                         ? `https://source.unsplash.com/featured/?${encodeURIComponent(optRow.imageQuery)}`
                         : "/placeholder.png");
-                    if (!imageSrc) return null;
                     return (
-                  <div className="mb-3 flex h-28 w-full items-center justify-center overflow-hidden rounded-lg bg-zinc-100 text-xs text-zinc-500">
-                    <img
-                      src={imageSrc}
-                      alt={opt.title}
-                      className="h-full w-full object-contain"
-                    />
-                  </div>
+                      <ImageWithFallback
+                        src={imageSrc}
+                        alt={opt.title}
+                        className="mb-3 h-28 w-full overflow-hidden rounded-lg object-contain"
+                      />
                     );
                   })()}
 
@@ -800,10 +796,10 @@ export default async function PublicSupplierDetailPage({
           {mode === "EXACT" && (
             <div className="mt-5 rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
               <div className="flex flex-col sm:flex-row gap-5">
-                <img
+                <ImageWithFallback
                   src={imageSrc}
                   alt={displayProductTitle}
-                  className="h-44 w-full rounded-lg object-contain bg-white sm:w-48"
+                  className="h-44 w-full rounded-lg bg-white object-contain sm:w-48"
                 />
 
                 <div className="flex-1">
@@ -873,13 +869,11 @@ export default async function PublicSupplierDetailPage({
                         })}
                         className="group block rounded-lg border border-zinc-200 bg-white p-3 shadow-sm transition hover:border-zinc-300 hover:shadow-md"
                       >
-                        <div className="mb-2 flex h-20 w-full items-center justify-center overflow-hidden rounded-md bg-zinc-100">
-                          <img
-                            src={opt.imageUrl || "/placeholder.png"}
-                            alt={opt.title}
-                            className="h-full w-full object-contain"
-                          />
-                        </div>
+                        <ImageWithFallback
+                          src={opt.imageUrl}
+                          alt={opt.title}
+                          className="mb-2 h-20 w-full overflow-hidden rounded-md object-contain"
+                        />
                         <h5 className="line-clamp-2 text-sm font-medium text-zinc-900">
                           {opt.title}
                         </h5>
