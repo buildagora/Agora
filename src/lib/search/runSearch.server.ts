@@ -146,6 +146,19 @@ function aggregateBySupplier(
 }
 
 /**
+ * Map a capabilitySearch score to a coarse confidence tier.
+ * Score buckets (from capabilitySearch.ts):
+ *   - >=30: productLine match (very specific) → high
+ *   - 15-29: subcategory or strong brand match → medium
+ *   - <15: weak brand/term overlap → low
+ */
+function scoreToConfidence(score: number): "high" | "medium" | "low" {
+  if (score >= 30) return "high";
+  if (score >= 15) return "medium";
+  return "low";
+}
+
+/**
  * Find the single closest store within radius for each broad-catalog chain,
  * skipping any supplier already in the capability-matched results.
  */
@@ -171,6 +184,7 @@ async function loadClosestBigBoxCards(args: {
       latitude: true,
       longitude: true,
       phone: true,
+      logoUrl: true,
     },
   });
 
@@ -199,7 +213,9 @@ async function loadClosestBigBoxCards(args: {
         state: s.state,
         phone: s.phone,
         distanceMiles: Math.round(distance * 10) / 10,
-        note: `Searches ${BROAD_CATALOG_LABEL[prefix]} catalog live`,
+        note: `Live catalog search — current pricing and availability from ${BROAD_CATALOG_LABEL[prefix]}.`,
+        logoUrl: s.logoUrl ?? null,
+        kind: "live-catalog",
       },
     });
   }
@@ -282,7 +298,7 @@ export async function runSearch(args: {
     return empty;
   }
 
-  // 2. Load full supplier records (need coords for distance, contact for cards)
+  // 2. Load full supplier records (need coords for distance, logo for cards)
   const prisma = getPrisma();
   const supplierIds = Array.from(bySupplier.keys());
   const suppliers = await prisma.supplier.findMany({
@@ -301,12 +317,12 @@ export async function runSearch(args: {
       latitude: true,
       longitude: true,
       phone: true,
+      logoUrl: true,
     },
   });
 
-  // 3. Distance filter + assemble cards with score for sorting
-  type Scored = SupplierCard & { _score: number };
-  const scoredCards: Scored[] = [];
+  // 3. Distance filter + assemble capability cards with confidence
+  const capabilityCards: SupplierCard[] = [];
   for (const s of suppliers) {
     const distance = haversineMiles(
       { lat: args.location.lat, lng: args.location.lng },
@@ -314,7 +330,7 @@ export async function runSearch(args: {
     );
     if (distance > radiusMiles) continue;
     const agg = bySupplier.get(s.id)!;
-    scoredCards.push({
+    capabilityCards.push({
       supplierId: s.id,
       name: s.name,
       category: s.category,
@@ -325,24 +341,16 @@ export async function runSearch(args: {
       distanceMiles: Math.round(distance * 10) / 10,
       note: buildMatchNote(agg),
       sourceUrl: agg.best.sourceUrl || undefined,
-      _score: agg.best.score,
+      logoUrl: s.logoUrl ?? null,
+      kind: "capability",
+      confidence: scoreToConfidence(agg.best.score),
     });
   }
 
-  // 4. Sort by capability score DESC, then distance ASC; cap to maxResults.
-  scoredCards.sort((a, b) => {
-    if (b._score !== a._score) return b._score - a._score;
-    return a.distanceMiles - b.distanceMiles;
-  });
-  const capabilityCards: SupplierCard[] = scoredCards
-    .slice(0, maxResults)
-    .map(({ _score, ...rest }) => rest);
-
-  // 5. Always append the closest big-box retailer per brand (Home Depot,
-  // Lowe's) within radius — their catalogs are too broad to model in
-  // SupplierCapability, but their adapter delivers real product results
-  // on the supplier detail page. Cap at 1 store per chain to keep the
-  // results focused.
+  // 4. Append the closest big-box retailer per brand (Home Depot, Lowe's)
+  // within radius — their catalogs are too broad to model in
+  // SupplierCapability, but their adapter delivers real product results on
+  // the supplier detail page. Cap at 1 store per chain.
   const includedIds = new Set(capabilityCards.map((c) => c.supplierId));
   const liveCards = await loadClosestBigBoxCards({
     location: args.location,
@@ -350,7 +358,11 @@ export async function runSearch(args: {
     excludeIds: includedIds,
   });
 
-  const cards: SupplierCard[] = [...capabilityCards, ...liveCards];
+  // 5. Interleave all cards by distance — confidence is conveyed via the
+  // badge color, not the order. Cap to maxResults.
+  const cards: SupplierCard[] = [...capabilityCards, ...liveCards]
+    .sort((a, b) => a.distanceMiles - b.distanceMiles)
+    .slice(0, maxResults);
 
   const result: SearchResult = {
     searchId,
