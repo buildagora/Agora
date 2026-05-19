@@ -455,36 +455,26 @@ export default function ChatClient() {
                 </div>
               )}
 
-              <div className="mb-2 flex items-center justify-between gap-2">
+              <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2">
                 <LocationPill
                   label={location?.label ?? null}
                   onSet={requestBrowserLocation}
                   onClear={() => persistLocation(null)}
                 />
-                <div className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={seeSuppliers}
-                    disabled={!canSearch}
-                    title={
-                      !threadId || messages.length === 0
-                        ? "Send a message first"
-                        : !location?.lat
-                        ? "Add your location first"
-                        : "Find suppliers nearby"
-                    }
-                    className="inline-flex items-center gap-1.5 rounded-full bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-200 disabled:text-zinc-400"
-                  >
-                    See suppliers →
-                  </button>
-                  <button
-                    type="button"
-                    onClick={startNewChat}
-                    className="text-xs text-zinc-500 transition hover:text-zinc-800"
-                  >
-                    New chat
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={seeSuppliers}
+                  disabled={!canSearch}
+                  title={
+                    !threadId || messages.length === 0
+                      ? "Send a message first"
+                      : "Find suppliers nearby"
+                  }
+                  className="inline-flex items-center gap-1.5 rounded-full bg-zinc-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-200 disabled:text-zinc-400 disabled:shadow-none"
+                >
+                  See suppliers
+                  <ArrowRightSmall className="h-3.5 w-3.5" />
+                </button>
               </div>
 
               <Composer
@@ -539,11 +529,11 @@ function SearchingOverlay({ location }: { location: string }) {
 
 function EmptyState() {
   return (
-    <div className="flex flex-col items-center pt-12 text-center">
-      <h1 className="text-[20px] font-normal leading-snug text-zinc-700 sm:text-[24px]">
+    <div className="flex flex-col items-center pt-12 text-center sm:pt-16">
+      <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 sm:text-3xl">
         Tell us what you&apos;re looking for
       </h1>
-      <p className="mt-3 max-w-md text-sm text-zinc-500 sm:text-[15px]">
+      <p className="mt-3 max-w-md text-[15px] leading-relaxed text-zinc-600 sm:text-base">
         Describe the materials you need, attach photos or specs, and we&apos;ll
         help refine the request before sending it to suppliers in your area.
       </p>
@@ -562,10 +552,10 @@ function MessageBubble({
   return (
     <div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
       <div
-        className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-4 py-3 text-[15px] leading-relaxed shadow-sm ${
+        className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-4 py-3 text-[15px] leading-relaxed shadow-sm sm:text-base ${
           isUser
             ? "rounded-br-md bg-zinc-900 text-white"
-            : "rounded-bl-md border border-zinc-200 bg-white text-zinc-800"
+            : "rounded-bl-md border border-zinc-200 bg-white text-zinc-900"
         }`}
       >
         {message.text || (streaming ? <TypingDots /> : null)}
@@ -577,14 +567,14 @@ function MessageBubble({
             {message.attachments.map((a, i) => (
               <span
                 key={i}
-                className={`inline-flex max-w-[200px] items-center gap-1 truncate rounded-full px-2.5 py-1 text-xs ${
+                className={`inline-flex max-w-[220px] items-center gap-1.5 truncate rounded-full px-2.5 py-1 text-[13px] font-medium ${
                   isUser
                     ? "bg-zinc-700/70 text-zinc-50"
                     : "bg-zinc-100 text-zinc-700"
                 }`}
                 title={`${a.name} • ${(a.sizeBytes / 1024).toFixed(0)} KB`}
               >
-                <PaperclipIcon className="h-3 w-3" />
+                <PaperclipIcon className="h-3.5 w-3.5" />
                 <span className="truncate">{a.name || a.mimeType}</span>
               </span>
             ))}
@@ -618,38 +608,50 @@ function Composer({
   onAttach: () => void;
   disabled: boolean;
 }) {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Auto-grow with the content, capped at ~7 lines (~168px) before internal
+  // scroll kicks in — keeps the composer from eating the chat history when
+  // someone pastes a long request.
+  useEffect(() => {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    ta.style.height = "auto";
+    ta.style.height = `${Math.min(ta.scrollHeight, 168)}px`;
+  }, [draft]);
+
   return (
-    <div className="flex w-full min-w-0 items-center rounded-full border border-zinc-200 bg-white py-3 pl-3 pr-2 shadow-sm transition-shadow focus-within:shadow-md hover:shadow-md sm:pl-4">
+    <div className="flex w-full min-w-0 items-end gap-1 rounded-2xl border border-zinc-200 bg-white p-2 shadow-sm transition-shadow focus-within:border-zinc-300 focus-within:shadow-md hover:shadow-md sm:gap-2 sm:p-2.5">
       <button
         type="button"
         onClick={onAttach}
         disabled={disabled}
-        className="flex shrink-0 items-center justify-center rounded-full p-2 text-zinc-500 transition hover:bg-zinc-50 hover:text-zinc-800 disabled:opacity-50"
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-800 disabled:opacity-50"
         aria-label="Attach files"
       >
         <PaperclipIcon className="h-5 w-5" />
       </button>
-      <div className="mx-2 h-6 w-px shrink-0 self-center bg-zinc-200" aria-hidden />
-      <input
-        type="text"
+      <textarea
+        ref={textareaRef}
+        rows={1}
         value={draft}
         onChange={(e) => onDraftChange(e.target.value)}
         onKeyDown={(e) => {
-          if (e.key === "Enter" && !e.shiftKey) {
+          // Enter sends. Shift+Enter (or Cmd/Ctrl+Enter) is a newline.
+          if (e.key === "Enter" && !e.shiftKey && !e.metaKey && !e.ctrlKey) {
             e.preventDefault();
             onSend();
           }
         }}
-        placeholder="Describe what you need..."
-        className="min-w-0 flex-1 bg-transparent text-base text-zinc-800 outline-none placeholder:text-zinc-400 sm:text-[17px]"
+        placeholder="Describe what you need…"
+        className="block min-w-0 flex-1 resize-none self-center bg-transparent px-2 py-2 text-[15px] leading-snug text-zinc-900 outline-none placeholder:text-zinc-400 sm:text-base"
         disabled={disabled}
       />
-      <div className="mx-2 h-6 w-px shrink-0 self-center bg-zinc-200" aria-hidden />
       <button
         type="button"
         onClick={onSend}
         disabled={disabled || !draft.trim()}
-        className="flex shrink-0 items-center justify-center rounded-full bg-zinc-900 p-2.5 text-white transition hover:bg-zinc-800 disabled:bg-zinc-300"
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-zinc-900 text-white transition hover:bg-zinc-800 disabled:bg-zinc-200 disabled:text-zinc-400"
         aria-label="Send"
       >
         <SendIcon className="h-4 w-4" />
@@ -672,7 +674,7 @@ function LocationPill({
       <button
         type="button"
         onClick={onSet}
-        className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white px-3 py-1 text-xs text-zinc-600 transition hover:bg-zinc-50 hover:text-zinc-800"
+        className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-[13px] font-medium text-zinc-700 transition hover:border-zinc-300 hover:bg-zinc-50 hover:text-zinc-900"
       >
         <PinIcon className="h-3.5 w-3.5" />
         Add location
@@ -680,13 +682,13 @@ function LocationPill({
     );
   }
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-xs text-zinc-700">
-      <PinIcon className="h-3.5 w-3.5" />
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-[13px] font-medium text-zinc-800">
+      <PinIcon className="h-3.5 w-3.5 text-zinc-500" />
       {label}
       <button
         type="button"
         onClick={onClear}
-        className="ml-1 rounded-full text-zinc-400 transition hover:text-zinc-700"
+        className="ml-0.5 rounded-full text-zinc-400 transition hover:text-zinc-700"
         aria-label="Clear location"
       >
         ×
@@ -697,14 +699,14 @@ function LocationPill({
 
 function FileChip({ file, onRemove }: { file: File; onRemove: () => void }) {
   return (
-    <span className="inline-flex max-w-[260px] items-center gap-2 rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-xs text-zinc-700">
-      <PaperclipIcon className="h-3.5 w-3.5" />
+    <span className="inline-flex max-w-[260px] items-center gap-2 rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-[13px] font-medium text-zinc-800">
+      <PaperclipIcon className="h-3.5 w-3.5 text-zinc-500" />
       <span className="truncate">{file.name}</span>
-      <span className="text-zinc-400">{(file.size / 1024).toFixed(0)} KB</span>
+      <span className="text-zinc-500">{(file.size / 1024).toFixed(0)} KB</span>
       <button
         type="button"
         onClick={onRemove}
-        className="ml-1 rounded-full text-zinc-400 transition hover:text-zinc-700"
+        className="ml-0.5 rounded-full text-zinc-400 transition hover:text-zinc-700"
         aria-label="Remove file"
       >
         ×
@@ -726,14 +728,14 @@ function ThreadsSidebar({
 }) {
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center justify-between border-b border-zinc-200 px-4 py-3">
-        <h2 className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+      <div className="flex items-center justify-between border-b border-zinc-200 px-4 py-4">
+        <h2 className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
           Recent chats
         </h2>
         <button
           type="button"
           onClick={onNew}
-          className="text-xs text-zinc-600 transition hover:text-zinc-900"
+          className="rounded-md px-2 py-1 text-[13px] font-medium text-zinc-700 transition hover:bg-zinc-200 hover:text-zinc-900"
         >
           + New
         </button>
@@ -817,6 +819,23 @@ function PinIcon({ className }: { className?: string }) {
     >
       <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z" />
       <circle cx="12" cy="10" r="3" />
+    </svg>
+  );
+}
+
+function ArrowRightSmall({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M5 12h14M13 6l6 6-6 6" />
     </svg>
   );
 }

@@ -159,13 +159,13 @@ export default function SupplierCard({
       <div className="pointer-events-none relative flex min-w-0 flex-1 flex-col gap-2">
         <header className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h3 className="truncate text-[17px] font-semibold text-zinc-900 group-hover:underline group-hover:underline-offset-2 sm:text-[18px]">
+            <h3 className="truncate text-[17px] font-semibold tracking-tight text-zinc-900 group-hover:underline group-hover:underline-offset-2 sm:text-lg">
               {card.name}
             </h3>
-            <p className="mt-0.5 truncate text-xs text-zinc-500 sm:text-[13px]">
+            <p className="mt-0.5 truncate text-[13px] text-zinc-600 sm:text-sm">
               {formatCategory(card.category)}
               {" · "}
-              <span className="font-medium text-zinc-700">
+              <span className="font-semibold text-zinc-900">
                 {card.distanceMiles.toFixed(1)} mi
               </span>
               {" · "}
@@ -174,7 +174,7 @@ export default function SupplierCard({
           </div>
           {badge && (
             <span
-              className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium ${badge.pillClass}`}
+              className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${badge.pillClass}`}
             >
               <span
                 className={`h-1.5 w-1.5 rounded-full ${badge.dotClass}`}
@@ -185,22 +185,16 @@ export default function SupplierCard({
           )}
         </header>
 
-        {card.note && (
-          <p className="text-[13px] leading-relaxed text-zinc-600 sm:text-sm">
-            {card.note}
-          </p>
-        )}
-
         {error && (
-          <p className="text-xs text-red-600" role="alert">
+          <p className="text-sm font-medium text-red-700" role="alert">
             {error}
           </p>
         )}
 
-        <footer className="mt-1 flex items-center justify-end text-xs text-zinc-500 transition group-hover:text-zinc-900 sm:text-[13px]">
+        <footer className="mt-1 flex items-center justify-end text-sm font-medium text-zinc-600 transition group-hover:text-zinc-900">
           <span className="inline-flex items-center gap-1">
             {submitting ? "Opening…" : "See products"}
-            <ArrowRightIcon className="h-3.5 w-3.5" />
+            <ArrowRightIcon className="h-4 w-4" />
           </span>
         </footer>
       </div>
