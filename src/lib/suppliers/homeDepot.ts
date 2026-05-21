@@ -198,7 +198,7 @@ export async function searchHomeDepot(query: string): Promise<SupplierProductRes
 
   try {
     const res = await cachedSerpFetch(url);
-    const data = await res.json();
+    const data = (await res.json()) as Record<string, unknown>;
 
     const rawProducts = extractHomeDepotProducts(data);
     if (rawProducts.length === 0) {
