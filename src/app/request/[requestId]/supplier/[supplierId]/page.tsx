@@ -20,6 +20,7 @@ import { notFound } from "next/navigation";
 import SiteFooter from "@/components/layout/SiteFooter";
 import SiteHeader from "@/components/layout/SiteHeader";
 import { getPrisma } from "@/lib/db.rsc";
+import BackToSearchLink, { buildSearchBackHref } from "./BackToSearchLink";
 import DeepSupplierDetail from "./DeepSupplierDetail";
 
 export const revalidate = 0;
@@ -32,12 +33,17 @@ type PageProps = {
     listingImage?: string;
     listingPrice?: string;
     listingUrl?: string;
+    fromThread?: string;
+    fromSearch?: string;
   }>;
 };
 
 export default async function PublicSupplierDetailPage(props: PageProps) {
   const { requestId, supplierId } = await props.params;
   if (!requestId || !supplierId) notFound();
+
+  const sp = props.searchParams ? await props.searchParams : undefined;
+  const backHref = buildSearchBackHref(sp?.fromThread, sp?.fromSearch);
 
   const prisma = getPrisma();
   const supplier = await prisma.supplier.findUnique({
@@ -55,11 +61,12 @@ export default async function PublicSupplierDetailPage(props: PageProps) {
   if (!supplier) notFound();
 
   return (
-    <Suspense fallback={<ShellWithSupplier supplier={supplier} />}>
+    <Suspense fallback={<ShellWithSupplier supplier={supplier} backHref={backHref} />}>
       <DeepSupplierDetail {...props} />
     </Suspense>
   );
 }
+
 
 type ShellSupplier = {
   name: string;
@@ -75,7 +82,13 @@ type ShellSupplier = {
  * the supplier hero (logo + name + address) so the buyer immediately knows
  * they clicked the right card, plus a product-section skeleton.
  */
-function ShellWithSupplier({ supplier }: { supplier: ShellSupplier }) {
+function ShellWithSupplier({
+  supplier,
+  backHref,
+}: {
+  supplier: ShellSupplier;
+  backHref: string | null;
+}) {
   const initials = supplier.name
     .replace(/[^\w\s]/g, "")
     .split(/\s+/)
@@ -88,8 +101,10 @@ function ShellWithSupplier({ supplier }: { supplier: ShellSupplier }) {
     <div className="flex min-h-screen flex-col bg-white">
       <SiteHeader />
 
-      <main className="flex-1 px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
+      <main className="flex-1 px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
         <div className="mx-auto w-full max-w-3xl">
+          {backHref && <BackToSearchLink href={backHref} />}
+
           {/* Real supplier hero — name, logo, address */}
           <div className="mb-6 flex items-start gap-4">
             {supplier.logoUrl ? (

@@ -102,8 +102,14 @@ export default function SupplierCard({
       if (!res.ok || !data?.ok) {
         throw new Error(data?.message || `HTTP ${res.status}`);
       }
+      // Carry through where we came from so the detail page can render a
+      // "← Back to search" link without having to reverse-lookup.
+      const backParams = new URLSearchParams({
+        fromThread: threadId,
+        fromSearch: searchId,
+      });
       router.push(
-        `/request/${encodeURIComponent(data.materialRequestId)}/supplier/${encodeURIComponent(card.supplierId)}`,
+        `/request/${encodeURIComponent(data.materialRequestId)}/supplier/${encodeURIComponent(card.supplierId)}?${backParams}`,
       );
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : "Couldn't open supplier";
