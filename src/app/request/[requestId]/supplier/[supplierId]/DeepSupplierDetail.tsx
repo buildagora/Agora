@@ -5,46 +5,31 @@ import { getPrisma } from "@/lib/db.rsc";
 import { categoryIdToLabel } from "@/lib/categoryIds";
 import { searchCapabilities } from "@/lib/search/capabilitySearch";
 import { getSearchMode } from "@/lib/search/getSearchMode";
+import { getPrimaryProcurementAction } from "@/lib/procurement/actions";
+import type { PurchaseOrderSourceType } from "@/lib/procurement/types";
 import { findSupplierSearchAdapter } from "@/lib/suppliers/registry";
 import { SUPPLIER_STATUS_TEXT } from "@/lib/suppliers/statusText";
 import type { SupplierProductResult } from "@/lib/suppliers/types";
 import BackToSearchLink, { buildSearchBackHref } from "./BackToSearchLink";
+import CreatePurchaseOrderDraftButton from "./CreatePurchaseOrderDraftButton";
+import SupplierDetailPurchaseOrderLayout from "./SupplierDetailPurchaseOrderLayout";
 import ImageWithFallback from "@/components/ImageWithFallback";
 
 /**
- * Wrapper that renders either an in-app Next Link (drill into a focused
- * listing on this same supplier page) OR an external `<a target="_blank">`
- * (open the retailer's product page directly). External-link mode is used
- * for big-box retailers where the buyer expects to go straight to the
- * retailer's site for stock and checkout.
+ * Broad listing tiles always drill into Agora (focused listing on this page).
+ * External supplier PDPs open only from the focused listing CTA, not from tiles.
  */
 function ProductOptionLink({
-  supplierId,
-  productUrl,
-  fallbackHref,
+  href,
   className,
   children,
 }: {
-  supplierId: string;
-  productUrl: string | null;
-  fallbackHref: string;
+  href: string;
   className?: string;
   children: React.ReactNode;
 }) {
-  if (isBigBoxSupplier(supplierId) && productUrl) {
-    return (
-      <a
-        href={productUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className={className}
-      >
-        {children}
-      </a>
-    );
-  }
   return (
-    <Link href={fallbackHref} className={className}>
+    <Link href={href} className={className}>
       {children}
     </Link>
   );
@@ -132,24 +117,6 @@ function availabilitySummary(r: {
     return "Out of stock";
   }
   return "Checking";
-}
-
-/**
- * Big-box retailers' adapters return real product pages on the retailer's
- * own site (homedepot.com, lowes.com). For those suppliers we want product
- * cards to open the retailer page directly — users have a familiar checkout
- * + inventory experience there. For everyone else, keep in-app drill-down.
- */
-const BIG_BOX_SUPPLIER_PREFIXES = ["home_depot", "lowes"];
-
-function isBigBoxSupplier(supplierId: string): boolean {
-  return BIG_BOX_SUPPLIER_PREFIXES.some((p) => supplierId.startsWith(p));
-}
-
-function bigBoxLabelForSupplier(supplierId: string): string | null {
-  if (supplierId.startsWith("home_depot")) return "Home Depot";
-  if (supplierId.startsWith("lowes")) return "Lowe's";
-  return null;
 }
 
 function statusBadgeClasses(status: string): string {
@@ -343,6 +310,16 @@ export default async function PublicSupplierDetailPage({
   const automatedProduct = automatedProductResults[0] ?? null;
 
   const hasAutomatedListings = automatedProductResults.length > 0;
+
+  const primaryAction = getPrimaryProcurementAction({
+    supplierId,
+    hasProductUrl: Boolean(listingUrl ?? automatedProduct?.productUrl),
+    hasAutomatedListing: hasAutomatedListings,
+    isExactMode: mode === "EXACT",
+  });
+
+  const purchaseOrderSourceType: PurchaseOrderSourceType =
+    listingTitle || automatedProduct ? "LISTING" : "MANUAL";
 
   const rows = materialRequest.recipients ?? [];
   const formatRecipient = (r: (typeof rows)[number]) => {
@@ -561,6 +538,7 @@ export default async function PublicSupplierDetailPage({
     title: string;
     imageUrl?: string | null;
     price?: string | null;
+    productUrl?: string | null;
   };
 
   const buildOptionHref = (opt: ProductOptionLinkData): string => {
@@ -569,6 +547,7 @@ export default async function PublicSupplierDetailPage({
     params.set("listingTitle", opt.title);
     if (opt.imageUrl) params.set("listingImage", opt.imageUrl);
     if (opt.price) params.set("listingPrice", opt.price);
+    if (opt.productUrl) params.set("listingUrl", opt.productUrl);
     return `/request/${materialRequest.id}/supplier/${supplierId}?${params.toString()}`;
   };
 
@@ -596,9 +575,20 @@ export default async function PublicSupplierDetailPage({
       ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapsQuery)}`
       : null;
 
+  const draftOriginalSearchText =
+    materialRequest.requestText.trim() || activeQuery;
+  const draftSourceListingUrl =
+    listingUrl ?? automatedProduct?.productUrl ?? null;
+
   return (
     <div className="min-h-screen bg-zinc-50 px-4 py-5 pb-12 sm:px-6 sm:py-6 lg:px-8">
-      <div className="mx-auto max-w-5xl space-y-4 sm:space-y-5">
+      <div className="mx-auto max-w-5xl space-y-4 sm:space-y-5 lg:max-w-7xl">
+        <SupplierDetailPurchaseOrderLayout
+          supplierName={r.supplierName}
+          productName={displayProductTitle}
+          originalSearchText={draftOriginalSearchText}
+          sourceListingUrl={draftSourceListingUrl}
+        >
         {backHref && <BackToSearchLink href={backHref} />}
         <p className="text-xs leading-relaxed text-zinc-500 sm:text-sm">
           Result for: &quot;{materialRequest.requestText.trim() || "—"}&quot;
@@ -724,19 +714,37 @@ export default async function PublicSupplierDetailPage({
           {mode !== "EXACT" && (
             broadProductOptions.length === 0 ? (
               <div className="mt-5 rounded-xl border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-600">
-                We do not have verified product listings for this supplier yet. Contact the supplier directly or check back as Agora verifies availability.
+                <p>
+                  We do not have verified product listings for this supplier yet.
+                  Contact the supplier directly or check back as Agora verifies
+                  availability.
+                </p>
+                {primaryAction.type !== "VIEW_SUPPLIER_PRODUCT" && (
+                  <CreatePurchaseOrderDraftButton
+                    requestId={materialRequest.id}
+                    supplierId={supplierId}
+                    materialRequestId={materialRequest.id}
+                    conversationId={selected.conversationId}
+                    sourceType={purchaseOrderSourceType}
+                    originalSearchText={draftOriginalSearchText}
+                    productName={displayProductTitle}
+                    sourceListingUrl={draftSourceListingUrl}
+                    label={primaryAction.label}
+                    description={primaryAction.description}
+                  />
+                )}
               </div>
             ) : (
             <div className="mt-5 grid gap-4 sm:grid-cols-2">
               {broadProductOptions.map((opt, i) => (
                 <ProductOptionLink
                   key={i}
-                  supplierId={supplierId}
-                  productUrl={(opt as { productUrl?: string | null }).productUrl ?? null}
-                  fallbackHref={buildOptionHref({
+                  href={buildOptionHref({
                     title: opt.title,
                     imageUrl: opt.imageUrl ?? null,
                     price: opt.price ?? null,
+                    productUrl:
+                      (opt as { productUrl?: string | null }).productUrl ?? null,
                   })}
                   className="group block rounded-xl border border-zinc-200 bg-white p-4 shadow-sm transition hover:border-zinc-300 hover:shadow-md"
                 >
@@ -777,15 +785,8 @@ export default async function PublicSupplierDetailPage({
                     {opt.price ?? priceDisplay}
                   </div>
 
-                  <p className="mt-2 inline-flex items-center gap-1 text-xs text-zinc-500">
-                    {isBigBoxSupplier(supplierId) &&
-                    (opt as { productUrl?: string | null }).productUrl
-                      ? `View on ${bigBoxLabelForSupplier(supplierId)}`
-                      : "View this option for more detail"}
-                    {isBigBoxSupplier(supplierId) &&
-                      (opt as { productUrl?: string | null }).productUrl && (
-                        <ExternalArrow className="h-3 w-3" />
-                      )}
+                  <p className="mt-2 text-xs text-zinc-500">
+                    View this option for more detail
                   </p>
                 </ProductOptionLink>
               ))}
@@ -835,7 +836,7 @@ export default async function PublicSupplierDetailPage({
                       : <>We&apos;re checking this exact item with {r.supplierName}. Pricing and availability update here once verified.</>}
                   </p>
 
-                  {isBigBoxSupplier(supplierId) &&
+                  {primaryAction.type === "VIEW_SUPPLIER_PRODUCT" &&
                     (listingUrl ?? automatedProduct?.productUrl) && (
                       <a
                         href={listingUrl ?? automatedProduct?.productUrl ?? "#"}
@@ -843,10 +844,25 @@ export default async function PublicSupplierDetailPage({
                         rel="noopener noreferrer"
                         className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-800"
                       >
-                        View on {bigBoxLabelForSupplier(supplierId)}
+                        {primaryAction.label}
                         <ExternalArrow className="h-3.5 w-3.5" />
                       </a>
                     )}
+
+                  {primaryAction.type !== "VIEW_SUPPLIER_PRODUCT" && (
+                    <CreatePurchaseOrderDraftButton
+                      requestId={materialRequest.id}
+                      supplierId={supplierId}
+                      materialRequestId={materialRequest.id}
+                      conversationId={selected.conversationId}
+                      sourceType={purchaseOrderSourceType}
+                      originalSearchText={draftOriginalSearchText}
+                      productName={displayProductTitle}
+                      sourceListingUrl={draftSourceListingUrl}
+                      label={primaryAction.label}
+                      description={primaryAction.description}
+                    />
+                  )}
 
                 </div>
               </div>
@@ -860,12 +876,11 @@ export default async function PublicSupplierDetailPage({
                     {relatedSupplierOptions.map((opt, i) => (
                       <ProductOptionLink
                         key={`${opt.title}-${opt.productUrl ?? i}`}
-                        supplierId={supplierId}
-                        productUrl={opt.productUrl ?? null}
-                        fallbackHref={buildOptionHref({
+                        href={buildOptionHref({
                           title: opt.title,
                           imageUrl: opt.imageUrl ?? null,
                           price: opt.price ?? null,
+                          productUrl: opt.productUrl ?? null,
                         })}
                         className="group block rounded-lg border border-zinc-200 bg-white p-3 shadow-sm transition hover:border-zinc-300 hover:shadow-md"
                       >
@@ -879,6 +894,9 @@ export default async function PublicSupplierDetailPage({
                         </h5>
                         <p className="mt-1 text-xs text-zinc-600">
                           {opt.price ?? "Pricing varies"}
+                        </p>
+                        <p className="mt-1.5 text-xs text-zinc-500">
+                          View this option for more detail
                         </p>
                       </ProductOptionLink>
                     ))}
@@ -913,6 +931,7 @@ export default async function PublicSupplierDetailPage({
             </div>
           </section>
         )}
+        </SupplierDetailPurchaseOrderLayout>
       </div>
     </div>
   );
