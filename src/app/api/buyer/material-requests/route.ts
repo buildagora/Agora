@@ -106,6 +106,37 @@ function haversineMiles(
 }
 
 /**
+ * Optional explicit WGS84 coordinates from the request body (e.g. chat search location).
+ * Returns null when omitted; "invalid" when present but out of range / non-finite.
+ */
+function parseExplicitCoordinates(
+  body: unknown
+): { latitude: number; longitude: number } | null | "invalid" {
+  if (!body || typeof body !== "object") return null;
+  const obj = body as Record<string, unknown>;
+  const hasLat = Object.prototype.hasOwnProperty.call(obj, "latitude");
+  const hasLng = Object.prototype.hasOwnProperty.call(obj, "longitude");
+  if (!hasLat && !hasLng) return null;
+
+  const lat = obj.latitude;
+  const lng = obj.longitude;
+  if (
+    typeof lat !== "number" ||
+    typeof lng !== "number" ||
+    !Number.isFinite(lat) ||
+    !Number.isFinite(lng) ||
+    lat < -90 ||
+    lat > 90 ||
+    lng < -180 ||
+    lng > 180
+  ) {
+    return "invalid";
+  }
+
+  return { latitude: lat, longitude: lng };
+}
+
+/**
  * Approximate request coordinates from city / region / country via Nominatim (US).
  * Returns null if lookup fails or location data is unusable.
  */
@@ -150,6 +181,10 @@ async function resolveRequestCoordinates(
  * Creates a material request and recipient rows for matched suppliers.
  * Supplier conversations are created for schema/FK only; no messages or supplier emails
  * (operator-assisted flow — operator notified via email).
+ *
+ * Optional body fields:
+ *   latitude, longitude — when both valid, used instead of IP + Nominatim geocoding
+ *   locationLabel — when explicit coordinates are used, stored as locationCity
  */
 export async function POST(request: NextRequest) {
   return withErrorHandling(async () => {
@@ -254,11 +289,31 @@ export async function POST(request: NextRequest) {
       locationCountry = "US";
     }
 
-    const requestCoords = await resolveRequestCoordinates(
-      locationCity,
-      locationRegion,
-      locationCountry
-    );
+    const explicitCoords = parseExplicitCoordinates(body);
+    if (explicitCoords === "invalid") {
+      return fail(
+        "BAD_REQUEST",
+        400,
+        "latitude and longitude must be finite numbers within WGS84 bounds"
+      );
+    }
+
+    const locationLabel =
+      typeof body.locationLabel === "string" && body.locationLabel.trim().length > 0
+        ? body.locationLabel.trim()
+        : null;
+
+    if (explicitCoords && locationLabel) {
+      locationCity = locationLabel;
+    }
+
+    const requestCoords =
+      explicitCoords ??
+      (await resolveRequestCoordinates(
+        locationCity,
+        locationRegion,
+        locationCountry
+      ));
 
     // Resolve target suppliers
     let targetSuppliers: Array<{ id: string; name: string }> = [];

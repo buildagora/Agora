@@ -9,8 +9,9 @@
  *   1. Verifies they own the chat thread + the search exists
  *   2. Creates a MaterialRequest (DIRECT mode to the chosen supplier) by
  *      forwarding to the existing /api/buyer/material-requests route — which
- *      already handles anonymous buyers, geocoding, supplier conversation
- *      creation, and the operator notification email
+ *      already handles anonymous buyers, supplier conversation creation, and the
+ *      operator notification email. Forwards search.location coordinates so
+ *      detail-page distance matches the search results cards.
  *   3. Returns the new materialRequestId so the client can navigate
  *
  * Body:    { supplierId: string }
@@ -120,6 +121,9 @@ export async function POST(
         requestText: search.query,
         sendMode: "DIRECT",
         supplierIds: [supplierId],
+        latitude: search.location.lat,
+        longitude: search.location.lng,
+        locationLabel: search.location.label,
       }),
     });
   } catch (err: any) {
