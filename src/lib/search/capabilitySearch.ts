@@ -23,12 +23,42 @@ function normalizeText(text: string): string {
     .trim();
 }
 
+const STOP_WORDS = new Set([
+  "a",
+  "an",
+  "and",
+  "are",
+  "at",
+  "be",
+  "buy",
+  "for",
+  "from",
+  "i",
+  "in",
+  "is",
+  "it",
+  "me",
+  "my",
+  "need",
+  "of",
+  "on",
+  "or",
+  "please",
+  "the",
+  "this",
+  "to",
+  "want",
+  "with",
+]);
+
 function meaningfulTerms(text: string): string[] {
-  return text
-    .trim()
-    .split(/\s+/)
-    .map((t) => t.trim())
-    .filter((t) => t.length >= 2);
+  const terms = new Set<string>();
+  for (const raw of text.trim().split(/\s+/)) {
+    const token = raw.trim().toLowerCase();
+    if (token.length < 3 || STOP_WORDS.has(token)) continue;
+    terms.add(token);
+  }
+  return [...terms];
 }
 
 /** True when the query is about metal roofing, metal panels, or common metal-roof accessories/tools. */
