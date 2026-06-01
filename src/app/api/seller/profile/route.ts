@@ -10,6 +10,7 @@ import { requireCurrentUserFromRequest } from "@/lib/auth/server";
 import { getPrisma } from "@/lib/db.server";
 import { z } from "zod";
 import { labelToCategoryId, categoryIdToLabel } from "@/lib/categoryIds";
+import { pickPrimaryCategoryId } from "@/lib/suppliers/categoryTaxonomy";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -162,6 +163,18 @@ export async function PATCH(request: NextRequest) {
           skipDuplicates: true, // Safety: skip if unique constraint violation
         });
       }
+
+      const primaryCategoryId = pickPrimaryCategoryId({
+        supplierId,
+        linkCategoryIds: normalizedCategoryIds,
+      });
+      await prisma.supplier.update({
+        where: { id: supplierId },
+        data: {
+          primaryCategoryId,
+          category: primaryCategoryId,
+        },
+      });
 
       // Optional: Also update User.categoriesServed for backwards compatibility (legacy mirror)
       // This is NOT used for feed, but helps with migration/backwards compatibility

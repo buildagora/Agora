@@ -145,7 +145,8 @@ async function main() {
           phone: s.phone || supplier.phone,
           email: s.email || supplier.email,
           onboarded: s.onboarded ?? supplier.onboarded,
-          category: s.categoryIds[0] ? categoryIdToLabel[s.categoryIds[0] as keyof typeof categoryIdToLabel] || "ROOFING" : supplier.category,
+          category: s.categoryIds[0] ?? supplier.category,
+          primaryCategoryId: s.categoryIds[0] ?? supplier.primaryCategoryId,
         },
         include: {
           categoryLinks: true,
@@ -163,7 +164,8 @@ async function main() {
           zip: s.zip,
           phone: s.phone,
           email: s.email,
-          category: s.categoryIds[0] ? categoryIdToLabel[s.categoryIds[0] as keyof typeof categoryIdToLabel] || "ROOFING" : "ROOFING",
+          category: s.categoryIds[0] ?? "roofing",
+          primaryCategoryId: s.categoryIds[0] ?? "roofing",
           onboarded: s.onboarded ?? false,
         },
         include: {

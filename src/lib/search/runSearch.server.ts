@@ -28,12 +28,17 @@ import "server-only";
 import { randomUUID } from "node:crypto";
 import { getPrisma } from "@/lib/db.server";
 import { classifyQueryToCategory } from "@/lib/ai/classifyQuery";
+import { normalizeToCanonicalCategoryId } from "@/lib/suppliers/categoryTaxonomy";
 import { findSupplierSearchAdapter } from "@/lib/suppliers/registry";
 import { haversineMiles } from "./distance";
 import {
   searchCapabilities,
   type CapabilitySearchResult,
 } from "./capabilitySearch";
+import {
+  resolveSupplierPrimaryCategoryId,
+  supplierPrimaryCategorySelect,
+} from "@/lib/suppliers/primaryCategory.server";
 import type { SearchResult, SupplierCard } from "./types";
 
 /**
@@ -242,9 +247,8 @@ async function loadClosestBigBoxCards(args: {
       longitude: { not: null },
     },
     select: {
-      id: true,
+      ...supplierPrimaryCategorySelect,
       name: true,
-      category: true,
       street: true,
       city: true,
       state: true,
@@ -274,7 +278,7 @@ async function loadClosestBigBoxCards(args: {
       card: {
         supplierId: s.id,
         name: s.name,
-        category: s.category,
+        categoryId: resolveSupplierPrimaryCategoryId(s),
         street: s.street,
         city: s.city,
         state: s.state,
@@ -339,9 +343,11 @@ export async function runSearch(args: {
   // an empty results page when the classifier guessed wrong).
   let matches: CapabilitySearchResult[];
   if (inferredCategory) {
-    const gated = rawMatches.filter(
-      (m) => m.categoryId.toLowerCase() === inferredCategory
-    );
+    const gated = rawMatches.filter((m) => {
+      const matchCat =
+        normalizeToCanonicalCategoryId(m.categoryId) ?? m.categoryId.toLowerCase();
+      return matchCat === inferredCategory;
+    });
     matches = gated.length > 0 ? gated : rawMatches;
   } else {
     matches = rawMatches;
@@ -375,9 +381,8 @@ export async function runSearch(args: {
       longitude: { not: null },
     },
     select: {
-      id: true,
+      ...supplierPrimaryCategorySelect,
       name: true,
-      category: true,
       street: true,
       city: true,
       state: true,
@@ -400,7 +405,7 @@ export async function runSearch(args: {
     capabilityCards.push({
       supplierId: s.id,
       name: s.name,
-      category: s.category,
+      categoryId: resolveSupplierPrimaryCategoryId(s),
       street: s.street,
       city: s.city,
       state: s.state,

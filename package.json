@@ -55,6 +55,7 @@
     "prisma:reinstall": "npm install && npm run db:generate",
     "backfill:seller-orgs": "node -r dotenv/config node_modules/.bin/tsx scripts/backfill-seller-orgs.ts dotenv_config_path=.env.local",
     "backfill:supplier-categories": "node -r dotenv/config node_modules/.bin/tsx scripts/backfill-supplier-categories.ts dotenv_config_path=.env.local",
+    "backfill:supplier-primary-category": "node -r dotenv/config node_modules/.bin/tsx scripts/backfill-supplier-primary-category.ts dotenv_config_path=.env.local",
     "pretest": "npm run guard:legacy",
     "prebuild": "npm run guard:legacy"
   },

@@ -8,6 +8,7 @@ import { requireServerEnv } from "@/lib/env";
 import { jsonOk, jsonError, withErrorHandling } from "@/lib/apiResponse";
 import { requireCurrentUserFromRequest } from "@/lib/auth/server";
 import { getPrisma } from "@/lib/db.server";
+import { normalizeToCanonicalCategoryId } from "@/lib/suppliers/categoryTaxonomy";
 
 // CRITICAL: Explicitly set nodejs runtime - Prisma cannot run in Edge runtime
 export const runtime = "nodejs";
@@ -29,19 +30,28 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const category = (searchParams.get("category") || "ROOFING").toUpperCase();
+    const rawCategory =
+      searchParams.get("categoryId") || searchParams.get("category") || "roofing";
+    const categoryId = normalizeToCanonicalCategoryId(rawCategory);
     const city = searchParams.get("city") || "Huntsville";
     const state = (searchParams.get("state") || "AL").toUpperCase();
 
+    if (!categoryId) {
+      return jsonError("BAD_REQUEST", "Invalid category", 400);
+    }
+
     const prisma = getPrisma();
     const suppliers = await prisma.supplier.findMany({
-      where: { category, city, state },
+      where: {
+        city,
+        state,
+        categoryLinks: {
+          some: { categoryId },
+        },
+      },
       orderBy: { name: "asc" },
     });
 
     return jsonOk({ suppliers });
   });
 }
-
-
-

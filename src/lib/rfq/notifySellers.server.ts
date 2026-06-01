@@ -114,20 +114,7 @@ export async function notifySellersOfNewRfq(
         },
       });
 
-      let supplierOrgIds: string[] = categoryLinks.map(link => link.supplierId);
-
-      // Legacy fallback: if no category links found, try to find suppliers by category label
-      if (supplierOrgIds.length === 0) {
-        const suppliersByLabel = await prisma.supplier.findMany({
-          where: {
-            category: rfq.category.toUpperCase(), // ROOFING, etc. (display/legacy uppercase form)
-          },
-          select: {
-            id: true,
-          },
-        });
-        supplierOrgIds = suppliersByLabel.map(s => s.id);
-      }
+      const supplierOrgIds: string[] = categoryLinks.map(link => link.supplierId);
 
       // For broadcast RFQs, we'll expand to all ACTIVE members below
       // Create placeholder list - actual expansion happens via SupplierMember lookup
@@ -206,20 +193,7 @@ export async function notifySellersOfNewRfq(
         },
       });
 
-      let supplierOrgIds: string[] = categoryLinks.map(link => link.supplierId);
-
-      // Legacy fallback: if no category links found, try to find suppliers by category label
-      if (supplierOrgIds.length === 0) {
-        const suppliersByLabel = await prisma.supplier.findMany({
-          where: {
-            category: rfq.category.toUpperCase(), // ROOFING, etc. (display/legacy uppercase form)
-          },
-          select: {
-            id: true,
-          },
-        });
-        supplierOrgIds = suppliersByLabel.map(s => s.id);
-      }
+      const supplierOrgIds: string[] = categoryLinks.map(link => link.supplierId);
 
       // Query all ACTIVE members for these supplier orgs
       memberships = await prisma.supplierMember.findMany({

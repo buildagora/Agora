@@ -7,7 +7,10 @@ export type MatchStatus = "likely" | "unlikely" | "unknown";
 export type SupplierCard = {
   supplierId: string;
   name: string;
-  category: string;
+  /** Canonical category id (e.g. roofing). */
+  categoryId: string;
+  /** @deprecated Pre-migration persisted searches may only have `category`. */
+  category?: string;
   street: string;
   city: string;
   state: string;

@@ -582,14 +582,16 @@ export async function signUpHandler(request: NextRequest): Promise<NextResponse<
             // NORMAL FLOW: Create new Supplier org (existing behavior)
             // Create supplier
             const supplierName = companyName?.trim() || fullName?.trim() || normalizedEmail;
-            const supplierCategory = normalizedCategoryIds.length > 0 
-              ? normalizedCategoryIds[0].toUpperCase() 
-              : "OTHER"; // Default category if none provided
-            
+            const primaryCategoryId =
+              normalizedCategoryIds.length > 0
+                ? normalizedCategoryIds[0]
+                : "tools_equipment";
+
             const supplier = await tx.supplier.create({
               data: {
                 name: supplierName,
-                category: supplierCategory,
+                category: primaryCategoryId,
+                primaryCategoryId,
                 street: "", // Placeholder - can be updated later
                 city: "", // Placeholder - can be updated later
                 state: "", // Placeholder - can be updated later
@@ -597,6 +599,11 @@ export async function signUpHandler(request: NextRequest): Promise<NextResponse<
                 email: normalizedEmail,
                 phone: phone?.trim() || null,
                 onboarded: false,
+                categoryLinks: {
+                  create: normalizedCategoryIds.map((categoryId) => ({
+                    categoryId,
+                  })),
+                },
               },
             });
 

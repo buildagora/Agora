@@ -9,6 +9,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getPrisma } from "@/lib/db.server";
 import { jsonError } from "@/lib/apiResponse";
+import {
+  resolveSupplierPrimaryCategoryId,
+  supplierPrimaryCategorySelect,
+} from "@/lib/suppliers/primaryCategory.server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -28,11 +32,10 @@ export async function GET(request: NextRequest) {
     const supplier = await prisma.supplier.findUnique({
       where: { id: supplierId },
       select: {
-        id: true,
+        ...supplierPrimaryCategorySelect,
         name: true,
         email: true,
         phone: true,
-        category: true,
       },
     });
 
@@ -40,7 +43,9 @@ export async function GET(request: NextRequest) {
       return jsonError("NOT_FOUND", "Supplier not found", 404);
     }
 
-    // Return supplier preview data (safe to expose publicly)
+    const primaryCategoryId = resolveSupplierPrimaryCategoryId(supplier);
+    const categoryIds = supplier.categoryLinks.map((l) => l.categoryId);
+
     return NextResponse.json({
       ok: true,
       supplier: {
@@ -48,7 +53,8 @@ export async function GET(request: NextRequest) {
         name: supplier.name,
         email: supplier.email,
         phone: supplier.phone,
-        category: supplier.category,
+        primaryCategoryId,
+        categoryIds,
       },
     });
   } catch (error) {

@@ -2,6 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { categoryIdToLabel, type CategoryId } from "@/lib/categoryIds";
+import { normalizeToCanonicalCategoryId } from "@/lib/suppliers/categoryTaxonomy";
 import type { SupplierCard as SupplierCardData } from "@/lib/search/types";
 
 type Confidence = "high" | "medium" | "low";
@@ -33,9 +35,17 @@ const LIVE_CATALOG_DISPLAY = {
   pillClass: "bg-sky-50 text-sky-700 ring-1 ring-sky-200",
 };
 
-function formatCategory(raw: string): string {
-  if (!raw) return "";
-  return raw
+function cardCategoryLabel(card: SupplierCardData): string {
+  const id =
+    card.categoryId ??
+    normalizeToCanonicalCategoryId(card.category ?? "") ??
+    card.category ??
+    "";
+  if (id in categoryIdToLabel) {
+    return categoryIdToLabel[id as CategoryId];
+  }
+  if (!id) return "";
+  return id
     .toLowerCase()
     .split("_")
     .filter(Boolean)
@@ -163,7 +173,7 @@ export default function SupplierCard({
               {card.name}
             </h3>
             <p className="mt-0.5 truncate text-[13px] text-zinc-600 sm:text-sm">
-              {formatCategory(card.category)}
+              {cardCategoryLabel(card)}
               {" · "}
               <span className="font-semibold text-zinc-900">
                 {card.distanceMiles.toFixed(1)} mi

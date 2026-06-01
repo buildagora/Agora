@@ -228,7 +228,10 @@ model Supplier {
   id        String   @id @default(cuid())
   name      String
   domain    String?
+  /// @deprecated Use primaryCategoryId + SupplierCategoryLink. Kept for SQL seed dumps; synced on backfill.
   category  String
+  /// Canonical marketplace category id (e.g. roofing). Source of truth for card labels and DIRECT material requests.
+  primaryCategoryId String?
   street    String
   city      String
   state     String
@@ -253,6 +256,7 @@ model Supplier {
   materialRequestRecipients MaterialRequestRecipient[]
 
   @@index([category])
+  @@index([primaryCategoryId])
   @@index([city, state])
 }
 

@@ -18,6 +18,8 @@ import { getCurrentUserFromRequest } from "@/lib/auth/server";
 import { ANON_COOKIE_NAME } from "@/lib/chat/types";
 import { loadThread } from "@/lib/chat/threads.server";
 import { loadSearch } from "@/lib/search/runSearch.server";
+import { categoryIdToLabel, type CategoryId } from "@/lib/categoryIds";
+import { normalizeToCanonicalCategoryId } from "@/lib/suppliers/categoryTaxonomy";
 import type { SearchResult } from "@/lib/search/types";
 
 export const dynamic = "force-dynamic";
@@ -59,7 +61,9 @@ export default async function SearchResultsPage({
   if (!search) notFound();
 
   const count = search.cards.length;
-  const categoryLabel = search.category ? formatCategory(search.category) : null;
+  const categoryLabel = search.category
+    ? inferredCategoryLabel(search.category)
+    : null;
   const subtitle = categoryLabel
     ? `${count} ${categoryLabel.toLowerCase()} ${count === 1 ? "supplier" : "suppliers"} within ${search.radiusMiles} miles of ${search.location.label}`
     : `${count} ${count === 1 ? "supplier" : "suppliers"} within ${search.radiusMiles} miles of ${search.location.label}`;
@@ -114,9 +118,12 @@ export default async function SearchResultsPage({
   );
 }
 
-function formatCategory(raw: string): string {
-  if (!raw) return "";
-  return raw
+function inferredCategoryLabel(raw: string): string {
+  const id = normalizeToCanonicalCategoryId(raw) ?? raw;
+  if (id in categoryIdToLabel) {
+    return categoryIdToLabel[id as CategoryId];
+  }
+  return id
     .toLowerCase()
     .split("_")
     .filter(Boolean)

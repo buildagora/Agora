@@ -12,6 +12,10 @@ import {
 } from "@/lib/operatorMaterialRequestEmail.server";
 import { trackServerEvent } from "@/lib/analytics/server";
 import { ANALYTICS_EVENTS } from "@/lib/analytics/events";
+import {
+  isCanonicalCategoryId,
+  normalizeToCanonicalCategoryId,
+} from "@/lib/suppliers/categoryTaxonomy";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -259,8 +263,17 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Normalize category ID
-    const normalizedCategoryId = categoryId.trim().toLowerCase();
+    const normalizedCategoryId =
+      normalizeToCanonicalCategoryId(categoryId) ??
+      categoryId.trim().toLowerCase();
+
+    if (!isCanonicalCategoryId(normalizedCategoryId)) {
+      return fail(
+        "BAD_REQUEST",
+        400,
+        `categoryId must be a canonical category (got "${categoryId}")`
+      );
+    }
 
     const headerStore = await headers();
     const rawCity = headerStore.get("x-vercel-ip-city");

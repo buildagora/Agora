@@ -24,6 +24,11 @@ import { readAnonymousId } from "@/lib/chat/anonId.server";
 import { loadThread } from "@/lib/chat/threads.server";
 import { loadSearch } from "@/lib/search/runSearch.server";
 import { getPrisma } from "@/lib/db.server";
+import { normalizeToCanonicalCategoryId } from "@/lib/suppliers/categoryTaxonomy";
+import {
+  resolveSupplierPrimaryCategoryId,
+  supplierPrimaryCategorySelect,
+} from "@/lib/suppliers/primaryCategory.server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -81,13 +86,10 @@ export async function POST(
     );
   }
 
-  // Resolve the supplier's category (the existing material-requests route
-  // requires categoryId, and the supplier's own category is the cleanest
-  // default since this is a DIRECT request to that specific supplier).
   const prisma = getPrisma();
   const supplier = await prisma.supplier.findUnique({
     where: { id: supplierId },
-    select: { id: true, category: true },
+    select: supplierPrimaryCategorySelect,
   });
   if (!supplier) {
     return NextResponse.json(
@@ -111,13 +113,19 @@ export async function POST(
   const cookieHeader = req.headers.get("cookie");
   if (cookieHeader) forwardHeaders.cookie = cookieHeader;
 
+  const inferredCategoryId = search.category
+    ? normalizeToCanonicalCategoryId(search.category)
+    : null;
+  const materialRequestCategoryId =
+    inferredCategoryId ?? resolveSupplierPrimaryCategoryId(supplier);
+
   let resp: Response;
   try {
     resp = await fetch(targetUrl, {
       method: "POST",
       headers: forwardHeaders,
       body: JSON.stringify({
-        categoryId: supplier.category,
+        categoryId: materialRequestCategoryId,
         requestText: search.query,
         sendMode: "DIRECT",
         supplierIds: [supplierId],

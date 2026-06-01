@@ -16,7 +16,8 @@ interface SupplierPreview {
   name: string;
   email: string | null;
   phone: string | null;
-  category: string | null;
+  primaryCategoryId?: string | null;
+  categoryIds?: string[];
 }
 
 function SellerSignUpPageInner() {
@@ -61,14 +62,17 @@ function SellerSignUpPageInner() {
             email: data.supplier.email || prev.email,
             phone: data.supplier.phone || "",
           }));
-          if (data.supplier.category) {
-            const raw = String(data.supplier.category).trim().toLowerCase();
-            const match = (Object.values(labelToCategoryId) as string[]).find(
-              (id) => id.toLowerCase() === raw
-            );
-            if (match) {
-              setCategoriesServed((prev) => (prev.includes(match) ? prev : [...prev, match]));
-            }
+          const seedIds: string[] =
+            data.supplier.categoryIds?.length > 0
+              ? data.supplier.categoryIds
+              : data.supplier.primaryCategoryId
+                ? [data.supplier.primaryCategoryId]
+                : [];
+          if (seedIds.length > 0) {
+            setCategoriesServed((prev) => {
+              const next = new Set([...prev, ...seedIds]);
+              return [...next];
+            });
           }
         } else {
           setPreviewError(data.message || "Supplier not found. Please check your signup link.");

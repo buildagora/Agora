@@ -177,7 +177,7 @@ async function main() {
 
     const categoryIds = Array.from(
       new Set(
-        [normCat(supplier.category), ...supplier.categoryLinks.map((l) => normCat(l.categoryId))].filter(Boolean)
+        supplier.categoryLinks.map((l) => normCat(l.categoryId)).filter(Boolean)
       )
     );
 
