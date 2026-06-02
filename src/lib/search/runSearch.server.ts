@@ -27,7 +27,10 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
 import { getPrisma } from "@/lib/db.server";
-import { classifyQueryToCategory } from "@/lib/ai/classifyQuery";
+import {
+  classifyQueryToCategory,
+  type KnownCategoryId,
+} from "@/lib/ai/classifyQuery";
 import { normalizeToCanonicalCategoryId } from "@/lib/suppliers/categoryTaxonomy";
 import { findSupplierSearchAdapter } from "@/lib/suppliers/registry";
 import { haversineMiles } from "./distance";
@@ -299,6 +302,107 @@ async function loadClosestBigBoxCards(args: {
     .map((x) => x.card);
 }
 
+function capabilityMatchesInferredCategory(
+  match: CapabilitySearchResult,
+  inferredCategory: KnownCategoryId
+): boolean {
+  const matchCat =
+    normalizeToCanonicalCategoryId(match.categoryId) ??
+    match.categoryId.toLowerCase();
+  return matchCat === inferredCategory;
+}
+
+/**
+ * Suppliers whose primary category or category links match the classifier when
+ * capability rows are noisy or missing — avoids falling back to raw substring hits.
+ */
+async function loadCategoryAlignedSupplierCards(args: {
+  inferredCategory: KnownCategoryId;
+  location: { label: string; lat: number; lng: number };
+  radiusMiles: number;
+  excludeIds: Set<string>;
+}): Promise<SupplierCard[]> {
+  const prisma = getPrisma();
+  const suppliers = await prisma.supplier.findMany({
+    where: {
+      latitude: { not: null },
+      longitude: { not: null },
+      OR: [
+        { primaryCategoryId: args.inferredCategory },
+        {
+          categoryLinks: {
+            some: { categoryId: args.inferredCategory },
+          },
+        },
+      ],
+    },
+    select: {
+      ...supplierPrimaryCategorySelect,
+      name: true,
+      street: true,
+      city: true,
+      state: true,
+      latitude: true,
+      longitude: true,
+      phone: true,
+      logoUrl: true,
+    },
+  });
+
+  const cards: SupplierCard[] = [];
+  for (const s of suppliers) {
+    if (args.excludeIds.has(s.id)) continue;
+    const distance = haversineMiles(
+      { lat: args.location.lat, lng: args.location.lng },
+      { lat: s.latitude!, lng: s.longitude! }
+    );
+    if (distance > args.radiusMiles) continue;
+    const categoryId = resolveSupplierPrimaryCategoryId(s);
+    cards.push({
+      supplierId: s.id,
+      name: s.name,
+      categoryId,
+      street: s.street,
+      city: s.city,
+      state: s.state,
+      phone: s.phone,
+      distanceMiles: Math.round(distance * 10) / 10,
+      note: `Listed in ${args.inferredCategory.replace(/_/g, " ")} — browse catalog for your product.`,
+      logoUrl: s.logoUrl ?? null,
+      kind: "capability",
+      confidence: "low",
+    });
+  }
+  return cards;
+}
+
+function rankSupplierCards(
+  cards: SupplierCard[],
+  args: {
+    inferredCategory: KnownCategoryId | null;
+    capabilityScoreBySupplier: Map<string, number>;
+  }
+): SupplierCard[] {
+  const rankScore = (card: SupplierCard): number => {
+    let score = 0;
+    if (
+      args.inferredCategory &&
+      card.categoryId === args.inferredCategory
+    ) {
+      score += 10_000;
+    }
+    const capScore = args.capabilityScoreBySupplier.get(card.supplierId) ?? 0;
+    score += capScore * 10;
+    if (card.kind === "live-catalog") {
+      score += 2_500;
+    }
+    score -= card.distanceMiles * 5;
+    return score;
+  };
+
+  return [...cards].sort((a, b) => rankScore(b) - rankScore(a));
+}
+
 function buildMatchNote(agg: SupplierAggregate): string | undefined {
   const productLines = Array.from(agg.productLines);
   const brands = Array.from(agg.brands);
@@ -338,94 +442,92 @@ export async function runSearch(args: {
   // we fall through unfiltered.
   const inferredCategory = await classifyQueryToCategory(args.query);
 
-  // 1b. Capability lookup against curated SupplierCapability table
-  const rawMatches = await searchCapabilities(args.query);
+  const productSearchQuery =
+    toProductSearchQuery(args.query) || args.query.trim();
 
-  // 1c. Gate by inferred category. If the gate would leave us with zero
-  // matches, fall back to unfiltered (better to show loose matches than
-  // an empty results page when the classifier guessed wrong).
+  const rawMatches = await searchCapabilities(productSearchQuery, {
+    originalQuery: args.query,
+  });
+
   let matches: CapabilitySearchResult[];
+  let useCategoryFallback = false;
+
   if (inferredCategory) {
-    const gated = rawMatches.filter((m) => {
-      const matchCat =
-        normalizeToCanonicalCategoryId(m.categoryId) ?? m.categoryId.toLowerCase();
-      return matchCat === inferredCategory;
-    });
-    matches = gated.length > 0 ? gated : rawMatches;
+    const gated = rawMatches.filter((m) =>
+      capabilityMatchesInferredCategory(m, inferredCategory)
+    );
+    if (gated.length > 0) {
+      matches = gated;
+    } else {
+      matches = [];
+      useCategoryFallback = true;
+    }
   } else {
     matches = rawMatches;
   }
 
   const bySupplier = aggregateBySupplier(matches);
-
-  if (bySupplier.size === 0) {
-    const empty: SearchResult = {
-      searchId,
-      threadId: args.threadId,
-      query: args.query,
-      category: inferredCategory,
-      location: args.location,
-      radiusMiles,
-      status: "complete",
-      cards: [],
-      createdAt,
-    };
-    await persistSearch({ threadId: args.threadId, search: empty });
-    return empty;
+  const capabilityScoreBySupplier = new Map<string, number>();
+  for (const [supplierId, agg] of bySupplier) {
+    capabilityScoreBySupplier.set(supplierId, agg.best.score);
   }
 
-  // 2. Load full supplier records (need coords for distance, logo for cards)
-  const prisma = getPrisma();
-  const supplierIds = Array.from(bySupplier.keys());
-  const suppliers = await prisma.supplier.findMany({
-    where: {
-      id: { in: supplierIds },
-      latitude: { not: null },
-      longitude: { not: null },
-    },
-    select: {
-      ...supplierPrimaryCategorySelect,
-      name: true,
-      street: true,
-      city: true,
-      state: true,
-      latitude: true,
-      longitude: true,
-      phone: true,
-      logoUrl: true,
-    },
-  });
+  let capabilityCards: SupplierCard[] = [];
 
-  // 3. Distance filter + assemble capability cards with confidence
-  const capabilityCards: SupplierCard[] = [];
-  for (const s of suppliers) {
-    const distance = haversineMiles(
-      { lat: args.location.lat, lng: args.location.lng },
-      { lat: s.latitude!, lng: s.longitude! }
-    );
-    if (distance > radiusMiles) continue;
-    const agg = bySupplier.get(s.id)!;
-    capabilityCards.push({
-      supplierId: s.id,
-      name: s.name,
-      categoryId: resolveSupplierPrimaryCategoryId(s),
-      street: s.street,
-      city: s.city,
-      state: s.state,
-      phone: s.phone,
-      distanceMiles: Math.round(distance * 10) / 10,
-      note: buildMatchNote(agg),
-      sourceUrl: agg.best.sourceUrl || undefined,
-      logoUrl: s.logoUrl ?? null,
-      kind: "capability",
-      confidence: scoreToConfidence(agg.best.score),
+  if (bySupplier.size > 0) {
+    const prisma = getPrisma();
+    const supplierIds = Array.from(bySupplier.keys());
+    const suppliers = await prisma.supplier.findMany({
+      where: {
+        id: { in: supplierIds },
+        latitude: { not: null },
+        longitude: { not: null },
+      },
+      select: {
+        ...supplierPrimaryCategorySelect,
+        name: true,
+        street: true,
+        city: true,
+        state: true,
+        latitude: true,
+        longitude: true,
+        phone: true,
+        logoUrl: true,
+      },
+    });
+
+    for (const s of suppliers) {
+      const distance = haversineMiles(
+        { lat: args.location.lat, lng: args.location.lng },
+        { lat: s.latitude!, lng: s.longitude! }
+      );
+      if (distance > radiusMiles) continue;
+      const agg = bySupplier.get(s.id)!;
+      capabilityCards.push({
+        supplierId: s.id,
+        name: s.name,
+        categoryId: resolveSupplierPrimaryCategoryId(s),
+        street: s.street,
+        city: s.city,
+        state: s.state,
+        phone: s.phone,
+        distanceMiles: Math.round(distance * 10) / 10,
+        note: buildMatchNote(agg),
+        sourceUrl: agg.best.sourceUrl || undefined,
+        logoUrl: s.logoUrl ?? null,
+        kind: "capability",
+        confidence: scoreToConfidence(agg.best.score),
+      });
+    }
+  } else if (inferredCategory && useCategoryFallback) {
+    capabilityCards = await loadCategoryAlignedSupplierCards({
+      inferredCategory,
+      location: args.location,
+      radiusMiles,
+      excludeIds: new Set(),
     });
   }
 
-  // 4. Append the closest big-box retailer per brand (Home Depot, Lowe's)
-  // within radius — their catalogs are too broad to model in
-  // SupplierCapability, but their adapter delivers real product results on
-  // the supplier detail page. Cap at 1 store per chain.
   const includedIds = new Set(capabilityCards.map((c) => c.supplierId));
   const liveCards = await loadClosestBigBoxCards({
     location: args.location,
@@ -433,11 +535,10 @@ export async function runSearch(args: {
     excludeIds: includedIds,
   });
 
-  // 5. Interleave all cards by distance — confidence is conveyed via the
-  // badge color, not the order. Cap to maxResults.
-  const cards: SupplierCard[] = [...capabilityCards, ...liveCards]
-    .sort((a, b) => a.distanceMiles - b.distanceMiles)
-    .slice(0, maxResults);
+  const cards = rankSupplierCards([...capabilityCards, ...liveCards], {
+    inferredCategory,
+    capabilityScoreBySupplier,
+  }).slice(0, maxResults);
 
   // 6. Pre-warm SerpAPI cache for the top N cards. The supplier detail page
   // calls the same adapter/searchSupplierSite path with the same query, so

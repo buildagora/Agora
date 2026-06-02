@@ -304,7 +304,10 @@ export default async function PublicSupplierDetailPage({
   // Transitional legacy support:
   // `capabilitySearch` comes from earlier manually-seeded inference.
   // Keep it only for search-mode inference + fallback option cards until full live-retrieval migration.
-  const legacyCapabilityInferenceMatches = await searchCapabilities(activeQuery);
+  const legacyCapabilityInferenceMatches = await searchCapabilities(
+    productSearchQuery || activeQuery,
+    { originalQuery: activeQuery }
+  );
 
   const mode = listingTitle
     ? "EXACT"

@@ -4,6 +4,13 @@
  */
 
 import { getPrisma } from "@/lib/db.server";
+import {
+  extractProductSearchTerms,
+  fieldMatchesSearchTerm,
+  isDimensionOrFractionToken,
+  normalizeSearchText,
+  toProductSearchQuery,
+} from "./productSearchQuery";
 
 export type CapabilitySearchResult = {
   supplierId: string;
@@ -15,50 +22,21 @@ export type CapabilitySearchResult = {
   score: number;
 };
 
-function normalizeText(text: string): string {
-  return String(text || "")
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+/** Terms safe for Prisma `contains` (no short substring false positives). */
+function dbLookupTerms(terms: string[]): string[] {
+  const out = new Set<string>();
+  for (const term of terms) {
+    const t = term.trim().toLowerCase();
+    if (!t) continue;
+    if (isDimensionOrFractionToken(t) || t.length >= 4 || t.includes(" ")) {
+      out.add(t);
+    }
+  }
+  return [...out];
 }
 
-const STOP_WORDS = new Set([
-  "a",
-  "an",
-  "and",
-  "are",
-  "at",
-  "be",
-  "buy",
-  "for",
-  "from",
-  "i",
-  "in",
-  "is",
-  "it",
-  "me",
-  "my",
-  "need",
-  "of",
-  "on",
-  "or",
-  "please",
-  "the",
-  "this",
-  "to",
-  "want",
-  "with",
-]);
-
-function meaningfulTerms(text: string): string[] {
-  const terms = new Set<string>();
-  for (const raw of text.trim().split(/\s+/)) {
-    const token = raw.trim().toLowerCase();
-    if (token.length < 3 || STOP_WORDS.has(token)) continue;
-    terms.add(token);
-  }
-  return [...terms];
+function termMatchesField(fieldNorm: string, term: string): boolean {
+  return fieldMatchesSearchTerm(fieldNorm, term);
 }
 
 /** True when the query is about metal roofing, metal panels, or common metal-roof accessories/tools. */
@@ -142,15 +120,14 @@ function fieldMatchRank(
   const meaningful = terms.filter((t) => t.length >= 2);
   if (
     meaningful.length > 0 &&
-    meaningful.every((t) => fieldNorm.includes(normalizeText(t)))
+    meaningful.every((t) => termMatchesField(fieldNorm, t))
   ) {
     return 3;
   }
 
   let hits = 0;
   for (const t of meaningful) {
-    const tn = normalizeText(t);
-    if (tn.length >= 2 && fieldNorm.includes(tn)) hits++;
+    if (termMatchesField(fieldNorm, t)) hits++;
   }
   if (hits >= 2) return 2;
   if (hits === 1) return 1;
@@ -184,21 +161,63 @@ function compareCandidates(
   return bTime - aTime;
 }
 
+function recordMatchesProductIntent(
+  fields: {
+    plNorm: string;
+    subNorm: string;
+    brandNorm: string;
+    notesNorm: string;
+    categoryNorm: string;
+  },
+  terms: string[],
+  normalizedQuery: string
+): boolean {
+  if (terms.length === 0) return false;
+
+  const allFields = [
+    fields.plNorm,
+    fields.subNorm,
+    fields.brandNorm,
+    fields.notesNorm,
+    fields.categoryNorm,
+  ];
+
+  if (
+    normalizedQuery.length >= 4 &&
+    allFields.some((f) => f.includes(normalizedQuery))
+  ) {
+    return true;
+  }
+
+  return terms.some((term) =>
+    allFields.some((f) => termMatchesField(f, term))
+  );
+}
+
 export async function searchCapabilities(
-  query: string
+  query: string,
+  options?: { originalQuery?: string }
 ): Promise<CapabilitySearchResult[]> {
   const prisma = getPrisma();
 
-  const normalizedQuery = normalizeText(query);
-  const terms = meaningfulTerms(normalizedQuery);
-  if (terms.length === 0) {
+  const productPhrase = toProductSearchQuery(query) || query.trim();
+  const normalizedQuery = normalizeSearchText(productPhrase);
+  const terms = extractProductSearchTerms(query, {
+    originalQuery: options?.originalQuery,
+  });
+  const lookupTerms = dbLookupTerms(terms);
+
+  if (lookupTerms.length === 0 && !normalizedQuery) {
     return [];
   }
+
   const metalIntent = isMetalRoofingIntent(normalizedQuery);
+
+  const whereTerms = lookupTerms.length > 0 ? lookupTerms : normalizedQuery ? [normalizedQuery] : [];
 
   const matches = await prisma.supplierCapability.findMany({
     where: {
-      OR: terms.flatMap((term) => [
+      OR: whereTerms.flatMap((term) => [
         { productLine: { contains: term, mode: "insensitive" as const } },
         { subcategory: { contains: term, mode: "insensitive" as const } },
         { brand: { contains: term, mode: "insensitive" as const } },
@@ -209,22 +228,30 @@ export async function searchCapabilities(
     orderBy: { createdAt: "desc" },
   });
 
-  // Keep both product-line rows AND broader capability rows.
-  // Product-line matches remain strongest, but brand/subcategory/category rows
-  // act as fallback evidence for suppliers that require manual verification.
-  const capabilities = matches;
+  const capabilities = matches.filter((record) => {
+    const plNorm = normalizeSearchText(String((record as any).productLine || ""));
+    const subNorm = normalizeSearchText(record.subcategory);
+    const brandNorm = normalizeSearchText(record.brand);
+    const notesNorm = normalizeSearchText(String((record as any).notes || ""));
+    const categoryNorm = normalizeSearchText(String((record as any).categoryId || ""));
+
+    return recordMatchesProductIntent(
+      { plNorm, subNorm, brandNorm, notesNorm, categoryNorm },
+      terms.length > 0 ? terms : whereTerms,
+      normalizedQuery
+    );
+  });
 
   const scored = capabilities.map((record) => {
     let score = 0;
 
     const categoryId = String((record as any).categoryId || "");
-    const plNorm = normalizeText(String((record as any).productLine || ""));
+    const plNorm = normalizeSearchText(String((record as any).productLine || ""));
     const hasProductLine = plNorm.length > 0;
-    const subNorm = normalizeText(record.subcategory);
-    const brandNorm = normalizeText(record.brand);
-    const notesNorm = normalizeText(String((record as any).notes || ""));
+    const subNorm = normalizeSearchText(record.subcategory);
+    const brandNorm = normalizeSearchText(record.brand);
+    const notesNorm = normalizeSearchText(String((record as any).notes || ""));
 
-    // 1) productLine — strongest signal (eligibility already guarantees non-empty productLine)
     if (plNorm === normalizedQuery) {
       score += 42;
     } else if (
@@ -237,16 +264,14 @@ export async function searchCapabilities(
     }
 
     for (const term of terms) {
-      const t = normalizeText(term);
-      if (!t) continue;
-      if (plNorm === t) {
+      if (!term) continue;
+      if (plNorm === term) {
         score += 22;
-      } else if (plNorm.includes(t)) {
+      } else if (termMatchesField(plNorm, term)) {
         score += 14;
       }
     }
 
-    // 2) subcategory — second (e.g. Metal Roofing + productLine Corrugated Panels)
     if (subNorm === normalizedQuery) {
       score += 26;
     } else if (
@@ -259,32 +284,28 @@ export async function searchCapabilities(
     }
 
     for (const term of terms) {
-      const t = normalizeText(term);
-      if (!t) continue;
-      if (subNorm === t) {
+      if (!term) continue;
+      if (subNorm === term) {
         score += 14;
-      } else if (subNorm.includes(t)) {
+      } else if (termMatchesField(subNorm, term)) {
         score += 9;
       }
     }
 
-    // 3) brand — third (weakened if no productLine)
     if (brandNorm === normalizedQuery) {
       score += hasProductLine ? 16 : 6;
     }
 
     for (const term of terms) {
-      const t = normalizeText(term);
-      if (!t) continue;
+      if (!term) continue;
 
-      if (brandNorm === t) {
+      if (brandNorm === term) {
         score += hasProductLine ? 12 : 4;
-      } else if (brandNorm.includes(t)) {
+      } else if (termMatchesField(brandNorm, term)) {
         score += hasProductLine ? 5 : 2;
       }
     }
 
-    // 4) notes — lightest
     if (notesNorm.length > 0) {
       if (
         normalizedQuery.length >= 5 &&
@@ -294,8 +315,7 @@ export async function searchCapabilities(
       } else {
         let noteHits = 0;
         for (const term of terms) {
-          const tn = normalizeText(term);
-          if (tn.length >= 3 && notesNorm.includes(tn)) noteHits++;
+          if (termMatchesField(notesNorm, term)) noteHits++;
         }
         score += Math.min(noteHits, 2);
       }
@@ -334,7 +354,6 @@ export async function searchCapabilities(
     rowsBySupplier.set(r.supplierId, list);
   }
 
-  /** Supplier order follows first appearance in global rank (best row per supplier first). */
   const supplierOrder: string[] = [];
   const seenSupplierOrder = new Set<string>();
   for (const r of ranked) {
@@ -348,11 +367,11 @@ export async function searchCapabilities(
 
   function rowUniquenessKey(r: (typeof scored)[number]): string {
     return [
-      normalizeText(String(r.brand ?? "")),
-      normalizeText(
+      normalizeSearchText(String(r.brand ?? "")),
+      normalizeSearchText(
         String((r as { productLine?: string | null }).productLine ?? "")
       ),
-      normalizeText(String(r.subcategory ?? "")),
+      normalizeSearchText(String(r.subcategory ?? "")),
     ].join("\u0001");
   }
 

@@ -37,6 +37,8 @@
     "test:rfqs-delete": "tsx scripts/test-rfqs-delete.ts",
     "test:dashboard-rfq-source": "tsx scripts/test-dashboard-rfq-source.ts",
     "test:auth": "tsx scripts/test-auth-smoke.ts",
+    "test:search-relevance": "tsx src/lib/search/__tests__/productSearchQuery.test.ts",
+    "debug:search-relevance": "tsx scripts/debug-search-relevance.ts",
     "test:rfq-email": "node -r dotenv/config node_modules/.bin/tsx scripts/test-rfq-email-smoke.ts dotenv_config_path=.env.local",
     "test:bid-notify": "node -r dotenv/config node_modules/.bin/tsx scripts/test-bid-notify-smoke.ts dotenv_config_path=.env.local",
     "test:bid-flow": "node -r dotenv/config node_modules/.bin/tsx scripts/test-bid-notify-smoke.ts dotenv_config_path=.env.local",
