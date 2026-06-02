@@ -35,6 +35,7 @@ import {
   searchCapabilities,
   type CapabilitySearchResult,
 } from "./capabilitySearch";
+import { toProductSearchQuery } from "./productSearchQuery";
 import {
   resolveSupplierPrimaryCategoryId,
   supplierPrimaryCategorySelect,
@@ -173,6 +174,8 @@ async function prewarmSupplierSearchCache(
 ): Promise<void> {
   if (cards.length === 0 || !query.trim()) return;
 
+  const productSearchQuery = toProductSearchQuery(query);
+
   // Need supplier domains for any non-adapter card. One query covers all.
   const prisma = getPrisma();
   const supplierDomains = new Map<string, string | null>();
@@ -191,7 +194,7 @@ async function prewarmSupplierSearchCache(
       try {
         const adapter = findSupplierSearchAdapter(card.supplierId);
         if (adapter) {
-          await adapter.search(query);
+          await adapter.search(productSearchQuery);
           return;
         }
         const domain = supplierDomains.get(card.supplierId);
@@ -200,7 +203,7 @@ async function prewarmSupplierSearchCache(
           "@/lib/suppliers/searchSupplierSite"
         );
         await searchSupplierSite({
-          query,
+          query: productSearchQuery,
           domain,
           supplierIds: [card.supplierId],
           source: "GENERIC",

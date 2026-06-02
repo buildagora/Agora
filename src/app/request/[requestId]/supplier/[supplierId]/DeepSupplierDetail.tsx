@@ -4,6 +4,7 @@ import { Clock, MapPin, Phone } from "lucide-react";
 import { getPrisma } from "@/lib/db.rsc";
 import { categoryIdToLabel } from "@/lib/categoryIds";
 import { searchCapabilities } from "@/lib/search/capabilitySearch";
+import { toProductSearchQuery } from "@/lib/search/productSearchQuery";
 import { getSearchMode } from "@/lib/search/getSearchMode";
 import { findSupplierSearchAdapter } from "@/lib/suppliers/registry";
 import { SUPPLIER_STATUS_TEXT } from "@/lib/suppliers/statusText";
@@ -298,6 +299,7 @@ export default async function PublicSupplierDetailPage({
 
   const activeQuery =
     (queryOverride || materialRequest.requestText || "").trim();
+  const productSearchQuery = toProductSearchQuery(activeQuery);
 
   // Transitional legacy support:
   // `capabilitySearch` comes from earlier manually-seeded inference.
@@ -325,14 +327,14 @@ export default async function PublicSupplierDetailPage({
   const adapter = findSupplierSearchAdapter(supplierId);
 
   if (adapter) {
-    automatedProductResults = (await adapter.search(activeQuery)).filter(
+    automatedProductResults = (await adapter.search(productSearchQuery)).filter(
       (p) => p.supplierId === supplierId,
     );
   } else if (supplierDomain) {
     const { searchSupplierSite } = await import("@/lib/suppliers/searchSupplierSite");
 
     automatedProductResults = await searchSupplierSite({
-      query: activeQuery,
+      query: productSearchQuery,
       domain: supplierDomain,
       supplierIds: [supplierId],
       source: "GENERIC",
