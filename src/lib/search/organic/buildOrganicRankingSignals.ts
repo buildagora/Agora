@@ -7,6 +7,8 @@ function classificationSignal(resultType: SearchResultType): string | null {
       return "product_page";
     case "CATEGORY_PAGE":
       return "category_page";
+    case "BRAND_PAGE":
+      return "brand_page";
     case "SEARCH_PAGE":
       return "search_page";
     case "HOMEPAGE":

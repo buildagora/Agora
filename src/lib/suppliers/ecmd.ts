@@ -1,11 +1,5 @@
-import { searchSupplierSite } from "./searchSupplierSite";
+import { searchSupplierDiscoveryForPrefix } from "./resolveSupplierDiscovery";
 
 export async function searchEcmd(query: string) {
-  return searchSupplierSite({
-    query,
-    domain: "ecmd.com",
-    supplierIds: ["ecmd_hsv"],
-    source: "ECMD",
-    logLabel: "East Coast Metal Distributors",
-  });
+  return searchSupplierDiscoveryForPrefix("ecmd", query, ["ecmd_hsv"]);
 }

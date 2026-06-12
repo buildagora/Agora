@@ -1,11 +1,5 @@
-import { searchSupplierSite } from "./searchSupplierSite";
+import { searchSupplierDiscoveryForPrefix } from "./resolveSupplierDiscovery";
 
 export async function searchMingledorffs(query: string) {
-  return searchSupplierSite({
-    query,
-    domain: "mingledorffs.com",
-    supplierIds: ["mingledorffs_hsv"],
-    source: "MINGLEDORFFS",
-    logLabel: "Mingledorff's",
-  });
+  return searchSupplierDiscoveryForPrefix("mingledorffs", query, ["mingledorffs_hsv"]);
 }

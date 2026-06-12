@@ -2,6 +2,7 @@ import { getPrisma } from "../src/lib/db.server";
 
 const SUPPLIER_DOMAINS: Record<string, string> = {
   // Local verified domains not yet in prod
+  abc_supply_hsv: "abcsupply.com",
   "84_lumber_mad": "84lumber.com",
   "acme_brick_madison": "acmebrick.com",
   "baker_hsv": "bakerdist.com",
@@ -36,6 +37,7 @@ const SUPPLIER_DOMAINS: Record<string, string> = {
   "metal_supermarkets_hsv": "metalsupermarkets.com",
   "siteone_hsv": "siteone.com",
   "siteone_north_hsv": "siteone.com",
+  cmn90dbjr000404ldzhcsquav: "qxo.com",
   "sunbelt_hsv": "sunbeltrentals.com",
   "sw_auto_finishes": "sherwin-williams.com",
   "sw_commercial_meridian": "sherwin-williams.com",

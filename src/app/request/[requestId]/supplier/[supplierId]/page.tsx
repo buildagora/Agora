@@ -29,7 +29,8 @@ export const revalidate = 0;
 type PageProps = {
   params: Promise<{ requestId: string; supplierId: string }>;
   searchParams?: Promise<{
-    q?: string;
+    brand?: string;
+    category?: string;
     listingTitle?: string;
     listingImage?: string;
     listingPrice?: string;
@@ -103,7 +104,7 @@ function ShellWithSupplier({
       <SiteHeader />
 
       <main className="flex-1 px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
-        <div className="mx-auto w-full max-w-3xl">
+        <div className="mx-auto w-full max-w-6xl">
           {backHref && <BackToSearchLink href={backHref} />}
 
           {/* Real supplier hero — name, logo, address */}

@@ -24,6 +24,17 @@ export const ANALYTICS_EVENTS = {
   search_submitted: "search_submitted",
   request_created: "request_created",
   results_viewed: "results_viewed",
+  storefront_viewed: "storefront_viewed",
+  storefront_product_card_viewed: "storefront_product_card_viewed",
+  storefront_product_detail_viewed: "storefront_product_detail_viewed",
+  storefront_category_clicked: "storefront_category_clicked",
+  storefront_brand_clicked: "storefront_brand_clicked",
+  storefront_filter_applied: "storefront_filter_applied",
+  storefront_call_clicked: "storefront_call_clicked",
+  storefront_directions_clicked: "storefront_directions_clicked",
+  storefront_website_clicked: "storefront_website_clicked",
+  storefront_load_more_clicked: "storefront_load_more_clicked",
+  storefront_image_fallback: "storefront_image_fallback",
 } as const;
 
 export type AnalyticsEventName = (typeof ANALYTICS_EVENTS)[keyof typeof ANALYTICS_EVENTS];

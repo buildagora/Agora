@@ -1,6 +1,7 @@
 export const SUPPLIER_STATUS_TEXT = {
   inStock: "In stock",
   carriesThis: "Carries this",
+  likelyCarries: "Likely carries",
   checkingAvailability: "Checking availability",
   outOfStock: "Out of stock",
   catalogMatch: "Catalog match",

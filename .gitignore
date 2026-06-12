@@ -53,4 +53,6 @@ dev.db
 
 # local dev caches: SerpAPI responses, pg_dump artifacts, anything in scripts/cache
 scripts/cache/
+scripts/pilot/browser-extraction/output/
+scripts/pilot/browser-extraction/artifacts/
 *.dump

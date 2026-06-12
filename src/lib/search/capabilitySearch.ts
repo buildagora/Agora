@@ -22,6 +22,15 @@ export type CapabilitySearchResult = {
   score: number;
 };
 
+export type CapabilitySearchOptions = {
+  originalQuery?: string;
+  /** When set, scopes DB query and row cap to this supplier. */
+  supplierId?: string;
+};
+
+export const CAPABILITY_MIN_SCORE = 5;
+export const CAPABILITY_MAX_ROWS_PER_SUPPLIER = 4;
+
 /** Terms safe for Prisma `contains` (no short substring false positives). */
 function dbLookupTerms(terms: string[]): string[] {
   const out = new Set<string>();
@@ -196,9 +205,10 @@ function recordMatchesProductIntent(
 
 export async function searchCapabilities(
   query: string,
-  options?: { originalQuery?: string }
+  options?: CapabilitySearchOptions
 ): Promise<CapabilitySearchResult[]> {
   const prisma = getPrisma();
+  const supplierIdFilter = options?.supplierId?.trim() || undefined;
 
   const productPhrase = toProductSearchQuery(query) || query.trim();
   const normalizedQuery = normalizeSearchText(productPhrase);
@@ -217,6 +227,7 @@ export async function searchCapabilities(
 
   const matches = await prisma.supplierCapability.findMany({
     where: {
+      ...(supplierIdFilter ? { supplierId: supplierIdFilter } : {}),
       OR: whereTerms.flatMap((term) => [
         { productLine: { contains: term, mode: "insensitive" as const } },
         { subcategory: { contains: term, mode: "insensitive" as const } },
@@ -344,7 +355,7 @@ export async function searchCapabilities(
   });
 
   const ranked = scored
-    .filter((r) => r.score >= 5)
+    .filter((r) => r.score >= CAPABILITY_MIN_SCORE)
     .sort((a, b) => compareCandidates(a, b));
 
   const rowsBySupplier = new Map<string, (typeof scored)[number][]>();
@@ -354,16 +365,21 @@ export async function searchCapabilities(
     rowsBySupplier.set(r.supplierId, list);
   }
 
-  const supplierOrder: string[] = [];
-  const seenSupplierOrder = new Set<string>();
-  for (const r of ranked) {
-    if (!seenSupplierOrder.has(r.supplierId)) {
-      seenSupplierOrder.add(r.supplierId);
-      supplierOrder.push(r.supplierId);
-    }
-  }
-
-  const MAX_ROWS_PER_SUPPLIER = 4;
+  const supplierOrder: string[] = supplierIdFilter
+    ? rowsBySupplier.has(supplierIdFilter)
+      ? [supplierIdFilter]
+      : []
+    : (() => {
+        const order: string[] = [];
+        const seenSupplierOrder = new Set<string>();
+        for (const r of ranked) {
+          if (!seenSupplierOrder.has(r.supplierId)) {
+            seenSupplierOrder.add(r.supplierId);
+            order.push(r.supplierId);
+          }
+        }
+        return order;
+      })();
 
   function rowUniquenessKey(r: (typeof scored)[number]): string {
     return [
@@ -381,7 +397,7 @@ export async function searchCapabilities(
     const seenKey = new Set<string>();
     let kept = 0;
     for (const r of supplierRows) {
-      if (kept >= MAX_ROWS_PER_SUPPLIER) break;
+      if (kept >= CAPABILITY_MAX_ROWS_PER_SUPPLIER) break;
       const key = rowUniquenessKey(r);
       if (seenKey.has(key)) continue;
       seenKey.add(key);

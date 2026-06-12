@@ -32,6 +32,13 @@ export type SupplierCard = {
    * visual distinction.
    */
   confidence?: "high" | "medium" | "low";
+  /** Phase 7A — router live extraction evidence (optional metadata). */
+  liveEvidence?: boolean;
+  liveResultCount?: number;
+  liveFinalStrategyUsed?: string;
+  liveTopProductTitle?: string;
+  liveTopProductUrl?: string;
+  liveTopProductImageUrl?: string;
 };
 
 export type SearchResult = {

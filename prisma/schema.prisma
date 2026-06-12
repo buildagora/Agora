@@ -254,6 +254,7 @@ model Supplier {
   contacts                  SupplierContact[]
   claimRequests             SupplierClaimRequest[]
   materialRequestRecipients MaterialRequestRecipient[]
+  fingerprint               SupplierFingerprint?
 
   @@index([category])
   @@index([primaryCategoryId])
@@ -513,4 +514,139 @@ model AnalyticsEvent {
   @@index([region])
   @@index([city])
   @@index([city, createdAt])
+}
+
+// --- Supplier fingerprinting (Phase 0: facts only; strategy derived by router) ---
+
+enum SupplierPlatform {
+  SHOPIFY
+  MAGENTO
+  HYBRIS
+  BIGCOMMERCE
+  WOOCOMMERCE
+  CONSTRUCTOR
+  BLOOMREACH
+  SLI
+  COVEO
+  ALGOLIA
+  CUSTOM_COMMERCE
+  UNKNOWN
+}
+
+enum PlatformAccessStatus {
+  NOT_APPLICABLE
+  UNKNOWN
+  ACCESSIBLE
+  PUBLIC_ANONYMOUS
+  REQUIRES_AUTH
+  REQUIRES_CONTRACT
+  BINDING_INCOMPLETE
+  PROBE_FAILED
+  BLOCKED
+}
+
+enum PublicApiAccessStatus {
+  NOT_PROBED
+  NOT_FOUND
+  ACCESSIBLE
+  REQUIRES_AUTH
+  BLOCKED
+}
+
+enum RenderingType {
+  SERVER_RENDERED
+  SPA
+  HYBRID
+  UNKNOWN
+}
+
+enum AntiBotRisk {
+  LOW
+  MEDIUM
+  HIGH
+  HARD_BLOCK
+  UNKNOWN
+}
+
+enum DemandPriority {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+  DEPRIORITIZED
+}
+
+enum ExtractionStrategy {
+  PLATFORM_API
+  PUBLIC_API
+  SCHEMA_OR_SITEMAP
+  HTML_SCRAPE
+  PLAYWRIGHT
+  ANTI_BOT_EVALUATION
+  SERP_PRODUCT_ENGINE
+  SERP_SITE_ORGANIC
+  PROBABILISTIC_CATEGORY_PROFILE
+  NONE
+}
+
+enum FingerprintStatus {
+  PENDING
+  SUCCESS
+  PARTIAL
+  FAILED
+  STALE
+}
+
+/// Facts discovered by the fingerprint engine. Router decisions are not stored here.
+model SupplierFingerprint {
+  id         String   @id @default(cuid())
+  supplierId String   @unique
+  supplier   Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+
+  // Detection
+  canonicalDomain               String?
+  detectedPlatform              SupplierPlatform @default(UNKNOWN)
+  platformDetectionConfidence   Float?
+  platformDetectionSource       String?
+
+  // Platform access (detection ≠ accessibility)
+  platformBindingId    String?
+  platformBindingValid Boolean              @default(false)
+  platformAccessStatus PlatformAccessStatus @default(UNKNOWN)
+
+  // Public API
+  hasPublicApi            Boolean?
+  publicApiAccessStatus   PublicApiAccessStatus @default(NOT_PROBED)
+  publicApiEndpoint       String?
+
+  // Structured data, rendering, anti-bot
+  hasSchemaMarkup Boolean?
+  hasSitemap      Boolean?
+  sitemapUrls     Json?
+  renderingType   RenderingType @default(UNKNOWN)
+  isSPA           Boolean?
+  antiBotRisk     AntiBotRisk   @default(UNKNOWN)
+
+  // Demand signals
+  demandPriority DemandPriority @default(MEDIUM)
+  demandScore    Int?
+
+  // Legacy routing intent (fact from backfill, consumed by router)
+  allowSerpFallback Boolean @default(false)
+
+  // Lifecycle / audit inputs
+  fingerprintStatus     FingerprintStatus @default(PENDING)
+  lastFingerprintedAt   DateTime?
+  legacySnapshot        Json?
+  notes                 String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([canonicalDomain])
+  @@index([detectedPlatform])
+  @@index([platformAccessStatus])
+  @@index([demandPriority])
+  @@index([fingerprintStatus])
+  @@index([allowSerpFallback])
 }

@@ -1,6 +1,7 @@
 import type { SupplierProductResult, SupplierProductSource } from "./types";
 import type { SupplierAdapterPrefix } from "./supplierAdapterPrefixes";
 import { SUPPLIER_ADAPTER_PREFIXES } from "./supplierAdapterPrefixes";
+import { SUPPLIER_SITE_SEARCH_CONFIG } from "./supplierSiteSearchConfig";
 import { searchAbcSupply } from "./abcSupply";
 import { searchBaker } from "./baker";
 import { searchEcmd } from "./ecmd";
@@ -53,27 +54,12 @@ export const supplierSearchRegistry = {
   ecmd: searchEcmd,
 } satisfies Record<SupplierAdapterPrefix, SupplierSearchFn>;
 
-const supplierAdapterApiSource = {
-  home_depot: "HOME_DEPOT",
-  lowes: "LOWES",
-  abc_supply: "ABC_SUPPLY",
-  ferguson: "FERGUSON",
-  grainger: "GRAINGER",
-  cmn90dbjr000404ldzhcsquav: "QXO",
-  srs: "SRS",
-  gulfeagle: "GULFEAGLE",
-  lansing: "LANSING",
-  baker: "BAKER",
-  johnstone: "JOHNSTONE",
-  lennox: "LENNOX",
-  ma_supply: "MA_SUPPLY",
-  mingledorffs: "MINGLEDORFFS",
-  re_michel: "RE_MICHEL",
-  shearer: "SHEARER",
-  trane: "TRANE",
-  wittichen: "WITTICHEN",
-  ecmd: "ECMD",
-} as const satisfies Record<SupplierAdapterPrefix, SupplierProductSource>;
+const supplierAdapterApiSource = Object.fromEntries(
+  (Object.keys(SUPPLIER_SITE_SEARCH_CONFIG) as SupplierAdapterPrefix[]).map((prefix) => [
+    prefix,
+    SUPPLIER_SITE_SEARCH_CONFIG[prefix].source,
+  ])
+) as Record<SupplierAdapterPrefix, SupplierProductSource>;
 
 export function findSupplierSearchAdapter(supplierId: string): {
   search: SupplierSearchFn;

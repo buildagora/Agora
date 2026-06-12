@@ -1,9 +1,26 @@
 import { getSerpApiKey } from "@/lib/config/env";
-import { classifyUrl } from "@/lib/search/classification/classifyUrl";
 import type { SearchResultType } from "@/lib/search/classification/resultTypes";
-import { rankOrganicResults } from "@/lib/search/organic/rankOrganicResults";
+import {
+  fetchSupplierPageHtml,
+  resolvePageImageUrl,
+} from "@/lib/search/extraction/pageImageExtraction";
+import {
+  rankOrganicCandidates,
+  type ScoredOrganicCandidate,
+} from "@/lib/search/extraction/scoreOrganicCandidateUrl";
 import { cachedSerpFetch } from "@/lib/serpCache/server";
+import {
+  STOREFRONT_DEFAULT_NUM_RESULTS,
+  STOREFRONT_SITE_ORGANIC_MAX_HITS,
+} from "@/lib/search/storefront/storefrontCatalogConstants";
+import {
+  dedupeSupplierSiteRows,
+  mergeSupplierSiteSearchFlatRows,
+} from "./mergeSupplierSiteSearchRows";
+import type { SupplierSiteSearchStructured } from "./searchSupplierSiteTypes";
 import type { SupplierProductResult, SupplierProductSource } from "./types";
+
+export type { SupplierSiteSearchStructured } from "./searchSupplierSiteTypes";
 
 export type SearchSupplierSiteParams = {
   query: string;
@@ -13,10 +30,17 @@ export type SearchSupplierSiteParams = {
   logLabel: string;
   /** When true with ABC_SUPPLY, fetches pages and uses WordPress `wp-post-image` imgs only (no og/twitter). */
   extractImagesFromPage?: boolean;
+  maxOrganicHits?: number;
+  minProductTarget?: number;
 };
 
-const PAGE_FETCH_USER_AGENT =
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+const MAX_PAGE_IMAGE_FETCH_ATTEMPTS = 3;
+
+type SerpOrganicItem = {
+  link?: string;
+  title?: string;
+  thumbnail?: string;
+};
 
 type SerpInlineImage = {
   title?: string;
@@ -106,59 +130,6 @@ async function fetchGoogleImageFallback({
   }
 }
 
-function escapeRegExp(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-function extractMetaContentByAttr(
-  html: string,
-  attrName: "property" | "name",
-  attrValue: string,
-): string | null {
-  const esc = escapeRegExp(attrValue);
-  const propFirst = new RegExp(
-    `<meta\\s[^>]*${attrName}=["']${esc}["'][^>]*content=["']([^"']+)["']`,
-    "i",
-  );
-  const m1 = html.match(propFirst);
-  if (m1?.[1]) return m1[1];
-
-  const contentFirst = new RegExp(
-    `<meta\\s[^>]*content=["']([^"']+)["'][^>]*${attrName}=["']${esc}["']`,
-    "i",
-  );
-  const m2 = html.match(contentFirst);
-  return m2?.[1] ?? null;
-}
-
-async function extractPageImageUrl(pageUrl: string): Promise<string | null> {
-  try {
-    const res = await fetch(pageUrl, {
-      headers: {
-        "User-Agent": PAGE_FETCH_USER_AGENT,
-      },
-    });
-    if (!res.ok) return null;
-    const html = await res.text();
-
-    const raw =
-      extractMetaContentByAttr(html, "property", "og:image") ??
-      extractMetaContentByAttr(html, "name", "twitter:image") ??
-      extractMetaContentByAttr(html, "property", "og:image:secure_url");
-    if (!raw) return null;
-
-    let imageUrl = raw.trim();
-    if (imageUrl.startsWith("//")) {
-      imageUrl = `https:${imageUrl}`;
-    } else if (imageUrl.startsWith("/")) {
-      imageUrl = new URL(imageUrl, pageUrl).toString();
-    }
-    return imageUrl;
-  } catch {
-    return null;
-  }
-}
-
 function findMatchingImage(title: string, inlineImages: SerpInlineImage[]): string | null {
   const t = title.toLowerCase();
   if (!t) return null;
@@ -205,13 +176,6 @@ function normalizeImgSrc(src: string, pageUrl: string): string {
   return u;
 }
 
-function normalizeTitleForDedupe(title: string | null | undefined): string {
-  return String(title || "")
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, " ");
-}
-
 /**
  * Parse `<img>` tags whose `class` contains `wp-post-image`; returns resolved src + alt.
  */
@@ -241,17 +205,8 @@ function parseWpPostImagesFromHtml(
 }
 
 async function fetchPageHtml(pageUrl: string): Promise<string | null> {
-  try {
-    const res = await fetch(pageUrl, {
-      headers: {
-        "User-Agent": PAGE_FETCH_USER_AGENT,
-      },
-    });
-    if (!res.ok) return null;
-    return await res.text();
-  } catch {
-    return null;
-  }
+  const fetched = await fetchSupplierPageHtml(pageUrl);
+  return fetched?.html ?? null;
 }
 
 async function extractAbcSupplyWpPostImages(
@@ -262,73 +217,95 @@ async function extractAbcSupplyWpPostImages(
   return parseWpPostImagesFromHtml(html, pageUrl);
 }
 
+type PerItemRows = {
+  mapped: SupplierProductResult[];
+  productResults: SupplierProductResult[];
+  categoryResults: SupplierProductResult[];
+  brandResults: SupplierProductResult[];
+  otherResults: SupplierProductResult[];
+};
+
+const EMPTY_STRUCTURED: SupplierSiteSearchStructured = {
+  products: [],
+  categories: [],
+  brands: [],
+  other: [],
+  flat: [],
+};
+
 /**
- * SerpAPI Google organic search restricted to a supplier domain (`site:domain query`).
+ * SerpAPI Google organic search with structured page-type buckets.
+ * `flat` is identical to legacy `searchSupplierSite()` output.
  */
-export async function searchSupplierSite({
-  query,
-  domain,
-  supplierIds,
-  source,
-  logLabel,
-  extractImagesFromPage,
-}: SearchSupplierSiteParams): Promise<SupplierProductResult[]> {
-  const q = query.trim();
-  if (!q) return [];
+export async function searchSupplierSiteStructured(
+  params: SearchSupplierSiteParams
+): Promise<SupplierSiteSearchStructured> {
+  const q = params.query.trim();
+  if (!q) return { ...EMPTY_STRUCTURED };
 
   const apiKey = getSerpApiKey();
-  const qParam = `site:${domain} ${q}`;
+  const qParam = `site:${params.domain} ${q}`;
   const url = `https://serpapi.com/search.json?engine=google&q=${encodeURIComponent(qParam)}&api_key=${apiKey}`;
 
   try {
     const res = await cachedSerpFetch(url);
     const data = await res.json();
 
-    const organicRaw = (data.organic_results || []).slice(0, 20);
+    const organicRaw = (data.organic_results || []).slice(0, 20) as SerpOrganicItem[];
 
-    const organic = organicRaw.filter((item: any) => {
-      if (!item.link) return false;
-      return isSameDomain(item.link, domain);
-    });
+    const organic = rankOrganicCandidates(
+      organicRaw
+        .filter((item) => item.link && isSameDomain(item.link, params.domain))
+        .map((item) => ({
+          link: item.link!,
+          title: item.title,
+          thumbnail: item.thumbnail,
+          query: q,
+          domain: params.domain,
+        }))
+    );
     const inlineImages: SerpInlineImage[] = data.inline_images || [];
     const shoppingResults: SerpShoppingResult[] = data.shopping_results || [];
 
     const mapped: SupplierProductResult[] = [];
     const productResults: SupplierProductResult[] = [];
     const categoryResults: SupplierProductResult[] = [];
+    const brandResults: SupplierProductResult[] = [];
+    const otherResults: SupplierProductResult[] = [];
 
-    // Each organic result independently may require 1-3 network calls
-    // (page-HTML fetch + Google image fallback). Run all of them in
-    // parallel, then merge results in original order. Cache hits return
-    // instantly so this only matters on first-uncached query. Cuts wall
-    // time on cold queries from ~5-15s to ~2-4s.
-    type PerItemRows = {
-      mapped: SupplierProductResult[];
-      productResults: SupplierProductResult[];
-      categoryResults: SupplierProductResult[];
-    };
+    let pageImageFetchAttempts = 0;
 
-    const processItem = async (item: any): Promise<PerItemRows> => {
-      const out: PerItemRows = { mapped: [], productResults: [], categoryResults: [] };
+    const processItem = async (
+      item: ScoredOrganicCandidate,
+      rankIndex: number
+    ): Promise<PerItemRows> => {
+      const out: PerItemRows = {
+        mapped: [],
+        productResults: [],
+        categoryResults: [],
+        brandResults: [],
+        otherResults: [],
+      };
       const link = item.link;
-      if (!isSameDomain(link, domain)) return out;
-      const resultType = classifyUrl(link);
+      if (!link || !isSameDomain(link, params.domain)) return out;
+      const resultType = item.resultType;
       if (isExcludedByResultType(resultType)) return out;
 
       const isProduct = resultType === "PRODUCT_PAGE";
       const isCategory =
         !isProduct &&
         (resultType === "CATEGORY_PAGE" || resultType === "SEARCH_PAGE");
+      const isBrand = !isProduct && !isCategory && resultType === "BRAND_PAGE";
 
       const organicTitle = item.title || q;
 
-      if (extractImagesFromPage === true && source === "ABC_SUPPLY") {
+      if (params.extractImagesFromPage === true && params.source === "ABC_SUPPLY") {
         const wpImages = await extractAbcSupplyWpPostImages(link);
         if (wpImages.length > 0) {
           for (const { src, alt } of wpImages) {
             if (!src) continue;
             const title = alt ?? organicTitle;
-            for (const supplierId of supplierIds) {
+            for (const supplierId of params.supplierIds) {
               const row: SupplierProductResult = {
                 supplierId,
                 title,
@@ -337,7 +314,7 @@ export async function searchSupplierSite({
                 price: null,
                 availability: "Found on supplier site",
                 productUrl: link,
-                source,
+                source: params.source,
                 classification: resultType,
               };
               out.mapped.push(row);
@@ -348,23 +325,31 @@ export async function searchSupplierSite({
         }
       }
 
+      const allowDeepFetch = rankIndex <= MAX_PAGE_IMAGE_FETCH_ATTEMPTS;
+
       let imageUrl =
         item.thumbnail ??
         findMatchingImage(organicTitle, inlineImages) ??
         findShoppingImage(organicTitle, shoppingResults) ??
-        (await extractPageImageUrl(link));
-      if (!imageUrl) {
+        null;
+
+      if (!imageUrl && allowDeepFetch) {
+        pageImageFetchAttempts += 1;
+        imageUrl = await resolvePageImageUrl(link);
+      }
+
+      if (!imageUrl && allowDeepFetch) {
         imageUrl = await fetchGoogleImageFallback({
           title: organicTitle,
-          supplierName: logLabel,
-          domain,
-          source,
+          supplierName: params.logLabel,
+          domain: params.domain,
+          source: params.source,
           apiKey,
         });
       }
       if (!imageUrl) return out;
 
-      for (const supplierId of supplierIds) {
+      for (const supplierId of params.supplierIds) {
         const row: SupplierProductResult = {
           supplierId,
           title: organicTitle,
@@ -373,7 +358,7 @@ export async function searchSupplierSite({
           price: null,
           availability: "Found on supplier site",
           productUrl: link,
-          source,
+          source: params.source,
           classification: resultType,
         };
         out.mapped.push(row);
@@ -381,59 +366,60 @@ export async function searchSupplierSite({
           out.productResults.push(row);
         } else if (isCategory) {
           out.categoryResults.push(row);
+        } else if (isBrand) {
+          out.brandResults.push(row);
+        } else {
+          out.otherResults.push(row);
         }
       }
       return out;
     };
 
-    const perItemResults = await Promise.all(organic.map(processItem));
-    for (const r of perItemResults) {
+    const maxOrganicHits =
+      params.maxOrganicHits ?? STOREFRONT_SITE_ORGANIC_MAX_HITS;
+    const minProductTarget =
+      params.minProductTarget ?? STOREFRONT_DEFAULT_NUM_RESULTS;
+
+    for (let index = 0; index < organic.length && index < maxOrganicHits; index++) {
+      const r = await processItem(organic[index]!, index + 1);
       mapped.push(...r.mapped);
       productResults.push(...r.productResults);
       categoryResults.push(...r.categoryResults);
+      brandResults.push(...r.brandResults);
+      otherResults.push(...r.otherResults);
+      if (productResults.length >= minProductTarget) break;
     }
 
-    const rowDedupeKey = (row: SupplierProductResult) =>
-      `${row.supplierId}|${normalizeTitleForDedupe(row.title)}|${row.productUrl ?? ""}`;
+    const flat = mergeSupplierSiteSearchFlatRows(
+      productResults,
+      categoryResults,
+      mapped,
+      q
+    );
 
-    const mergeSeen = new Set<string>();
-    const baseRowsRaw: SupplierProductResult[] = [];
-    for (const row of productResults) {
-      const k = rowDedupeKey(row);
-      if (mergeSeen.has(k)) continue;
-      mergeSeen.add(k);
-      baseRowsRaw.push(row);
-    }
-    for (const row of categoryResults) {
-      const k = rowDedupeKey(row);
-      if (mergeSeen.has(k)) continue;
-      mergeSeen.add(k);
-      baseRowsRaw.push(row);
-    }
-    for (const row of mapped) {
-      const k = rowDedupeKey(row);
-      if (mergeSeen.has(k)) continue;
-      mergeSeen.add(k);
-      baseRowsRaw.push(row);
+    if (flat.length === 0) {
+      return { ...EMPTY_STRUCTURED };
     }
 
-    const baseRows = rankOrganicResults(baseRowsRaw, q);
-    const deduped: SupplierProductResult[] = [];
-    const seen = new Set<string>();
-    for (const row of baseRows) {
-      const key = `${row.supplierId}|${normalizeTitleForDedupe(row.title)}|${row.productUrl ?? ""}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      deduped.push(row);
-    }
-
-    if (deduped.length === 0) {
-      return [];
-    }
-
-    return deduped;
+    return {
+      products: dedupeSupplierSiteRows(productResults),
+      categories: dedupeSupplierSiteRows(categoryResults),
+      brands: dedupeSupplierSiteRows(brandResults),
+      other: dedupeSupplierSiteRows(otherResults),
+      flat,
+    };
   } catch (err) {
-    console.error(`SerpApi ${logLabel} site search failed:`, err);
-    return [];
+    console.error(`SerpApi ${params.logLabel} site search failed:`, err);
+    return { ...EMPTY_STRUCTURED };
   }
+}
+
+/**
+ * SerpAPI Google organic search restricted to a supplier domain (`site:domain query`).
+ */
+export async function searchSupplierSite(
+  params: SearchSupplierSiteParams
+): Promise<SupplierProductResult[]> {
+  const structured = await searchSupplierSiteStructured(params);
+  return structured.flat;
 }

@@ -2,6 +2,16 @@ import { getSerpApiKey } from "@/lib/config/env";
 import { rankShoppingResults } from "@/lib/search/shopping/rankShoppingResults";
 import type { ShoppingResultItem } from "@/lib/search/shopping/types";
 import { cachedSerpFetch } from "@/lib/serpCache/server";
+import {
+  clampStorefrontPage,
+  clampStorefrontPageSize,
+  STOREFRONT_DEFAULT_NUM_RESULTS,
+  STOREFRONT_SERP_MAX_PAGES,
+} from "@/lib/search/storefront/storefrontCatalogConstants";
+import type {
+  SupplierCatalogPageOptions,
+  SupplierCatalogPageResult,
+} from "./supplierCatalogPageOptions";
 import type { SupplierProductResult } from "./types";
 
 /** Huntsville market ZIP for delivery / localization (SerpApi `delivery_zip`). */
@@ -110,7 +120,7 @@ function canonicalizeHomeDepotPdpUrl(url: string): string {
 
 function resolveHomeDepotPdpUrl(product: HomeDepotSerpProduct): string | null {
   const candidates = [product.link, product.product_link, product.url].filter(
-    (v): v is string => typeof v === "string" && v.trim().length > 0,
+    (v): v is string => typeof v === "string" && v.trim().length > 0
   );
 
   for (const candidate of candidates) {
@@ -131,7 +141,7 @@ function extractHomeDepotProducts(data: Record<string, unknown>): HomeDepotSerpP
   if (Array.isArray(legacy)) {
     console.warn(
       "SerpApi Home Depot: using products_results fallback; expected products[]",
-      { keys: Object.keys(data) },
+      { keys: Object.keys(data) }
     );
     return legacy as HomeDepotSerpProduct[];
   }
@@ -139,7 +149,7 @@ function extractHomeDepotProducts(data: Record<string, unknown>): HomeDepotSerpP
   if (Array.isArray(data.shopping_results)) {
     console.warn(
       "SerpApi Home Depot: unexpected shopping_results in home_depot response; ignoring Google Shopping shape",
-      { keys: Object.keys(data) },
+      { keys: Object.keys(data) }
     );
   }
 
@@ -148,7 +158,7 @@ function extractHomeDepotProducts(data: Record<string, unknown>): HomeDepotSerpP
 
 function normalizeToShoppingItems(
   rawProducts: HomeDepotSerpProduct[],
-  query: string,
+  query: string
 ): ShoppingResultItem[] {
   const items: ShoppingResultItem[] = [];
 
@@ -177,7 +187,7 @@ function normalizeToShoppingItems(
   return items;
 }
 
-function buildHomeDepotSearchUrl(query: string, apiKey: string): string {
+function buildHomeDepotSearchUrl(query: string, apiKey: string, page = 1): string {
   const params = new URLSearchParams({
     engine: "home_depot",
     q: query,
@@ -185,16 +195,28 @@ function buildHomeDepotSearchUrl(query: string, apiKey: string): string {
     country: "us",
     delivery_zip: HOME_DEPOT_DELIVERY_ZIP,
   });
+  if (page > 1) {
+    params.set("page", String(page));
+  }
 
   return `https://serpapi.com/search.json?${params.toString()}`;
 }
 
-export async function searchHomeDepot(query: string): Promise<SupplierProductResult[]> {
-  const q = query.trim();
-  if (!q) return [];
+const pendingHomeDepotSearches = new Map<
+  string,
+  Promise<SupplierCatalogPageResult>
+>();
 
+async function searchHomeDepotInternal(
+  query: string,
+  options: SupplierCatalogPageOptions = {}
+): Promise<SupplierCatalogPageResult> {
+  const page = clampStorefrontPage(options.page ?? 1);
+  const pageSize = clampStorefrontPageSize(
+    options.pageSize ?? STOREFRONT_DEFAULT_NUM_RESULTS
+  );
   const apiKey = getSerpApiKey();
-  const url = buildHomeDepotSearchUrl(q, apiKey);
+  const url = buildHomeDepotSearchUrl(query, apiKey, page);
 
   try {
     const res = await cachedSerpFetch(url);
@@ -203,27 +225,30 @@ export async function searchHomeDepot(query: string): Promise<SupplierProductRes
     const rawProducts = extractHomeDepotProducts(data);
     if (rawProducts.length === 0) {
       console.warn("SerpApi Home Depot: no products in response", {
-        query: q,
+        query,
         keys: Object.keys(data),
         error: data.error,
       });
-      return [];
+      return { products: [], totalCount: null, hasMore: false };
     }
 
-    const shoppingItems = normalizeToShoppingItems(rawProducts, q);
+    const shoppingItems = normalizeToShoppingItems(rawProducts, query);
     if (shoppingItems.length === 0) {
       console.warn("SerpApi Home Depot: no items with valid PDP URLs after normalization", {
-        query: q,
+        query,
         rawCount: rawProducts.length,
       });
-      return [];
+      return { products: [], totalCount: null, hasMore: false };
     }
 
-    const results = rankShoppingResults(shoppingItems, q).slice(0, 6);
+    const ranked = rankShoppingResults(shoppingItems, query);
+    const totalCount = ranked.length;
+    const start = (page - 1) * pageSize;
+    const pageSlice = ranked.slice(start, start + pageSize);
 
     const mapped: SupplierProductResult[] = [];
 
-    for (const result of results) {
+    for (const result of pageSlice) {
       const item = result.item;
       const productUrl = resolveHomeDepotPdpUrl({
         link: item.link,
@@ -235,7 +260,7 @@ export async function searchHomeDepot(query: string): Promise<SupplierProductRes
       for (const supplierId of HOME_DEPOT_STORES) {
         mapped.push({
           supplierId,
-          title: item.title || q,
+          title: item.title || query,
           brand: item.brand || null,
           imageUrl: item.thumbnail || item.images?.[0]?.thumbnail || null,
           price: item.price || null,
@@ -248,9 +273,38 @@ export async function searchHomeDepot(query: string): Promise<SupplierProductRes
       }
     }
 
-    return mapped;
+    const hasMore =
+      page < STOREFRONT_SERP_MAX_PAGES && start + pageSize < totalCount;
+
+    return { products: mapped, totalCount, hasMore };
   } catch (err) {
     console.error("SerpApi Home Depot search failed:", err);
-    return [];
+    return { products: [], totalCount: null, hasMore: false };
   }
+}
+
+export async function searchHomeDepotPaged(
+  query: string,
+  options: SupplierCatalogPageOptions = {}
+): Promise<SupplierCatalogPageResult> {
+  const q = query.trim();
+  if (!q) return { products: [], totalCount: null, hasMore: false };
+
+  const cacheKey = `${q}::${options.page ?? 1}::${options.pageSize ?? STOREFRONT_DEFAULT_NUM_RESULTS}`;
+  const pending = pendingHomeDepotSearches.get(cacheKey);
+  if (pending) return pending;
+
+  const promise = searchHomeDepotInternal(q, options).finally(() => {
+    pendingHomeDepotSearches.delete(cacheKey);
+  });
+  pendingHomeDepotSearches.set(cacheKey, promise);
+  return promise;
+}
+
+export async function searchHomeDepot(
+  query: string,
+  options?: SupplierCatalogPageOptions
+): Promise<SupplierProductResult[]> {
+  const result = await searchHomeDepotPaged(query, options);
+  return result.products;
 }

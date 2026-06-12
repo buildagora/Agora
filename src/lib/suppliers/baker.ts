@@ -1,11 +1,5 @@
-import { searchSupplierSite } from "./searchSupplierSite";
+import { searchSupplierDiscoveryForPrefix } from "./resolveSupplierDiscovery";
 
 export async function searchBaker(query: string) {
-  return searchSupplierSite({
-    query,
-    domain: "bakerdist.com",
-    supplierIds: ["baker_hsv"],
-    source: "BAKER",
-    logLabel: "Baker Distributing",
-  });
+  return searchSupplierDiscoveryForPrefix("baker", query, ["baker_hsv"]);
 }

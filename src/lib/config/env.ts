@@ -7,3 +7,13 @@ export function getSerpApiKey(): string {
 
   return key;
 }
+
+export function getConstructorApiKey(envVarName: string): string {
+  const key = process.env[envVarName];
+
+  if (!key) {
+    throw new Error(`Missing ${envVarName}`);
+  }
+
+  return key;
+}

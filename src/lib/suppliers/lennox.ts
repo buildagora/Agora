@@ -1,11 +1,5 @@
-import { searchSupplierSite } from "./searchSupplierSite";
+import { searchSupplierDiscoveryForPrefix } from "./resolveSupplierDiscovery";
 
 export async function searchLennox(query: string) {
-  return searchSupplierSite({
-    query,
-    domain: "lennoxpros.com",
-    supplierIds: ["lennox_hsv"],
-    source: "LENNOX",
-    logLabel: "Lennox",
-  });
+  return searchSupplierDiscoveryForPrefix("lennox", query, ["lennox_hsv"]);
 }

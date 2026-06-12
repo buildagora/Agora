@@ -1,11 +1,5 @@
-import { searchSupplierSite } from "./searchSupplierSite";
+import { searchSupplierDiscoveryForPrefix } from "./resolveSupplierDiscovery";
 
 export async function searchJohnstone(query: string) {
-  return searchSupplierSite({
-    query,
-    domain: "johnstonesupply.com",
-    supplierIds: ["johnstone_hsv"],
-    source: "JOHNSTONE",
-    logLabel: "Johnstone Supply",
-  });
+  return searchSupplierDiscoveryForPrefix("johnstone", query, ["johnstone_hsv"]);
 }

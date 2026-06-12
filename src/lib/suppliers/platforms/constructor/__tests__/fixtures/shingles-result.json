@@ -1,0 +1,17 @@
+{
+  "matched_terms": ["shingles"],
+  "data": {
+    "id": "C-635001",
+    "variation_id": "656431",
+    "prdName": "Timberline HDZ&trade; Shingles with StainGuard Protection",
+    "image_url": "/images/large/656431_default_hero.jpg",
+    "prdImageUrl": "/images/large/C-635001_default_hero.jpg",
+    "url": "/productDetail/C-635001?skuId=656431",
+    "facets": [
+      {
+        "name": "prdBrand",
+        "values": ["GAF"]
+      }
+    ]
+  }
+}

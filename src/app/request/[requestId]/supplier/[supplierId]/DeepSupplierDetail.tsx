@@ -1,72 +1,21 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Clock, MapPin, Phone } from "lucide-react";
 import { getPrisma } from "@/lib/db.rsc";
 import { categoryIdToLabel } from "@/lib/categoryIds";
+import { trackServerEvent } from "@/lib/analytics/server";
+import { ANALYTICS_EVENTS } from "@/lib/analytics/events";
 import { searchCapabilities } from "@/lib/search/capabilitySearch";
+import { buildSupplierStorefrontView } from "@/lib/search/storefront/buildSupplierStorefrontView.server";
+import {
+  composeStorefrontQuery,
+  parseStorefrontUrlParams,
+} from "@/lib/search/storefront/storefrontNavigation";
 import { toProductSearchQuery } from "@/lib/search/productSearchQuery";
 import { getSearchMode } from "@/lib/search/getSearchMode";
-import { findSupplierSearchAdapter } from "@/lib/suppliers/registry";
 import { SUPPLIER_STATUS_TEXT } from "@/lib/suppliers/statusText";
-import type { SupplierProductResult } from "@/lib/suppliers/types";
+import SupplierStorefrontExperience from "@/components/supplier-storefront/SupplierStorefrontExperience";
+import SupplierHeroCard from "@/components/supplier-storefront/SupplierHeroCard";
+import ExactListingFocus from "@/components/supplier-storefront/ExactListingFocus";
 import BackToSearchLink, { buildSearchBackHref } from "./BackToSearchLink";
-import ImageWithFallback from "@/components/ImageWithFallback";
-
-/**
- * Wrapper that renders either an in-app Next Link (drill into a focused
- * listing on this same supplier page) OR an external `<a target="_blank">`
- * (open the retailer's product page directly). External-link mode is used
- * for big-box retailers where the buyer expects to go straight to the
- * retailer's site for stock and checkout.
- */
-function ProductOptionLink({
-  supplierId,
-  productUrl,
-  fallbackHref,
-  className,
-  children,
-}: {
-  supplierId: string;
-  productUrl: string | null;
-  fallbackHref: string;
-  className?: string;
-  children: React.ReactNode;
-}) {
-  if (isBigBoxSupplier(supplierId) && productUrl) {
-    return (
-      <a
-        href={productUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className={className}
-      >
-        {children}
-      </a>
-    );
-  }
-  return (
-    <Link href={fallbackHref} className={className}>
-      {children}
-    </Link>
-  );
-}
-
-function ExternalArrow({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      aria-hidden
-    >
-      <path d="M7 17 17 7M10 7h7v7" />
-    </svg>
-  );
-}
 
 export const revalidate = 0;
 
@@ -135,24 +84,6 @@ function availabilitySummary(r: {
   return "Checking";
 }
 
-/**
- * Big-box retailers' adapters return real product pages on the retailer's
- * own site (homedepot.com, lowes.com). For those suppliers we want product
- * cards to open the retailer page directly — users have a familiar checkout
- * + inventory experience there. For everyone else, keep in-app drill-down.
- */
-const BIG_BOX_SUPPLIER_PREFIXES = ["home_depot", "lowes"];
-
-function isBigBoxSupplier(supplierId: string): boolean {
-  return BIG_BOX_SUPPLIER_PREFIXES.some((p) => supplierId.startsWith(p));
-}
-
-function bigBoxLabelForSupplier(supplierId: string): string | null {
-  if (supplierId.startsWith("home_depot")) return "Home Depot";
-  if (supplierId.startsWith("lowes")) return "Lowe's";
-  return null;
-}
-
 function statusBadgeClasses(status: string): string {
   const colors: Record<string, string> = {
     REPLIED: "bg-emerald-50 text-emerald-800 border border-emerald-200",
@@ -176,7 +107,8 @@ export default async function PublicSupplierDetailPage({
 }: {
   params: Promise<{ requestId: string; supplierId: string }>;
   searchParams?: Promise<{
-    q?: string;
+    brand?: string;
+    category?: string;
     listingTitle?: string;
     listingImage?: string;
     listingPrice?: string;
@@ -191,38 +123,16 @@ export default async function PublicSupplierDetailPage({
 
   const resolvedSearchParams =
     searchParams != null ? await searchParams : undefined;
-  const queryOverride =
-    typeof resolvedSearchParams?.q === "string" &&
-    resolvedSearchParams.q.trim().length > 0
-      ? resolvedSearchParams.q.trim()
-      : null;
+  const urlParams = parseStorefrontUrlParams(resolvedSearchParams);
+  const { brand: brandFilter, category: categoryFilter } = urlParams;
 
-  const listingTitle =
-    typeof resolvedSearchParams?.listingTitle === "string" &&
-    resolvedSearchParams.listingTitle.trim().length > 0
-      ? resolvedSearchParams.listingTitle.trim()
-      : null;
-
-  const listingImage =
-    typeof resolvedSearchParams?.listingImage === "string" &&
-    resolvedSearchParams.listingImage.trim().length > 0
-      ? resolvedSearchParams.listingImage.trim()
-      : null;
-
-  const listingPrice =
-    typeof resolvedSearchParams?.listingPrice === "string" &&
-    resolvedSearchParams.listingPrice.trim().length > 0
-      ? resolvedSearchParams.listingPrice.trim()
-      : null;
-  const listingUrl =
-    typeof resolvedSearchParams?.listingUrl === "string" &&
-    resolvedSearchParams.listingUrl.trim().length > 0
-      ? resolvedSearchParams.listingUrl.trim()
-      : null;
+  const listingTitle = urlParams.listingTitle ?? null;
+  const listingImage = urlParams.listingImage ?? null;
+  const listingPrice = urlParams.listingPrice ?? null;
 
   const backHref = buildSearchBackHref(
-    resolvedSearchParams?.fromThread,
-    resolvedSearchParams?.fromSearch
+    urlParams.fromThread,
+    urlParams.fromSearch
   );
 
   if (!requestId || !supplierId) {
@@ -297,8 +207,13 @@ export default async function PublicSupplierDetailPage({
     notFound();
   }
 
-  const activeQuery =
-    (queryOverride || materialRequest.requestText || "").trim();
+  const requestText = (materialRequest.requestText || "").trim();
+  const activeQuery = composeStorefrontQuery({
+    requestText,
+    brand: brandFilter,
+    category: categoryFilter,
+    listingTitle,
+  });
   const productSearchQuery = toProductSearchQuery(activeQuery);
 
   // Transitional legacy support:
@@ -313,41 +228,71 @@ export default async function PublicSupplierDetailPage({
     ? "EXACT"
     : getSearchMode(activeQuery, legacyCapabilityInferenceMatches);
 
-  const selected = materialRequest.recipients.find((r) => r.supplierId === supplierId);
-  if (!selected) {
-    notFound();
-  }
-  // Supplier-scoped legacy fallback only (never cross-supplier).
-  const supplierLegacyCapabilityMatches = legacyCapabilityInferenceMatches.filter(
-    (m) => m.supplierId === supplierId,
+  const selectedFromRecipients = materialRequest.recipients.find(
+    (r) => r.supplierId === supplierId
   );
 
-  const supplierDomain = selected.supplier.domain ?? null;
+  type RecipientRow = (typeof materialRequest.recipients)[number];
 
-  // Live retrieval is the source of truth for supplier listings.
-  let automatedProductResults: SupplierProductResult[] = [];
+  let selected: RecipientRow;
 
-  const adapter = findSupplierSearchAdapter(supplierId);
-
-  if (adapter) {
-    automatedProductResults = (await adapter.search(productSearchQuery)).filter(
-      (p) => p.supplierId === supplierId,
-    );
-  } else if (supplierDomain) {
-    const { searchSupplierSite } = await import("@/lib/suppliers/searchSupplierSite");
-
-    automatedProductResults = await searchSupplierSite({
-      query: productSearchQuery,
-      domain: supplierDomain,
-      supplierIds: [supplierId],
-      source: "GENERIC",
-      logLabel: selected.supplier.name || "Supplier",
+  if (selectedFromRecipients) {
+    selected = selectedFromRecipients;
+  } else {
+    // Storefront browse: supplier exists but was not linked as a request recipient
+    // (e.g. big-box deep link). Avoid 404; show catalog with neutral availability.
+    const supplier = await prisma.supplier.findUnique({
+      where: { id: supplierId },
+      select: {
+        id: true,
+        name: true,
+        domain: true,
+        street: true,
+        city: true,
+        state: true,
+        zip: true,
+        latitude: true,
+        longitude: true,
+        phone: true,
+        logoUrl: true,
+        hoursText: true,
+      },
     });
+    if (!supplier) {
+      notFound();
+    }
+    selected = {
+      supplierId: supplier.id,
+      conversationId: "storefront-browse",
+      status: "SENT",
+      sentAt: materialRequest.createdAt,
+      viewedAt: null,
+      respondedAt: null,
+      statusUpdatedAt: materialRequest.updatedAt,
+      operatorNotes: null,
+      availabilityStatus: null,
+      quantityAvailable: null,
+      quantityUnit: null,
+      price: null,
+      priceUnit: null,
+      pickupAvailable: null,
+      deliveryAvailable: null,
+      deliveryEta: null,
+      supplier,
+      conversation: {
+        id: "storefront-browse",
+        updatedAt: materialRequest.updatedAt,
+      },
+    };
   }
 
-  const automatedProduct = automatedProductResults[0] ?? null;
-
-  const hasAutomatedListings = automatedProductResults.length > 0;
+  const supplierDomain = selected.supplier.domain?.trim() ?? null;
+  const locationLabel = [
+    materialRequest.locationCity,
+    materialRequest.locationRegion,
+  ]
+    .filter((s) => typeof s === "string" && s.trim().length > 0)
+    .join(", ");
 
   const rows = materialRequest.recipients ?? [];
   const formatRecipient = (r: (typeof rows)[number]) => {
@@ -407,11 +352,50 @@ export default async function PublicSupplierDetailPage({
 
   const r = formatRecipient(selected);
   const cat = categoryLabel(materialRequest.categoryId);
+
+  const storefront = await buildSupplierStorefrontView({
+    query: activeQuery,
+    productSearchQuery,
+    categoryId: materialRequest.categoryId,
+    categoryLabel: cat,
+    listingTitle,
+    brandFilter,
+    categoryFilter,
+    locationLabel: locationLabel || null,
+    supplier: {
+      id: supplierId,
+      name: selected.supplier.name,
+      logoUrl: selected.supplier.logoUrl ?? null,
+      city: selected.supplier.city ?? null,
+      state: selected.supplier.state ?? null,
+      websiteUrl: supplierDomain ? `https://${supplierDomain}` : null,
+    },
+    searchMode: mode,
+  });
+
+  try {
+    await trackServerEvent(ANALYTICS_EVENTS.storefront_viewed, {
+      requestId: materialRequest.id,
+      supplierId,
+      tier: storefront.tier,
+      productCount: storefront.catalogMetrics.productCount,
+      layoutMode: storefront.layoutMode,
+      discoveryStatus: storefront.discoveryStatus,
+    });
+  } catch {
+    // fail silently
+  }
+
+  const automatedProduct = storefront.sections.products[0] ?? null;
+  const hasLiveProducts = storefront.sections.products.length > 0;
+  const hasCapabilityProfiles = storefront.sections.capabilityProfiles.length > 0;
+
   const avail = availabilitySummary(r);
   const checking = avail === "Checking";
-  const supplierDiscoveryState =
-    hasAutomatedListings
-      ? "AUTOMATED_DISCOVERY"
+  const supplierDiscoveryState = hasLiveProducts
+    ? "AUTOMATED_DISCOVERY"
+    : hasCapabilityProfiles
+      ? "CAPABILITY_PROFILE"
       : avail === "In stock"
         ? "VERIFIED_IN_STOCK"
         : avail === "Out of stock"
@@ -467,8 +451,7 @@ export default async function PublicSupplierDetailPage({
         : "Checking"
     : triState(r.deliveryAvailable);
 
-  const normalizedRequestText =
-    (queryOverride || materialRequest.requestText).trim() || cat;
+  const normalizedRequestText = requestText || cat;
   const baseProductTitle = normalizedRequestText;
 
   // Derive a cleaner product name for UI
@@ -500,11 +483,7 @@ export default async function PublicSupplierDetailPage({
       ? deriveDisplayProduct(automatedProduct.title)
       : deriveDisplayProduct(baseProductTitle);
 
-  const imageSrc =
-    listingImage ||
-    automatedProduct?.imageUrl ||
-    "/placeholder.png";
-  if (!imageSrc) return null;
+  const imageSrc = listingImage || automatedProduct?.imageUrl || null;
 
   const productPriceDisplay =
     listingPrice ?? automatedProduct?.price ?? priceDisplay;
@@ -512,86 +491,32 @@ export default async function PublicSupplierDetailPage({
   const productStatusLabel =
     supplierDiscoveryState === "AUTOMATED_DISCOVERY"
       ? SUPPLIER_STATUS_TEXT.catalogMatch
-      : supplierDiscoveryState === "VERIFIED_IN_STOCK"
-        ? SUPPLIER_STATUS_TEXT.inStock
-        : supplierDiscoveryState === "OUT_OF_STOCK"
-          ? SUPPLIER_STATUS_TEXT.outOfStock
-          : SUPPLIER_STATUS_TEXT.checkingAvailability;
+      : supplierDiscoveryState === "CAPABILITY_PROFILE"
+        ? SUPPLIER_STATUS_TEXT.likelyCarries
+        : supplierDiscoveryState === "VERIFIED_IN_STOCK"
+          ? SUPPLIER_STATUS_TEXT.inStock
+          : supplierDiscoveryState === "OUT_OF_STOCK"
+            ? SUPPLIER_STATUS_TEXT.outOfStock
+            : SUPPLIER_STATUS_TEXT.checkingAvailability;
   const supplierStatusBadgeText =
     supplierDiscoveryState === "AUTOMATED_DISCOVERY"
       ? SUPPLIER_STATUS_TEXT.carriesThis
-      : supplierDiscoveryState === "VERIFIED_IN_STOCK"
-        ? SUPPLIER_STATUS_TEXT.inStock
-        : supplierDiscoveryState === "OUT_OF_STOCK"
-          ? SUPPLIER_STATUS_TEXT.outOfStock
-          : SUPPLIER_STATUS_TEXT.checkingAvailability;
+      : supplierDiscoveryState === "CAPABILITY_PROFILE"
+        ? SUPPLIER_STATUS_TEXT.likelyCarries
+        : supplierDiscoveryState === "VERIFIED_IN_STOCK"
+          ? SUPPLIER_STATUS_TEXT.inStock
+          : supplierDiscoveryState === "OUT_OF_STOCK"
+            ? SUPPLIER_STATUS_TEXT.outOfStock
+            : SUPPLIER_STATUS_TEXT.checkingAvailability;
   const supplierStatusBadgeClass =
-    supplierDiscoveryState === "AUTOMATED_DISCOVERY" ||
-    supplierDiscoveryState === "VERIFIED_IN_STOCK"
-      ? "bg-emerald-50 text-emerald-800 border-emerald-200"
-      : supplierDiscoveryState === "OUT_OF_STOCK"
-        ? "bg-orange-50 text-orange-800 border-orange-200"
-        : "bg-amber-50 text-amber-800 border-amber-200";
-
-  const broadProductOptions =
-    automatedProductResults.length > 0
-      ? automatedProductResults.slice(0, 6)
-      : supplierLegacyCapabilityMatches.length > 0
-        ? supplierLegacyCapabilityMatches.slice(0, 4).map((m) => {
-            const parts = [
-              m.brand,
-              m.productLine,
-              m.subcategory,
-            ].filter(Boolean);
-
-            const title = parts.join(" ");
-
-            return {
-              title,
-              imageUrl: null,
-              imageQuery: title,
-              price: null,
-              productUrl: m.sourceUrl ?? null,
-            };
-          })
-        : [];
-
-  const normalizeOptionTitle = (title: string | null | undefined) =>
-    String(title || "")
-      .trim()
-      .toLowerCase()
-      .replace(/\s+/g, " ");
-
-  type ProductOptionLinkData = {
-    title: string;
-    imageUrl?: string | null;
-    price?: string | null;
-  };
-
-  const buildOptionHref = (opt: ProductOptionLinkData): string => {
-    const params = new URLSearchParams();
-    params.set("q", opt.title);
-    params.set("listingTitle", opt.title);
-    if (opt.imageUrl) params.set("listingImage", opt.imageUrl);
-    if (opt.price) params.set("listingPrice", opt.price);
-    return `/request/${materialRequest.id}/supplier/${supplierId}?${params.toString()}`;
-  };
-
-  const focusedListingTitle = listingTitle ?? automatedProduct?.title ?? null;
-
-  const relatedSupplierOptions =
-    mode === "EXACT"
-      ? automatedProductResults
-          .filter((opt) => {
-            const sameTitle =
-              normalizeOptionTitle(opt.title) ===
-              normalizeOptionTitle(focusedListingTitle);
-            return !sameTitle;
-          })
-          .slice(0, 4)
-      : [];
-
-  const responseSubtleVal = checking ? "text-sm text-zinc-600" : "text-sm font-medium text-zinc-800";
+    supplierDiscoveryState === "CAPABILITY_PROFILE"
+      ? "bg-sky-50 text-sky-900 border-sky-200"
+      : supplierDiscoveryState === "AUTOMATED_DISCOVERY" ||
+          supplierDiscoveryState === "VERIFIED_IN_STOCK"
+        ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+        : supplierDiscoveryState === "OUT_OF_STOCK"
+          ? "bg-orange-50 text-orange-800 border-orange-200"
+          : "bg-amber-50 text-amber-800 border-amber-200";
 
   const telDigits = r.phone?.replace(/[^\d+]/g, "") ?? "";
   const telHref = telDigits.length > 0 ? `tel:${telDigits}` : null;
@@ -601,298 +526,58 @@ export default async function PublicSupplierDetailPage({
       ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapsQuery)}`
       : null;
 
+  const showExactListingFocus =
+    Boolean(listingTitle) ||
+    (storefront.layoutMode === "PRODUCT_FIRST" &&
+      hasLiveProducts &&
+      (listingImage || automatedProduct?.imageUrl));
+
   return (
     <div className="min-h-screen bg-zinc-50 px-4 py-5 pb-12 sm:px-6 sm:py-6 lg:px-8">
-      <div className="mx-auto max-w-5xl space-y-4 sm:space-y-5">
+      <div className="mx-auto max-w-6xl space-y-4 sm:space-y-5">
         {backHref && <BackToSearchLink href={backHref} />}
-        <p className="text-xs leading-relaxed text-zinc-500 sm:text-sm">
-          Result for: &quot;{materialRequest.requestText.trim() || "—"}&quot;
-        </p>
 
-        {/* Hero — expanded supplier card */}
-        <section className="overflow-hidden rounded-2xl border border-zinc-200 bg-white px-5 py-5 shadow-sm sm:px-6 sm:py-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div className="flex min-w-0 flex-1 gap-4">
-              <ImageWithFallback
-                src={r.logoUrl}
-                alt={r.supplierName}
-                className="h-16 w-28 shrink-0 rounded-xl border border-zinc-200 bg-white object-contain p-2"
-                fallback={
-                  <span className="text-base font-semibold text-zinc-500">
-                    {r.supplierName.slice(0, 2).toUpperCase()}
-                  </span>
-                }
-                fallbackContainerClassName="flex items-center justify-center bg-white"
-              />
-              <div className="min-w-0 flex-1">
-                <h1 className="text-xl font-bold tracking-tight text-zinc-900 sm:text-2xl">
-                  {r.supplierName}
-                </h1>
-                <p className="mt-1 text-xs text-zinc-500 sm:text-sm">
-                  <span>{cat}</span>
-                  {r.distanceMiles != null && (
-                    <>
-                      <span className="mx-1.5 text-zinc-300" aria-hidden>
-                        ·
-                      </span>
-                      <span className="text-zinc-400">
-                        {r.distanceMiles.toFixed(1)} mi away
-                      </span>
-                    </>
-                  )}
-                </p>
-              </div>
-            </div>
-            <div className="shrink-0 sm:pt-0.5">
-              <span
-                className={`inline-flex items-center rounded-md border px-2.5 py-1 text-xs font-medium ${supplierStatusBadgeClass}`}
-              >
-                {supplierStatusBadgeText}
-              </span>
-            </div>
-          </div>
+        <SupplierHeroCard
+          supplierName={r.supplierName}
+          logoUrl={r.logoUrl}
+          categoryLabel={cat}
+          distanceMiles={r.distanceMiles}
+          addressLine={addressLine}
+          phone={r.phone}
+          hoursText={r.hoursText}
+          availabilityLabel={supplierStatusBadgeText}
+          availabilityClass={supplierStatusBadgeClass}
+          discoveryStatus={storefront.discoveryStatus}
+          catalogMetrics={storefront.catalogMetrics}
+          telHref={telHref}
+          directionsHref={directionsHref}
+          requestId={materialRequest.id}
+          supplierId={supplierId}
+          tier={storefront.tier}
+        />
 
-          <div className="mt-4 border-t border-zinc-100 pt-4">
-            <div className="grid gap-3 text-xs text-zinc-600 sm:grid-cols-2 sm:gap-x-8 sm:gap-y-2 sm:text-sm">
-              <div className="flex min-w-0 gap-2 sm:col-span-2">
-                <Phone className="mt-0.5 h-3.5 w-3.5 shrink-0 text-zinc-400" aria-hidden />
-                <p className="min-w-0 leading-snug">
-                  <span className="text-zinc-400">Phone </span>
-                  <span className="font-medium text-zinc-800">
-                    {r.phone?.trim() || "—"}
-                  </span>
-                </p>
-              </div>
-              <div className="flex min-w-0 gap-2 sm:col-span-2">
-                <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-zinc-400" aria-hidden />
-                <p className="min-w-0 leading-snug break-words">
-                  <span className="text-zinc-400">Address </span>
-                  <span className="font-medium text-zinc-800">
-                    {addressLine || "—"}
-                  </span>
-                </p>
-              </div>
-              <div className="flex min-w-0 gap-2 sm:col-span-2">
-                <Clock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-zinc-400" aria-hidden />
-                <p className="min-w-0 whitespace-pre-wrap leading-snug">
-                  <span className="text-zinc-400">Hours </span>
-                  <span className="font-medium text-zinc-800">
-                    {r.hoursText?.trim() || "—"}
-                  </span>
-                </p>
-              </div>
-            </div>
-          </div>
+        {showExactListingFocus ? (
+          <ExactListingFocus
+            supplierName={r.supplierName}
+            title={displayProductTitle}
+            imageSrc={imageSrc}
+            priceDisplay={productPriceDisplay}
+            quantityDisplay={quantityDisplay}
+            productStatusLabel={productStatusLabel}
+            supplierDiscoveryState={supplierDiscoveryState}
+          />
+        ) : null}
 
-          {(telHref || directionsHref) && (
-            <div className="mt-4 flex flex-wrap gap-2 border-t border-zinc-100 pt-4">
-              {telHref && (
-                <a
-                  href={telHref}
-                  className="inline-flex items-center justify-center rounded-lg border border-zinc-200 bg-zinc-50/80 px-3 py-1.5 text-xs font-medium text-zinc-800 transition hover:border-zinc-300 hover:bg-zinc-100 sm:text-sm"
-                >
-                  Call
-                </a>
-              )}
-              {directionsHref && (
-                <a
-                  href={directionsHref}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center rounded-lg border border-zinc-200 bg-zinc-50/80 px-3 py-1.5 text-xs font-medium text-zinc-800 transition hover:border-zinc-300 hover:bg-zinc-100 sm:text-sm"
-                >
-                  Directions
-                </a>
-              )}
-            </div>
-          )}
-        </section>
-
-        {/* Main answer */}
-        <section className="rounded-2xl border border-zinc-200 bg-white px-5 py-5 shadow-sm sm:px-7 sm:py-6">
-          <h2 className="text-base font-semibold text-zinc-900 sm:text-lg">
-            {mode === "EXACT" ? "Best match for your search" : "Available options"}
-          </h2>
-
-          {mode !== "EXACT" && (
-            <p className="mt-1 text-sm text-zinc-500">
-              Showing product options based on your search
-            </p>
-          )}
-
-          {mode === "EXACT" && (
-            <p className="mt-1 text-sm text-zinc-500">
-              Showing the closest match to your exact request
-            </p>
-          )}
-
-          {mode !== "EXACT" && (
-            broadProductOptions.length === 0 ? (
-              <div className="mt-5 rounded-xl border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-600">
-                We do not have verified product listings for this supplier yet. Contact the supplier directly or check back as Agora verifies availability.
-              </div>
-            ) : (
-            <div className="mt-5 grid gap-4 sm:grid-cols-2">
-              {broadProductOptions.map((opt, i) => (
-                <ProductOptionLink
-                  key={i}
-                  supplierId={supplierId}
-                  productUrl={(opt as { productUrl?: string | null }).productUrl ?? null}
-                  fallbackHref={buildOptionHref({
-                    title: opt.title,
-                    imageUrl: opt.imageUrl ?? null,
-                    price: opt.price ?? null,
-                  })}
-                  className="group block rounded-xl border border-zinc-200 bg-white p-4 shadow-sm transition hover:border-zinc-300 hover:shadow-md"
-                >
-                  {(() => {
-                    const optRow = opt as {
-                      title: string;
-                      imageUrl?: string | null;
-                      imageQuery?: string;
-                    };
-                    const imageSrc =
-                      optRow.imageUrl ||
-                      (optRow.imageQuery
-                        ? `https://source.unsplash.com/featured/?${encodeURIComponent(optRow.imageQuery)}`
-                        : "/placeholder.png");
-                    return (
-                      <ImageWithFallback
-                        src={imageSrc}
-                        alt={opt.title}
-                        className="mb-3 h-28 w-full overflow-hidden rounded-lg object-contain"
-                      />
-                    );
-                  })()}
-
-                  <h3 className="line-clamp-2 text-sm font-semibold text-zinc-900">
-                    {opt.title}
-                  </h3>
-
-                  <div className="mt-2 flex flex-wrap items-center gap-2">
-                    <span className="inline-flex items-center rounded-md bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
-                      {productStatusLabel}
-                    </span>
-                    <span className="inline-flex items-center rounded-md bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600">
-                      {SUPPLIER_STATUS_TEXT.catalogMatch}
-                    </span>
-                  </div>
-
-                  <div className="mt-3 text-sm font-medium text-zinc-900">
-                    {opt.price ?? priceDisplay}
-                  </div>
-
-                  <p className="mt-2 inline-flex items-center gap-1 text-xs text-zinc-500">
-                    {isBigBoxSupplier(supplierId) &&
-                    (opt as { productUrl?: string | null }).productUrl
-                      ? `View on ${bigBoxLabelForSupplier(supplierId)}`
-                      : "View this option for more detail"}
-                    {isBigBoxSupplier(supplierId) &&
-                      (opt as { productUrl?: string | null }).productUrl && (
-                        <ExternalArrow className="h-3 w-3" />
-                      )}
-                  </p>
-                </ProductOptionLink>
-              ))}
-            </div>
-            )
-          )}
-
-          {mode === "EXACT" && (
-            <div className="mt-5 rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
-              <div className="flex flex-col sm:flex-row gap-5">
-                <ImageWithFallback
-                  src={imageSrc}
-                  alt={displayProductTitle}
-                  className="h-44 w-full rounded-lg bg-white object-contain sm:w-48"
-                />
-
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-zinc-900">
-                    {displayProductTitle}
-                  </h3>
-
-                  <div className="mt-2 flex flex-wrap items-center gap-2">
-                    <span className="inline-flex items-center rounded-md bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
-                      {productStatusLabel}
-                    </span>
-                    <span className="inline-flex items-center rounded-md bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600">
-                      {supplierDiscoveryState === "AUTOMATED_DISCOVERY"
-                        ? SUPPLIER_STATUS_TEXT.supplierCarriesThisItem
-                        : "Exact search"}
-                    </span>
-                  </div>
-
-                  <div className="mt-4 grid gap-3 rounded-lg border border-zinc-100 bg-zinc-50/60 p-3 text-sm sm:grid-cols-2">
-                    <div>
-                      <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-400">Price</p>
-                      <p className="mt-0.5 font-semibold text-zinc-900">{productPriceDisplay}</p>
-                    </div>
-                    <div>
-                      <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-400">Quantity</p>
-                      <p className="mt-0.5 font-semibold text-zinc-900">{quantityDisplay}</p>
-                    </div>
-                  </div>
-
-                  <p className="mt-3 text-xs leading-relaxed text-zinc-500">
-                    {supplierDiscoveryState === "AUTOMATED_DISCOVERY"
-                      ? "Agora found this listing automatically. Store availability may vary."
-                      : <>We&apos;re checking this exact item with {r.supplierName}. Pricing and availability update here once verified.</>}
-                  </p>
-
-                  {isBigBoxSupplier(supplierId) &&
-                    (listingUrl ?? automatedProduct?.productUrl) && (
-                      <a
-                        href={listingUrl ?? automatedProduct?.productUrl ?? "#"}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-800"
-                      >
-                        View on {bigBoxLabelForSupplier(supplierId)}
-                        <ExternalArrow className="h-3.5 w-3.5" />
-                      </a>
-                    )}
-
-                </div>
-              </div>
-
-              {relatedSupplierOptions.length > 0 && (
-                <div className="mt-6 border-t border-zinc-100 pt-5">
-                  <h4 className="text-sm font-semibold text-zinc-900">
-                    Other options from this supplier
-                  </h4>
-                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                    {relatedSupplierOptions.map((opt, i) => (
-                      <ProductOptionLink
-                        key={`${opt.title}-${opt.productUrl ?? i}`}
-                        supplierId={supplierId}
-                        productUrl={opt.productUrl ?? null}
-                        fallbackHref={buildOptionHref({
-                          title: opt.title,
-                          imageUrl: opt.imageUrl ?? null,
-                          price: opt.price ?? null,
-                        })}
-                        className="group block rounded-lg border border-zinc-200 bg-white p-3 shadow-sm transition hover:border-zinc-300 hover:shadow-md"
-                      >
-                        <ImageWithFallback
-                          src={opt.imageUrl}
-                          alt={opt.title}
-                          className="mb-2 h-20 w-full overflow-hidden rounded-md object-contain"
-                        />
-                        <h5 className="line-clamp-2 text-sm font-medium text-zinc-900">
-                          {opt.title}
-                        </h5>
-                        <p className="mt-1 text-xs text-zinc-600">
-                          {opt.price ?? "Pricing varies"}
-                        </p>
-                      </ProductOptionLink>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </section>
+        <SupplierStorefrontExperience
+          view={storefront}
+          requestId={materialRequest.id}
+          supplierId={supplierId}
+          urlParams={urlParams}
+          materialRequestText={materialRequest.requestText.trim() || "—"}
+          productStatusLabel={productStatusLabel}
+          fallbackPriceDisplay={priceDisplay}
+          listingTitle={listingTitle}
+        />
 
         {/* Supporting context */}
         <section className="rounded-xl border border-zinc-200/80 bg-zinc-50/60 px-4 py-3.5 sm:px-5 sm:py-4">
