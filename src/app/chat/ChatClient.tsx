@@ -4,6 +4,12 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import SiteFooter from "@/components/layout/SiteFooter";
 import SiteHeader from "@/components/layout/SiteHeader";
+import AgoraLogo from "@/components/brand/AgoraLogo";
+import SearchHero from "@/components/search-home/SearchHero";
+import HomeSearchBar from "@/components/search-home/HomeSearchBar";
+import PopularCategoriesSection from "@/components/search-home/PopularCategoriesSection";
+import PopularBrandsSection from "@/components/search-home/PopularBrandsSection";
+import SuggestedSearchChips from "@/components/search-home/SuggestedSearchChips";
 import type {
   ChatAttachmentMeta,
   ChatMessage,
@@ -194,9 +200,9 @@ export default function ChatClient() {
     setFiles((prev) => prev.filter((_, i) => i !== idx));
   };
 
-  const send = async () => {
+  const send = async (queryOverride?: string) => {
     if (isStreaming) return;
-    const text = draft.trim();
+    const text = (queryOverride ?? draft).trim();
     if (!text) return;
     setError(null);
 
@@ -302,16 +308,6 @@ export default function ChatClient() {
     }
   };
 
-  const startNewChat = () => {
-    setThreadId(null);
-    setMessages([]);
-    setPendingUser(null);
-    setStreamingText("");
-    setFiles([]);
-    setError(null);
-    setDrawerOpen(false);
-  };
-
   const seeSuppliers = async () => {
     if (isSearching || isStreaming) return;
     if (!threadId) {
@@ -394,6 +390,7 @@ export default function ChatClient() {
   };
 
   const showEmptyState = messages.length === 0 && !pendingUser && !isStreaming;
+
   const visibleMessages = useMemo(() => {
     const list: ChatMessage[] = [...messages];
     if (pendingUser) list.push(pendingUser);
@@ -407,97 +404,192 @@ export default function ChatClient() {
     return list;
   }, [messages, pendingUser, isStreaming, streamingText]);
 
+  const showDiscovery = showEmptyState && !isStreaming;
+
+  const submitDiscoveryQuery = (query: string) => {
+    if (isStreaming) return;
+    void send(query);
+  };
+
+  const sidebarProps = {
+    threads,
+    activeThreadId: threadId,
+    onSelect: loadThread,
+    locationLabel: location?.label ?? null,
+    onSetLocation: requestBrowserLocation,
+    onClearLocation: () => persistLocation(null),
+  };
+
+  const searchBarProps = {
+    value: draft,
+    onDraftChange: setDraft,
+    onSend: send,
+    disabled: isStreaming,
+  };
+
   return (
-    <div className="flex min-h-screen flex-col bg-white">
-      <SiteHeader drawerOpen={drawerOpen} onDrawerOpenChange={setDrawerOpen} />
+    <div className="flex min-h-screen flex-col overflow-x-hidden bg-white">
+      <SiteHeader
+        layout="searchHomeMobile"
+        drawerOpen={drawerOpen}
+        onDrawerOpenChange={setDrawerOpen}
+        showLogo={false}
+        trailing={
+          <LocationPill
+            label={location?.label ?? null}
+            onSet={requestBrowserLocation}
+            onClear={() => persistLocation(null)}
+            compact
+            soft
+          />
+        }
+      />
 
-      <div className="flex min-h-0 flex-1 flex-col md:flex-row">
-        {drawerOpen && (
-          <aside className="hidden w-72 shrink-0 border-r border-zinc-200 bg-zinc-50 md:block md:self-stretch">
-            <ThreadsSidebar
-              threads={threads}
-              activeThreadId={threadId}
-              onSelect={loadThread}
-              onNew={startNewChat}
-            />
-          </aside>
-        )}
+      <div className="flex min-h-0 flex-1">
+        <aside className="hidden w-72 shrink-0 flex-col border-r border-zinc-200 bg-stone-50/70 md:flex">
+          <SearchSidebar {...sidebarProps} />
+        </aside>
 
-        <main className="flex min-h-0 w-full flex-1 flex-col">
-          <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8">
-            <div className="mx-auto w-full max-w-3xl py-8">
-              {showEmptyState ? (
-                <EmptyState />
-              ) : (
-                <ul className="space-y-4">
-                  {visibleMessages.map((m, idx) => (
-                    <li key={idx}>
-                      <MessageBubble message={m} streaming={isStreaming && idx === visibleMessages.length - 1 && m.role === "model"} />
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </div>
+        {drawerOpen ? (
+          <MobileSearchSidebar
+            {...sidebarProps}
+            onClose={() => setDrawerOpen(false)}
+          />
+        ) : null}
 
-          <div className="shrink-0 border-t border-zinc-100 bg-white px-4 py-4 sm:px-6 sm:py-5 lg:px-8">
-            <div className="mx-auto w-full max-w-3xl">
-              {(files.length > 0 || error) && (
-                <div className="mb-3 space-y-2">
-                  {files.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {files.map((f, i) => (
-                        <FileChip key={i} file={f} onRemove={() => removeFile(i)} />
-                      ))}
-                    </div>
-                  )}
-                  {error && <p className="text-sm text-red-600">{error}</p>}
-                </div>
-              )}
-
-              <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2">
+        <main className="flex min-h-0 min-w-0 flex-1 flex-col">
+          {showEmptyState ? (
+            <>
+              <div className="hidden shrink-0 justify-end px-4 py-3 sm:px-8 md:flex lg:px-10">
                 <LocationPill
                   label={location?.label ?? null}
                   onSet={requestBrowserLocation}
                   onClear={() => persistLocation(null)}
+                  showChevron
+                  soft
                 />
-                <button
-                  type="button"
-                  onClick={seeSuppliers}
-                  disabled={!canSearch}
-                  title={
-                    !threadId || messages.length === 0
-                      ? "Send a message first"
-                      : "Find suppliers nearby"
-                  }
-                  className="inline-flex items-center gap-1.5 rounded-full bg-zinc-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-200 disabled:text-zinc-400 disabled:shadow-none"
-                >
-                  See suppliers
-                  <ArrowRightSmall className="h-3.5 w-3.5" />
-                </button>
               </div>
 
-              <Composer
-                draft={draft}
-                onDraftChange={setDraft}
-                onSend={send}
-                onAttach={() => fileInputRef.current?.click()}
-                disabled={isStreaming}
-              />
-              <input
-                ref={fileInputRef}
-                type="file"
-                multiple
-                accept="image/jpeg,image/png,image/webp,image/heic,image/heif,application/pdf"
-                className="hidden"
-                onChange={(e) => addFiles(e.target.files)}
-              />
-            </div>
-          </div>
+              <div
+                ref={scrollRef}
+                className="flex flex-1 flex-col overflow-x-hidden overflow-y-auto bg-gradient-to-b from-white to-stone-50/50 px-4 sm:px-8 lg:px-10"
+              >
+                <div className="mx-auto flex w-full min-w-0 max-w-3xl flex-col pb-14 pt-8 sm:pt-10">
+                  <div className="space-y-5 sm:space-y-6">
+                    <SearchHero />
+                    <HomeSearchBar {...searchBarProps} />
+                    {(files.length > 0 || error) && (
+                      <SearchAlerts
+                        files={files}
+                        error={error}
+                        onRemoveFile={removeFile}
+                      />
+                    )}
+                    {showDiscovery ? (
+                      <SuggestedSearchChips
+                        onSelect={submitDiscoveryQuery}
+                        disabled={isStreaming}
+                      />
+                    ) : null}
+                  </div>
+
+                  {showDiscovery ? (
+                    <>
+                      <PopularCategoriesSection
+                        onSelect={submitDiscoveryQuery}
+                        disabled={isStreaming}
+                      />
+                      <PopularBrandsSection
+                        onSelect={submitDiscoveryQuery}
+                        disabled={isStreaming}
+                      />
+                    </>
+                  ) : null}
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              <div
+                ref={scrollRef}
+                className="flex-1 overflow-y-auto px-4 sm:px-8 lg:px-10"
+              >
+                <div className="mx-auto w-full max-w-3xl py-6 sm:py-8">
+                  <ul className="space-y-4">
+                    {visibleMessages.map((m, idx) => (
+                      <li key={idx}>
+                        <MessageBubble
+                          message={m}
+                          streaming={
+                            isStreaming &&
+                            idx === visibleMessages.length - 1 &&
+                            m.role === "model"
+                          }
+                        />
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+
+              <div className="shrink-0 border-t border-zinc-200 bg-white px-4 py-4 sm:px-8 sm:py-5 lg:px-10">
+                <div className="mx-auto w-full max-w-3xl">
+                  {(files.length > 0 || error) && (
+                    <div className="mb-3">
+                      <SearchAlerts
+                        files={files}
+                        error={error}
+                        onRemoveFile={removeFile}
+                      />
+                    </div>
+                  )}
+
+                  <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                    <LocationPill
+                      label={location?.label ?? null}
+                      onSet={requestBrowserLocation}
+                      onClear={() => persistLocation(null)}
+                    />
+                    <button
+                      type="button"
+                      onClick={seeSuppliers}
+                      disabled={!canSearch}
+                      title={
+                        !threadId || messages.length === 0
+                          ? "Send a message first"
+                          : "Find suppliers nearby"
+                      }
+                      className="inline-flex min-h-[44px] items-center gap-1.5 rounded-full bg-[#1E3A5F] px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#172e4c] disabled:cursor-not-allowed disabled:bg-zinc-200 disabled:text-zinc-400 disabled:shadow-none"
+                    >
+                      See suppliers
+                      <ArrowRightSmall className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+
+                  <Composer
+                    draft={draft}
+                    onDraftChange={setDraft}
+                    onSend={send}
+                    onAttach={() => fileInputRef.current?.click()}
+                    disabled={isStreaming}
+                  />
+                </div>
+              </div>
+            </>
+          )}
         </main>
       </div>
 
       <SiteFooter />
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        multiple
+        accept="image/jpeg,image/png,image/webp,image/heic,image/heif,application/pdf"
+        className="hidden"
+        onChange={(e) => addFiles(e.target.files)}
+      />
 
       {isSearching && <SearchingOverlay location={location?.label ?? ""} />}
     </div>
@@ -515,9 +607,9 @@ function SearchingOverlay({ location }: { location: string }) {
     >
       <div className="flex flex-col items-center gap-4 px-6 text-center">
         <div className="flex items-center gap-1.5" aria-hidden>
-          <span className="h-2 w-2 animate-bounce rounded-full bg-zinc-700 [animation-delay:-0.3s]" />
-          <span className="h-2 w-2 animate-bounce rounded-full bg-zinc-700 [animation-delay:-0.15s]" />
-          <span className="h-2 w-2 animate-bounce rounded-full bg-zinc-700" />
+          <span className="h-2 w-2 animate-bounce rounded-full bg-[#1E3A5F] [animation-delay:-0.3s]" />
+          <span className="h-2 w-2 animate-bounce rounded-full bg-[#1E3A5F] [animation-delay:-0.15s]" />
+          <span className="h-2 w-2 animate-bounce rounded-full bg-[#1E3A5F]" />
         </div>
         <p className="text-[15px] text-zinc-800">
           Finding suppliers{location ? ` in ${location}` : ""}…
@@ -527,16 +619,42 @@ function SearchingOverlay({ location }: { location: string }) {
   );
 }
 
-function EmptyState() {
+function formatRelativeTime(iso: string): string {
+  const ts = new Date(iso).getTime();
+  if (Number.isNaN(ts)) return "";
+  const diffMs = Date.now() - ts;
+  const mins = Math.floor(diffMs / 60000);
+  if (mins < 1) return "Just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d ago`;
+  return new Date(iso).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function SearchAlerts({
+  files,
+  error,
+  onRemoveFile,
+}: {
+  files: File[];
+  error: string | null;
+  onRemoveFile: (idx: number) => void;
+}) {
   return (
-    <div className="flex flex-col items-center pt-12 text-center sm:pt-16">
-      <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 sm:text-3xl">
-        Tell us what you&apos;re looking for
-      </h1>
-      <p className="mt-3 max-w-md text-[15px] leading-relaxed text-zinc-600 sm:text-base">
-        Describe the materials you need, attach photos or specs, and we&apos;ll
-        help refine the request before sending it to suppliers in your area.
-      </p>
+    <div className="space-y-2">
+      {files.length > 0 ? (
+        <div className="flex flex-wrap gap-2">
+          {files.map((f, i) => (
+            <FileChip key={i} file={f} onRemove={() => onRemoveFile(i)} />
+          ))}
+        </div>
+      ) : null}
+      {error ? <p className="text-sm text-red-600">{error}</p> : null}
     </div>
   );
 }
@@ -554,22 +672,22 @@ function MessageBubble({
       <div
         className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-4 py-3 text-[15px] leading-relaxed shadow-sm sm:text-base ${
           isUser
-            ? "rounded-br-md bg-zinc-900 text-white"
+            ? "rounded-br-md bg-[#1E3A5F] text-white"
             : "rounded-bl-md border border-zinc-200 bg-white text-zinc-900"
         }`}
       >
         {message.text || (streaming ? <TypingDots /> : null)}
-        {streaming && message.text && (
+        {streaming && message.text ? (
           <span className="ml-1 inline-block h-3 w-1 animate-pulse bg-current align-middle" />
-        )}
-        {message.attachments && message.attachments.length > 0 && (
+        ) : null}
+        {message.attachments && message.attachments.length > 0 ? (
           <div className={`mt-2 flex flex-wrap gap-1.5 ${isUser ? "justify-end" : ""}`}>
             {message.attachments.map((a, i) => (
               <span
                 key={i}
                 className={`inline-flex max-w-[220px] items-center gap-1.5 truncate rounded-full px-2.5 py-1 text-[13px] font-medium ${
                   isUser
-                    ? "bg-zinc-700/70 text-zinc-50"
+                    ? "bg-[#172e4c]/70 text-zinc-50"
                     : "bg-zinc-100 text-zinc-700"
                 }`}
                 title={`${a.name} • ${(a.sizeBytes / 1024).toFixed(0)} KB`}
@@ -579,7 +697,7 @@ function MessageBubble({
               </span>
             ))}
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   );
@@ -610,9 +728,6 @@ function Composer({
 }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Auto-grow with the content, capped at ~7 lines (~168px) before internal
-  // scroll kicks in — keeps the composer from eating the chat history when
-  // someone pastes a long request.
   useEffect(() => {
     const ta = textareaRef.current;
     if (!ta) return;
@@ -621,7 +736,7 @@ function Composer({
   }, [draft]);
 
   return (
-    <div className="flex w-full min-w-0 items-end gap-1 rounded-2xl border border-zinc-200 bg-white p-2 shadow-sm transition-shadow focus-within:border-zinc-300 focus-within:shadow-md hover:shadow-md sm:gap-2 sm:p-2.5">
+    <div className="flex w-full min-w-0 items-end gap-1 rounded-2xl border border-zinc-200 bg-white p-2 shadow-sm transition-shadow focus-within:border-zinc-300 focus-within:shadow-md sm:gap-2 sm:p-2.5">
       <button
         type="button"
         onClick={onAttach}
@@ -637,7 +752,6 @@ function Composer({
         value={draft}
         onChange={(e) => onDraftChange(e.target.value)}
         onKeyDown={(e) => {
-          // Enter sends. Shift+Enter (or Cmd/Ctrl+Enter) is a newline.
           if (e.key === "Enter" && !e.shiftKey && !e.metaKey && !e.ctrlKey) {
             e.preventDefault();
             onSend();
@@ -651,7 +765,7 @@ function Composer({
         type="button"
         onClick={onSend}
         disabled={disabled || !draft.trim()}
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-zinc-900 text-white transition hover:bg-zinc-800 disabled:bg-zinc-200 disabled:text-zinc-400"
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#1E3A5F] text-white transition hover:bg-[#172e4c] disabled:bg-zinc-200 disabled:text-zinc-400"
         aria-label="Send"
       >
         <SendIcon className="h-4 w-4" />
@@ -660,40 +774,211 @@ function Composer({
   );
 }
 
+const RECENT_SEARCH_PREVIEW = 6;
+
+function SearchSidebar({
+  threads,
+  activeThreadId,
+  onSelect,
+  locationLabel,
+  onSetLocation,
+  onClearLocation,
+}: {
+  threads: ChatThreadSummary[];
+  activeThreadId: string | null;
+  onSelect: (id: string) => void;
+  locationLabel: string | null;
+  onSetLocation: () => void;
+  onClearLocation: () => void;
+}) {
+  const [showAllHistory, setShowAllHistory] = useState(false);
+  const visibleThreads = showAllHistory
+    ? threads
+    : threads.slice(0, RECENT_SEARCH_PREVIEW);
+  const hasMoreHistory = threads.length > RECENT_SEARCH_PREVIEW;
+
+  return (
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="px-5 pb-2 pt-5">
+        <AgoraLogo variant="header" />
+      </div>
+
+      <div className="flex min-h-0 flex-1 flex-col px-4 py-3">
+        <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+          Recent searches
+        </h2>
+
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          {threads.length === 0 ? (
+            <p className="px-1 py-2 text-sm text-zinc-500">No recent searches yet.</p>
+          ) : (
+            <nav aria-label="Recent searches">
+              <ul className="flex flex-col gap-0.5">
+                {visibleThreads.map((t) => (
+                  <li key={t.id}>
+                    <button
+                      type="button"
+                      onClick={() => onSelect(t.id)}
+                      className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left transition ${
+                        t.id === activeThreadId
+                          ? "bg-white/80 text-zinc-900 shadow-sm shadow-zinc-200/50"
+                          : "text-zinc-600 hover:bg-white/50 hover:text-zinc-900"
+                      }`}
+                    >
+                      <ClockIcon className="h-4 w-4 shrink-0 text-zinc-400" />
+                      <span className="min-w-0 flex-1 truncate text-sm">
+                        {t.title || "Untitled search"}
+                      </span>
+                      <span className="ml-auto shrink-0 text-[11px] text-zinc-400">
+                        {formatRelativeTime(t.updatedAt)}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          )}
+        </div>
+
+        {hasMoreHistory ? (
+          <button
+            type="button"
+            onClick={() => setShowAllHistory((prev) => !prev)}
+            className="mt-3 px-2.5 text-left text-sm font-medium text-[#1E3A5F] transition hover:text-[#172e4c]"
+          >
+            {showAllHistory ? "Show less" : "View all history"}
+          </button>
+        ) : null}
+      </div>
+
+      <div className="px-4 pb-5 pt-2">
+        <LocationPill
+          label={locationLabel}
+          onSet={onSetLocation}
+          onClear={onClearLocation}
+          showChevron
+          soft
+        />
+      </div>
+    </div>
+  );
+}
+
+function MobileSearchSidebar({
+  threads,
+  activeThreadId,
+  onSelect,
+  locationLabel,
+  onSetLocation,
+  onClearLocation,
+  onClose,
+}: {
+  threads: ChatThreadSummary[];
+  activeThreadId: string | null;
+  onSelect: (id: string) => void;
+  locationLabel: string | null;
+  onSetLocation: () => void;
+  onClearLocation: () => void;
+  onClose: () => void;
+}) {
+  return (
+    <>
+      <button
+        type="button"
+        aria-label="Close menu"
+        className="fixed inset-0 top-14 z-40 bg-black/30 md:hidden"
+        onClick={onClose}
+      />
+      <aside className="fixed left-0 top-14 z-50 flex h-[calc(100vh-3.5rem)] w-72 max-w-[85vw] flex-col bg-stone-50/95 shadow-xl shadow-zinc-900/5 md:hidden">
+        <SearchSidebar
+          threads={threads}
+          activeThreadId={activeThreadId}
+          onSelect={(id) => {
+            onSelect(id);
+            onClose();
+          }}
+          locationLabel={locationLabel}
+          onSetLocation={onSetLocation}
+          onClearLocation={onClearLocation}
+        />
+      </aside>
+    </>
+  );
+}
+
 function LocationPill({
   label,
   onSet,
   onClear,
+  compact = false,
+  showChevron = false,
+  soft = false,
 }: {
   label: string | null;
   onSet: () => void;
   onClear: () => void;
+  compact?: boolean;
+  showChevron?: boolean;
+  soft?: boolean;
 }) {
+  const baseClass = compact
+    ? soft
+      ? "inline-flex max-w-[200px] items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-[12px] font-medium text-zinc-700 shadow-sm shadow-zinc-200/60"
+      : "inline-flex max-w-[200px] items-center gap-1 rounded-full border border-zinc-200 bg-white px-2.5 py-1 text-[12px] font-medium text-zinc-700"
+    : soft
+      ? "inline-flex max-w-[240px] items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 text-[13px] font-medium text-zinc-700 shadow-sm shadow-zinc-200/60 transition hover:bg-white hover:shadow-md hover:shadow-zinc-200/70"
+      : "inline-flex max-w-[240px] items-center gap-1.5 rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-[13px] font-medium text-zinc-700 transition hover:border-zinc-300 hover:bg-zinc-50";
+
   if (!label) {
     return (
-      <button
-        type="button"
-        onClick={onSet}
-        className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-[13px] font-medium text-zinc-700 transition hover:border-zinc-300 hover:bg-zinc-50 hover:text-zinc-900"
-      >
-        <PinIcon className="h-3.5 w-3.5" />
-        Add location
+      <button type="button" onClick={onSet} className={baseClass}>
+        <PinIcon className={compact ? "h-3 w-3" : "h-3.5 w-3.5"} />
+        <span className="truncate">{compact ? "Location" : "Add location"}</span>
+        {showChevron ? <ChevronDownIcon className="h-3.5 w-3.5 shrink-0 text-zinc-400" /> : null}
       </button>
     );
   }
+
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-[13px] font-medium text-zinc-800">
-      <PinIcon className="h-3.5 w-3.5 text-zinc-500" />
-      {label}
-      <button
-        type="button"
-        onClick={onClear}
-        className="ml-0.5 rounded-full text-zinc-400 transition hover:text-zinc-700"
-        aria-label="Clear location"
-      >
-        ×
-      </button>
-    </span>
+    <button
+      type="button"
+      onClick={onSet}
+      className={
+        compact
+          ? soft
+            ? "inline-flex max-w-[220px] items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-[12px] font-medium text-zinc-800 shadow-sm shadow-zinc-200/60"
+            : "inline-flex max-w-[220px] items-center gap-1 rounded-full border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-[12px] font-medium text-zinc-800"
+          : soft
+            ? "inline-flex max-w-[260px] items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 text-[13px] font-medium text-zinc-800 shadow-sm shadow-zinc-200/60 transition hover:bg-white hover:shadow-md hover:shadow-zinc-200/70"
+            : "inline-flex max-w-[260px] items-center gap-1.5 rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-[13px] font-medium text-zinc-800 transition hover:border-zinc-300"
+      }
+    >
+      <PinIcon className={`${compact ? "h-3 w-3" : "h-3.5 w-3.5"} shrink-0 text-zinc-500`} />
+      <span className="truncate">{label}</span>
+      {showChevron ? (
+        <ChevronDownIcon className="h-3.5 w-3.5 shrink-0 text-zinc-400" />
+      ) : (
+        <span
+          role="button"
+          tabIndex={0}
+          onClick={(e) => {
+            e.stopPropagation();
+            onClear();
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              e.stopPropagation();
+              onClear();
+            }
+          }}
+          className="ml-0.5 shrink-0 rounded-full text-zinc-400 transition hover:text-zinc-700"
+          aria-label="Clear location"
+        >
+          ×
+        </span>
+      )}
+    </button>
   );
 }
 
@@ -715,61 +1000,8 @@ function FileChip({ file, onRemove }: { file: File; onRemove: () => void }) {
   );
 }
 
-function ThreadsSidebar({
-  threads,
-  activeThreadId,
-  onSelect,
-  onNew,
-}: {
-  threads: ChatThreadSummary[];
-  activeThreadId: string | null;
-  onSelect: (id: string) => void;
-  onNew: () => void;
-}) {
-  return (
-    <div className="flex h-full flex-col">
-      <div className="flex items-center justify-between border-b border-zinc-200 px-4 py-4">
-        <h2 className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
-          Recent chats
-        </h2>
-        <button
-          type="button"
-          onClick={onNew}
-          className="rounded-md px-2 py-1 text-[13px] font-medium text-zinc-700 transition hover:bg-zinc-200 hover:text-zinc-900"
-        >
-          + New
-        </button>
-      </div>
-      <div className="flex-1 overflow-y-auto">
-        {threads.length === 0 ? (
-          <p className="px-4 py-6 text-xs text-zinc-400">No chats yet.</p>
-        ) : (
-          <ul className="py-2">
-            {threads.map((t) => (
-              <li key={t.id}>
-                <button
-                  type="button"
-                  onClick={() => onSelect(t.id)}
-                  className={`block w-full truncate px-4 py-2 text-left text-sm transition ${
-                    t.id === activeThreadId
-                      ? "bg-zinc-200 text-zinc-900"
-                      : "text-zinc-700 hover:bg-zinc-100"
-                  }`}
-                  title={t.title || "Untitled"}
-                >
-                  {t.title || "Untitled chat"}
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-    </div>
-  );
-}
-
 // ---------------------------------------------------------------------------
-// Tiny inline icons (SVG) — match the SearchGlyph style on the landing page.
+// Tiny inline icons (SVG)
 
 function PaperclipIcon({ className }: { className?: string }) {
   return (
@@ -805,6 +1037,24 @@ function SendIcon({ className }: { className?: string }) {
   );
 }
 
+function ClockIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3 2" />
+    </svg>
+  );
+}
+
 function PinIcon({ className }: { className?: string }) {
   return (
     <svg
@@ -819,6 +1069,23 @@ function PinIcon({ className }: { className?: string }) {
     >
       <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z" />
       <circle cx="12" cy="10" r="3" />
+    </svg>
+  );
+}
+
+function ChevronDownIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="m6 9 6 6 6-6" />
     </svg>
   );
 }

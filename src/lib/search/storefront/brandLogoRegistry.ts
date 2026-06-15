@@ -6,6 +6,8 @@ import { normalizeStorefrontLabel } from "./normalizeStorefrontLabel";
  */
 const BRAND_LOGO_ALIASES: Record<string, string> = {
   // Roofing
+  atlas: "atlas",
+  "atlas roofing": "atlas",
   gaf: "gaf",
   certainteed: "certainteed",
   "certain teed": "certainteed",
@@ -14,6 +16,14 @@ const BRAND_LOGO_ALIASES: Record<string, string> = {
   tamko: "tamko",
   "tamko building products": "tamko",
   iko: "iko",
+  // Siding / building products
+  "james hardie": "james-hardie",
+  hardie: "james-hardie",
+  "lp smartside": "lp-smartside",
+  "lp smart side": "lp-smartside",
+  usg: "usg",
+  "usg corporation": "usg",
+  sheetrock: "usg",
   // Paint
   "sherwin-williams": "sherwin-williams",
   "sherwin williams": "sherwin-williams",
@@ -56,13 +66,36 @@ const BRAND_LOGO_ALIASES: Record<string, string> = {
   yardlink: "yardlink",
 };
 
+/** Real raster logo assets under /storefront/brands/ (homepage + storefront). */
+const BRAND_LOGO_FILES: Record<string, string> = {
+  usg: "usg.png",
+  "james-hardie": "james-hardie.png",
+  "lp-smartside": "lp-smartside.jpg",
+  daltile: "daltile.jpg",
+  mohawk: "mohawk.png",
+  gaf: "gaf.png",
+  milwaukee: "milwaukee.png",
+  "simpson-strong-tie": "simpson-strong-tie.jpg",
+  trex: "trex.jpg",
+  "owens-corning": "owens-corning.png",
+};
+
+export function brandLogoAssetSrc(slug: string): string {
+  const file = BRAND_LOGO_FILES[slug] ?? `${slug}.svg`;
+  return `/storefront/brands/${file}`;
+}
+
+export function hasRealBrandLogo(slug: string): boolean {
+  return slug in BRAND_LOGO_FILES;
+}
+
 export function lookupBrandLogo(
   label: string
 ): { src: string; slug: string } | null {
   const key = normalizeStorefrontLabel(label);
   const slug = BRAND_LOGO_ALIASES[key];
   if (!slug) return null;
-  return { src: `/storefront/brands/${slug}.svg`, slug };
+  return { src: brandLogoAssetSrc(slug), slug };
 }
 
 export function listRegisteredBrandSlugs(): string[] {

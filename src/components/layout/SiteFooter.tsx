@@ -2,8 +2,8 @@ import Link from "next/link";
 
 export default function SiteFooter() {
   return (
-    <footer className="mt-auto w-full shrink-0 border-t border-zinc-200 bg-white">
-      <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+    <footer className="mt-auto w-full shrink-0 overflow-x-hidden bg-white pt-2">
+      <div className="mx-auto w-full min-w-0 max-w-3xl px-4 py-6 sm:px-6 sm:py-8 lg:px-10">
         <div className="grid grid-cols-1 items-center gap-6 text-center text-xs leading-relaxed text-zinc-500 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] sm:gap-x-8 sm:gap-y-0 sm:text-[13px]">
           <p className="sm:justify-self-start sm:text-left">
             Serving Huntsville &amp; North Alabama
