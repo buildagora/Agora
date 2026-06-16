@@ -10,19 +10,16 @@
  *   2. Stream the slow SerpAPI-backed content into a Suspense boundary,
  *      with a product-shaped skeleton in place while it loads.
  *
- * Compared to relying on loading.tsx alone (which shows a generic skeleton
- * before the page starts rendering), this gives the buyer specific
- * confirmation in ~100ms.
+ * SiteHeader/SiteFooter sit outside Suspense so Agora chrome persists after load.
  */
 
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
-import SiteFooter from "@/components/layout/SiteFooter";
-import SiteHeader from "@/components/layout/SiteHeader";
 import ImageWithFallback from "@/components/ImageWithFallback";
 import { getPrisma } from "@/lib/db.rsc";
 import BackToSearchLink, { buildSearchBackHref } from "./BackToSearchLink";
 import DeepSupplierDetail from "./DeepSupplierDetail";
+import SupplierDetailPageShell from "./SupplierDetailPageShell";
 
 export const revalidate = 0;
 
@@ -63,12 +60,13 @@ export default async function PublicSupplierDetailPage(props: PageProps) {
   if (!supplier) notFound();
 
   return (
-    <Suspense fallback={<ShellWithSupplier supplier={supplier} backHref={backHref} />}>
-      <DeepSupplierDetail {...props} />
-    </Suspense>
+    <SupplierDetailPageShell>
+      <Suspense fallback={<SupplierDetailFallback supplier={supplier} backHref={backHref} />}>
+        <DeepSupplierDetail {...props} />
+      </Suspense>
+    </SupplierDetailPageShell>
   );
 }
-
 
 type ShellSupplier = {
   name: string;
@@ -80,11 +78,10 @@ type ShellSupplier = {
 };
 
 /**
- * Page shell shown while the heavy page is still server-rendering. Includes
- * the supplier hero (logo + name + address) so the buyer immediately knows
- * they clicked the right card, plus a product-section skeleton.
+ * Content-only fallback while DeepSupplierDetail streams. Header/footer are
+ * provided by SupplierDetailPageShell.
  */
-function ShellWithSupplier({
+function SupplierDetailFallback({
   supplier,
   backHref,
 }: {
@@ -100,67 +97,58 @@ function ShellWithSupplier({
     .join("");
 
   return (
-    <div className="flex min-h-screen flex-col bg-white">
-      <SiteHeader />
+    <div className="px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
+      <div className="mx-auto w-full max-w-6xl">
+        {backHref && <BackToSearchLink href={backHref} />}
 
-      <main className="flex-1 px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
-        <div className="mx-auto w-full max-w-6xl">
-          {backHref && <BackToSearchLink href={backHref} />}
-
-          {/* Real supplier hero — name, logo, address */}
-          <div className="mb-6 flex items-start gap-4">
-            <ImageWithFallback
-              src={supplier.logoUrl}
-              alt={supplier.name}
-              className="h-14 w-14 shrink-0 rounded-xl bg-zinc-50 object-contain p-1 ring-1 ring-zinc-200 sm:h-16 sm:w-16"
-              fallback={
-                <span className="text-base font-semibold text-zinc-600">
-                  {initials || "?"}
-                </span>
-              }
-              fallbackContainerClassName="flex items-center justify-center bg-zinc-50 ring-1 ring-zinc-200"
-            />
-            <div className="min-w-0 flex-1 pt-1">
-              <h1 className="truncate text-xl font-semibold text-zinc-900 sm:text-2xl">
-                {supplier.name}
-              </h1>
-              <p className="mt-1 truncate text-sm text-zinc-500">
-                {supplier.street}, {supplier.city}, {supplier.state} {supplier.zip}
-              </p>
-            </div>
-          </div>
-
-          {/* Live-fetching banner */}
-          <div className="relative mb-6 flex items-center gap-3 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
-            <span className="relative flex h-2 w-2 shrink-0">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-sky-400 opacity-75" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-sky-500" />
-            </span>
-            <p className="text-sm text-zinc-700">
-              Fetching live product results from {supplier.name}…
+        <div className="mb-6 flex items-start gap-4">
+          <ImageWithFallback
+            src={supplier.logoUrl}
+            alt={supplier.name}
+            className="h-14 w-14 shrink-0 rounded-xl bg-zinc-50 object-contain p-1 ring-1 ring-zinc-200 sm:h-16 sm:w-16"
+            fallback={
+              <span className="text-base font-semibold text-zinc-600">
+                {initials || "?"}
+              </span>
+            }
+            fallbackContainerClassName="flex items-center justify-center bg-zinc-50 ring-1 ring-zinc-200"
+          />
+          <div className="min-w-0 flex-1 pt-1">
+            <h1 className="truncate text-xl font-semibold text-zinc-900 sm:text-2xl">
+              {supplier.name}
+            </h1>
+            <p className="mt-1 truncate text-sm text-zinc-500">
+              {supplier.street}, {supplier.city}, {supplier.state} {supplier.zip}
             </p>
           </div>
-
-          {/* Product-shape skeletons */}
-          <h2 className="mb-3 text-xs font-medium uppercase tracking-wide text-zinc-500">
-            Loading products
-          </h2>
-          <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <li
-                key={i}
-                className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm"
-              >
-                <div className="mb-3 h-32 animate-pulse rounded-lg bg-zinc-100" />
-                <div className="mb-2 h-4 w-3/4 animate-pulse rounded bg-zinc-100" />
-                <div className="h-3 w-1/3 animate-pulse rounded bg-zinc-100" />
-              </li>
-            ))}
-          </ul>
         </div>
-      </main>
 
-      <SiteFooter />
+        <div className="relative mb-6 flex items-center gap-3 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
+          <span className="relative flex h-2 w-2 shrink-0">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-sky-400 opacity-75" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-sky-500" />
+          </span>
+          <p className="text-sm text-zinc-700">
+            Fetching live product results from {supplier.name}…
+          </p>
+        </div>
+
+        <h2 className="mb-3 text-xs font-medium uppercase tracking-wide text-zinc-500">
+          Loading products
+        </h2>
+        <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <li
+              key={i}
+              className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm"
+            >
+              <div className="mb-3 h-32 animate-pulse rounded-lg bg-zinc-100" />
+              <div className="mb-2 h-4 w-3/4 animate-pulse rounded bg-zinc-100" />
+              <div className="h-3 w-1/3 animate-pulse rounded bg-zinc-100" />
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }

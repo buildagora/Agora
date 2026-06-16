@@ -9,12 +9,15 @@ export default function SiteHeader({
   trailing,
   showLogo = true,
   layout = "default",
+  homeReplace = false,
 }: {
   drawerOpen?: boolean;
   onDrawerOpenChange?: (open: boolean) => void;
   trailing?: ReactNode;
   showLogo?: boolean;
   layout?: "default" | "searchHomeMobile";
+  /** Replace history when navigating logo to `/` (search results + supplier detail only). */
+  homeReplace?: boolean;
 }) {
   const isSearchHomeMobile = layout === "searchHomeMobile";
   const navClass = isSearchHomeMobile
@@ -47,7 +50,9 @@ export default function SiteHeader({
             </button>
           ) : null}
 
-          {showLogo ? <AgoraLogo variant="header" /> : null}
+          {showLogo ? (
+            <AgoraLogo variant="header" replace={homeReplace} />
+          ) : null}
         </div>
         {trailing ? <div className="shrink-0">{trailing}</div> : null}
       </div>

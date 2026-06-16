@@ -20,6 +20,8 @@ const HERO_LOCKUP_H = 208;
 interface AgoraLogoProps {
   variant?: AgoraLogoVariant;
   className?: string;
+  /** When true, use router.replace instead of push (public search exit surfaces only). */
+  replace?: boolean;
 }
 
 /**
@@ -28,6 +30,7 @@ interface AgoraLogoProps {
 export default function AgoraLogo({
   variant = "auth",
   className = "",
+  replace = false,
 }: AgoraLogoProps) {
   const getHomeRoute = () => {
     switch (variant) {
@@ -70,6 +73,7 @@ export default function AgoraLogo({
     return (
       <Link
         href={homeRoute}
+        replace={replace}
         className={`inline-block max-w-full shrink-0 leading-none hover:opacity-80 transition-opacity ${className}`}
         aria-label="Go to Agora home"
       >
@@ -89,6 +93,7 @@ export default function AgoraLogo({
     return (
       <Link
         href={homeRoute}
+        replace={replace}
         className={`inline-flex shrink-0 items-center justify-center hover:opacity-80 transition-opacity ${className}`}
         aria-label="Go to Agora home"
       >
@@ -103,6 +108,7 @@ export default function AgoraLogo({
   return (
     <Link
       href={homeRoute}
+      replace={replace}
       className={`inline-flex shrink-0 items-center leading-none hover:opacity-80 transition-opacity ${className}`}
       aria-label="Go to Agora home"
     >

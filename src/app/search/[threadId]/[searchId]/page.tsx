@@ -70,7 +70,7 @@ export default async function SearchResultsPage({
 
   return (
     <div className="flex min-h-screen flex-col bg-white">
-      <SiteHeader />
+      <SiteHeader homeReplace />
 
       <main className="flex-1 px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
         <div className="mx-auto w-full max-w-3xl">
@@ -87,6 +87,7 @@ export default async function SearchResultsPage({
             </div>
             <Link
               href="/"
+              replace
               className="shrink-0 rounded-full border border-zinc-200 bg-white px-3.5 py-1.5 text-[13px] font-medium text-zinc-700 shadow-sm transition hover:border-zinc-300 hover:bg-zinc-50 hover:text-zinc-900"
             >
               ← New search
