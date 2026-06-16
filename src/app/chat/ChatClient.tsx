@@ -486,8 +486,8 @@ export default function ChatClient() {
                 ref={scrollRef}
                 className="flex flex-1 flex-col overflow-x-hidden overflow-y-auto bg-gradient-to-b from-white to-stone-50/50 px-4 sm:px-8 lg:px-10"
               >
-                <div className="mx-auto flex w-full min-w-0 max-w-3xl flex-col pb-14 pt-8 sm:pt-10">
-                  <div className="space-y-5 sm:space-y-6">
+                <div className="flex w-full min-w-0 flex-col pb-14 pt-8 sm:pt-10">
+                  <div className="mx-auto w-full min-w-0 max-w-3xl space-y-5 sm:space-y-6">
                     <SearchHero />
                     <HomeSearchBar {...searchBarProps} />
                     {(files.length > 0 || error) && (
@@ -506,7 +506,7 @@ export default function ChatClient() {
                   </div>
 
                   {showDiscovery ? (
-                    <>
+                    <div className="mx-auto w-full min-w-0 max-w-3xl md:max-w-none md:-mx-8 md:px-8 lg:-mx-10 lg:px-10">
                       <PopularCategoriesSection
                         onSelect={submitDiscoveryQuery}
                         disabled={isStreaming}
@@ -515,7 +515,7 @@ export default function ChatClient() {
                         onSelect={submitDiscoveryQuery}
                         disabled={isStreaming}
                       />
-                    </>
+                    </div>
                   ) : null}
                 </div>
               </div>
