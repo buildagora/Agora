@@ -389,6 +389,18 @@ export default function ChatClient() {
     }
   };
 
+  const startNewSearch = () => {
+    if (isStreaming || isSearching) return;
+    setThreadId(null);
+    setMessages([]);
+    setPendingUser(null);
+    setStreamingText("");
+    setDraft("");
+    setFiles([]);
+    setError(null);
+    router.replace("/");
+  };
+
   const showEmptyState = messages.length === 0 && !pendingUser && !isStreaming;
 
   const visibleMessages = useMemo(() => {
@@ -544,12 +556,15 @@ export default function ChatClient() {
                     </div>
                   )}
 
-                  <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                    <LocationPill
-                      label={location?.label ?? null}
-                      onSet={requestBrowserLocation}
-                      onClear={() => persistLocation(null)}
-                    />
+                  <div className="mb-3 flex flex-wrap items-center justify-between gap-3 border-b border-zinc-100 pb-3">
+                    <button
+                      type="button"
+                      onClick={startNewSearch}
+                      disabled={isStreaming || isSearching}
+                      className="inline-flex min-h-[44px] shrink-0 items-center justify-center gap-1.5 rounded-full border border-transparent bg-[#1E3A5F] px-5 py-2 text-sm font-semibold text-white shadow-sm shadow-[#1E3A5F]/25 transition hover:bg-[#172e4c] disabled:border-transparent disabled:bg-zinc-200 disabled:text-zinc-400 disabled:shadow-none"
+                    >
+                      ← New Search
+                    </button>
                     <button
                       type="button"
                       onClick={seeSuppliers}
@@ -559,11 +574,19 @@ export default function ChatClient() {
                           ? "Send a message first"
                           : "Find suppliers nearby"
                       }
-                      className="inline-flex min-h-[44px] items-center gap-1.5 rounded-full bg-[#1E3A5F] px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#172e4c] disabled:cursor-not-allowed disabled:bg-zinc-200 disabled:text-zinc-400 disabled:shadow-none"
+                      className="inline-flex min-h-[44px] shrink-0 items-center justify-center gap-1.5 rounded-full border border-transparent bg-[#1E3A5F] px-5 py-2 text-sm font-semibold text-white shadow-sm shadow-[#1E3A5F]/25 transition hover:bg-[#172e4c] disabled:border-transparent disabled:bg-zinc-200 disabled:text-zinc-400 disabled:shadow-none"
                     >
                       See suppliers
                       <ArrowRightSmall className="h-3.5 w-3.5" />
                     </button>
+                  </div>
+
+                  <div className="mb-3">
+                    <LocationPill
+                      label={location?.label ?? null}
+                      onSet={requestBrowserLocation}
+                      onClear={() => persistLocation(null)}
+                    />
                   </div>
 
                   <Composer
