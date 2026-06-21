@@ -1,9 +1,34 @@
 import type { SupplierFingerprint } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { getPrisma } from "@/lib/db.server";
 import type {
   LegacyStrategySnapshot,
   SupplierFingerprintFacts,
 } from "./types";
+
+let loggedFingerprintStoreUnavailable = false;
+
+function isFingerprintStoreUnavailable(err: unknown): boolean {
+  if (err instanceof Prisma.PrismaClientKnownRequestError) {
+    // P2021: table does not exist; P2022: column does not exist (partial migration)
+    if (err.code === "P2021" || err.code === "P2022") return true;
+  }
+  if (
+    err instanceof Error &&
+    /does not exist in the current database/i.test(err.message)
+  ) {
+    return true;
+  }
+  return false;
+}
+
+function logFingerprintStoreUnavailableOnce(): void {
+  if (loggedFingerprintStoreUnavailable) return;
+  loggedFingerprintStoreUnavailable = true;
+  console.warn(
+    "[fingerprint] SupplierFingerprint store unavailable; treating as missing fingerprint"
+  );
+}
 
 export function mapFingerprintRowToFacts(
   supplierId: string,
@@ -41,15 +66,23 @@ export function mapFingerprintRowToFacts(
 
 /**
  * Load persisted fingerprint facts for a supplier (read-only).
- * Returns null when no row exists — never throws for a missing fingerprint.
+ * Returns null when no row exists or the fingerprint store is unavailable.
  */
 export async function loadSupplierFingerprintFacts(
   supplierId: string
 ): Promise<SupplierFingerprintFacts | null> {
   const prisma = getPrisma();
-  const row = await prisma.supplierFingerprint.findUnique({
-    where: { supplierId },
-  });
-  if (!row) return null;
-  return mapFingerprintRowToFacts(supplierId, row);
+  try {
+    const row = await prisma.supplierFingerprint.findUnique({
+      where: { supplierId },
+    });
+    if (!row) return null;
+    return mapFingerprintRowToFacts(supplierId, row);
+  } catch (err) {
+    if (isFingerprintStoreUnavailable(err)) {
+      logFingerprintStoreUnavailableOnce();
+      return null;
+    }
+    throw err;
+  }
 }
